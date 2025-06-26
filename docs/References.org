@@ -1,0 +1,39 @@
+
+  * [[https://arxiv.org/pdf/2309.16797][PromptBreeder]]
+  * [[https://arxiv.org/abs/2309.08532][EvoPrompt: Connecting LLMs with Evolutionary Algorithms Yields Powerful Prompt Optimizers]]
+
+  * https://arxiv.org/html/2504.07157v3
+
+  * https://www.themoonlight.io/review/gaapo-genetic-algorithmic-applied-to-prompt-optimization
+
+  * https://openreview.net/forum?id=ZG3RaNIsO8
+
+
+  * https://community.openai.com/t/promptoptimization-genetic-algorithms-for-prompt-optimization/457839
+
+  * https://www.brightsec.com/blog/llm-prompt-injection/
+
+  * https://www.reddit.com/r/MachineLearning/comments/1aji7np/d_microsoft_researchs_evoprompt_evolutionary/
+
+  * https://www.reddit.com/r/MachineLearning/comments/1edgtft/d_i_created_promptimizer_a_genetic_algorithm/
+
+  * https://github.com/AmanPriyanshu/GeneticPromptLab
+
+  * https://www.datacamp.com/tutorial/genetic-algorithm-python
+
+  * https://ai.gopubby.com/evoprompt-evolutionary-algorithms-meets-prompt-engineering-a-powerful-duo-c30c427e88cc
+
+  * https://brightsec.com/blog/llm-prompt-injection/
+
+  * https://hub.athina.ai/research-papers/b783c9c35b334596a432c755829a3f42/
+
+  * https://www.themoonlight.io/de/review/gaapo-genetic-algorithmic-applied-to-prompt-optimization
+
+  * [[https://selfrefine.info/]["Self-Refine: Iterative Refinement with Self-Feedback"]]
+  * [[https://www.promptingguide.ai/techniques/ape]["Automatic Prompt Engineer (APE)"]]
+  * [[https://openreview.net/forum?id=HKkiX32Zw1]["Self-Referential Self-Improvement via Prompt Evolution | OpenReview"]]
+  * [[https://arxiv.org/abs/2309.16797][Promptbreeder: Self-Referential Self-Improvement Via Prompt Evolution]]
+  * [[https://www.promptingguide.ai/techniques/reflexion][Reflexion | Prompt Engineering Guide]]
+  * [[https://arxiv.org/abs/2309.08532][EvoPrompt: Connecting LLMs with Evolutionary Algorithms Yields ...]]
+  * [[https://arxiv.org/html/2504.07157v3][GAAPO: Genetic Algorithmic Applied to Prompt Optimization - arXiv]]
+  * [[https://arxiv.org/abs/2410.07652][StablePrompt: Automatic Prompt Tuning using Reinforcement ... - arXiv]]

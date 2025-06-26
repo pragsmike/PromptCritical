@@ -1,0 +1,19 @@
+Our goal is to use different strategies to generate prompts,
+and we'll use failter as a tool for evaluating the prompts.
+
+The first strategy we'll investigate is to take a seed prompt and use an LLM to
+improve it. We may even use different models in a pipeline. This is similar in
+concept to prompt folding. We would need to define the "meta-prompt" that
+instructs the model to improve the seed prompt, to produce the improved prompt.
+The improved prompt could become the seed for another LLM, with possibly its own
+meta-prompt.
+
+An ultimate goal is to use these techniques to generate a population
+of candidate prompts, evaluate them using failter, and choose
+the most fit ones.  These would then be combined using a
+recombination strategy, perhaps by choosing pairs of them
+and giving them to an LLM whose prompt instructs it to
+combine them, taking the best parts of each one,
+to produce an offspring prompt.  This will then
+join the population for the next generation,
+and the cycle repeats for a number of iterations.
