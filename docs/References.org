@@ -37,3 +37,4 @@
   * [[https://arxiv.org/abs/2309.08532][EvoPrompt: Connecting LLMs with Evolutionary Algorithms Yields ...]]
   * [[https://arxiv.org/html/2504.07157v3][GAAPO: Genetic Algorithmic Applied to Prompt Optimization - arXiv]]
   * [[https://arxiv.org/abs/2410.07652][StablePrompt: Automatic Prompt Tuning using Reinforcement ... - arXiv]]
+  * [[https://www.mdpi.com/2504-4990/7/2/38][Survey of LLM/KG research]]
