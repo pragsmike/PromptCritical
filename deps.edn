@@ -10,7 +10,7 @@
         com.taoensso/telemere {:mvn/version "1.0.1"}}
 
  :aliases
- {:run {:main-opts ["-m" "failter.core"]}
+ {:run {:main-opts ["-m" "pcrit.core"]}
   :test {:extra-paths ["src" "test"]
          :extra-deps {io.github.cognitect-labs/test-runner
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}

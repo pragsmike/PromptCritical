@@ -41,3 +41,7 @@
     reflection. The evaluation module provides feedback to the answers and
     reasoning paths from the generation module, which are further referred by
     the reflection module to regenerate answers.
+
+  * [[https://aclanthology.org/2024.findings-emnlp.844/][LLM-Based Multi-Hop Question Answering with Knowledge Graph Integration in Evolving Environments]]
+
+  * 
