@@ -1,0 +1,45 @@
+* Binary Recombination prompt
+
+  Given two prompts, produce a new one that combines the best parts of each
+  to produce a stronger one that is likely to give better results.
+
+* Unary improvement prompt
+
+   Given a prompt, produce a stronger one that is likely to give better results.
+
+* Transformation prompt
+
+   Given a prompt, an input text, and a gold standard output text,
+   produce a prompt that instructs an LLM to transform the input into the output.
+   It's best if there are multiple sample text+output pairs.
+
+* Prompt quality evaluation prompt
+
+  Given a prompt, evaluate it on some quality aspects.
+  Produce a score for each area, and a composite score.
+
+  Is it clearly stated?
+  Are there ambiguities that could be interpreted in different ways?
+  Are the instructions obviously stated and clear?
+  Are the assumptions explicitly stated?
+  Are there unstated assumptions?
+
+* Transformation Evaluation prompt
+
+  These are given to failter as part of the experiment spec.
+  There are two cases in general, depending on whether there is a known
+  correct output text (the "gold" standard).
+
+  With no gold standard:
+  Given a prompt, an input text, and an output text,
+  analyze how closely the transforming LLM followed the instruction.
+
+  With a gold standard:
+  Given a prompt, an input text, and an output text, and a "gold" correct output text,
+  analyze how closely the transforming LLM followed the instruction.
+  If it produced exactly the gold output, it gets the highest score.
+
+
+* NOTES
+
+Prompts are most often imperative commands.
