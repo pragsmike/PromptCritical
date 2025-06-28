@@ -1,13 +1,7 @@
 
-  * [[https://arxiv.org/pdf/2309.16797][PromptBreeder]]
+  * [[https://arxiv.org/abs/2309.16797][Promptbreeder: Self-Referential Self-Improvement Via Prompt Evolution]] ([[https://arxiv.org/pdf/2309.16797][PDF]])
   * [[https://arxiv.org/abs/2309.08532][EvoPrompt: Connecting LLMs with Evolutionary Algorithms Yields Powerful Prompt Optimizers]]
-
-  * https://arxiv.org/html/2504.07157v3
-
-  * https://www.themoonlight.io/review/gaapo-genetic-algorithmic-applied-to-prompt-optimization
-
-  * https://openreview.net/forum?id=ZG3RaNIsO8
-
+    * [[https://openreview.net/forum?id=ZG3RaNIsO8][Review: EvoPrompt]]
 
   * https://community.openai.com/t/promptoptimization-genetic-algorithms-for-prompt-optimization/457839
 
@@ -19,22 +13,31 @@
 
   * https://github.com/AmanPriyanshu/GeneticPromptLab
 
-  * https://www.datacamp.com/tutorial/genetic-algorithm-python
-
   * https://ai.gopubby.com/evoprompt-evolutionary-algorithms-meets-prompt-engineering-a-powerful-duo-c30c427e88cc
-
-  * https://brightsec.com/blog/llm-prompt-injection/
 
   * https://hub.athina.ai/research-papers/b783c9c35b334596a432c755829a3f42/
 
-  * https://www.themoonlight.io/de/review/gaapo-genetic-algorithmic-applied-to-prompt-optimization
-
-  * [[https://selfrefine.info/]["Self-Refine: Iterative Refinement with Self-Feedback"]]
-  * [[https://www.promptingguide.ai/techniques/ape]["Automatic Prompt Engineer (APE)"]]
-  * [[https://openreview.net/forum?id=HKkiX32Zw1]["Self-Referential Self-Improvement via Prompt Evolution | OpenReview"]]
-  * [[https://arxiv.org/abs/2309.16797][Promptbreeder: Self-Referential Self-Improvement Via Prompt Evolution]]
+  * [[https://selfrefine.info/][Self-Refine: Iterative Refinement with Self-Feedback]]
+  * [[https://www.promptingguide.ai/techniques/ape][Automatic Prompt Engineer (APE)]]
+  * [[https://openreview.net/forum?id=HKkiX32Zw1][Self-Referential Self-Improvement via Prompt Evolution | OpenReview]]
   * [[https://www.promptingguide.ai/techniques/reflexion][Reflexion | Prompt Engineering Guide]]
-  * [[https://arxiv.org/abs/2309.08532][EvoPrompt: Connecting LLMs with Evolutionary Algorithms Yields ...]]
   * [[https://arxiv.org/html/2504.07157v3][GAAPO: Genetic Algorithmic Applied to Prompt Optimization - arXiv]]
+    * [[https://www.themoonlight.io/review/gaapo-genetic-algorithmic-applied-to-prompt-optimization][Review: GAAPO Genetic Algorithm Prompt Engineering]]
   * [[https://arxiv.org/abs/2410.07652][StablePrompt: Automatic Prompt Tuning using Reinforcement ... - arXiv]]
   * [[https://www.mdpi.com/2504-4990/7/2/38][Survey of LLM/KG research]]
+
+  * [[https://www.frontiersin.org/journals/artificial-intelligence/articles/10.3389/frai.2025.1546179/full][Large language models for intelligent RDF knowledge graph construction: results from medical ontology mapping]]
+
+  * [[https://openreview.net/forum?id=OHZO0Hdfo0][Ger: Generation, Evaluation and Reflection Enhanced LLM for Knowledge Graph Question Answering]]
+
+    Reviewers rejected this paper as not being novel, not providing enough experimental
+    analysis.
+
+    The paper proposes a GER (Generation-Evaluation-Reflection) framework for
+    knowledge graph question answering. The authors’ main argument is that the
+    complex entities and relationships in KGs introduce irrelevant information,
+    which further exacerbates the hallucination problem of LLMs. The paper’s
+    solution is to leverage three modules including generation, evaluation, and
+    reflection. The evaluation module provides feedback to the answers and
+    reasoning paths from the generation module, which are further referred by
+    the reflection module to regenerate answers.
