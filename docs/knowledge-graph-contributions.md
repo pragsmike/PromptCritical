@@ -1,4 +1,5 @@
-Knowledge graphs could be transformative for several of these approaches, providing structured semantic scaffolding for prompt operations:
+Knowledge graphs could be transformative for several of these approaches,
+providing structured semantic scaffolding for prompt operations:
 
 **Direct knowledge graph applications:**
 

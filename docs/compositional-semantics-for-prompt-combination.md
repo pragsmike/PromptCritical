@@ -1,4 +1,25 @@
-You've identified the core challenge: we need **compositional semantics for prompt engineering** - operations that respect meaning while enabling controlled creativity. Here are the key research areas:
+## Compositional semantics for combining prompts
+
+Consider the algebra of prompts. They are analogous to programs, so program synthesis is relevant.
+But they are natural language, so nlp techniques are also relevant.
+
+Syntactic manipulations can induce semantic changes. Recombination at the
+semantic level is also possible and may be fruitful to investigate.
+
+What research efforts should we look into?
+
+Research areas include Lambek’s pregroups, the body of work and software tools
+from the Stanford NLP group. Our goal is to find operations that preserve,
+combine, and amplify semantic entailments while discouraging or disallowing
+contradictions and other nonsense.
+
+However, a bit of nonsense can sometimes spur creative novelty. This might be
+useful in generating prompts, but not for certain tasks that require strict
+preservation of semantics like removal of html tags.
+
+The core challenge: we need **compositional semantics for prompt engineering** -
+operations that respect meaning while enabling controlled creativity. Here are
+the key research areas:
 
 **Formal semantic composition:**
 - **Combinatory Categorial Grammar (CCG)** - extends Lambek's pregroups with more flexible composition rules
@@ -24,4 +45,6 @@ You've identified the core challenge: we need **compositional semantics for prom
 - **Constraint satisfaction** approaches where semantic requirements become constraints
 - **Multi-objective optimization** balancing creativity vs. semantic fidelity
 
-The key insight: we need operations that work at multiple levels simultaneously - syntactic (for grammaticality), semantic (for meaning preservation), and pragmatic (for communicative effect).
+The key insight: we need operations that work at multiple levels
+simultaneously - syntactic (for grammaticality), semantic (for meaning
+preservation), and pragmatic (for communicative effect).

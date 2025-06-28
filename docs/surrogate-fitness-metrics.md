@@ -1,4 +1,20 @@
-You're essentially proposing to build a **surrogate fitness function** - a cheap predictor that approximates expensive LLM evaluations. This is a classic optimization problem where the evaluation itself is the bottleneck.
+Running evolutionary experiments using llms is extremely expensive. We want to
+minimize the number of trials needed. We must have a way to measure fitness and
+stop on sufficient fitness.
+
+We'll investigate the strategy of measuring something easy to compute about the
+prompt - Kolmogorov complexity, entropy, other kinds of statistical novelty, the
+fitness scores of its ancestors - looking to devise predictors of fitness before
+running the trials.
+
+What other measures can we find? What do researchers typically use to quantify aspects of text?
+
+We would catalog these measures along with the hard-won fitness scores, and
+derive a predictive model. It may be a formula, or an ML model.
+
+What are some promising avenues here?
+
+We're essentially proposing to build a **surrogate fitness function** - a cheap predictor that approximates expensive LLM evaluations. This is a classic optimization problem where the evaluation itself is the bottleneck.
 
 **Intrinsic text measures we can compute cheaply:**
 
