@@ -93,7 +93,7 @@
 ;; -----------------------------------------------------------------------------
 ;; Facade macros (avoid reflection on varargs)
 ;; -----------------------------------------------------------------------------
-(defmacro info [& args]  `(tel/log! {:level :info, :msg ~@args}))
-(defmacro warn [& args]  `(tel/log! {:level :warn, :msg ~@args}))
-(defmacro error [& args] `(tel/log! {:level :error, :msg ~@args}))
-(defmacro debug [& args] `(tel/log! {:level :debug, :msg ~@args}))
+(defmacro info [& args]  `(tel/log! {:level :info, :msg (str ~@args)}))
+(defmacro warn [& args]  `(tel/log! {:level :warn, :msg (str ~@args)}))
+(defmacro error [& args] `(tel/log! {:level :error, :msg (str ~@args)}))
+(defmacro debug [& args] `(tel/log! {:level :debug, :msg (str ~@args)}))

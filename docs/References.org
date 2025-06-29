@@ -44,4 +44,5 @@
 
   * [[https://aclanthology.org/2024.findings-emnlp.844/][LLM-Based Multi-Hop Question Answering with Knowledge Graph Integration in Evolving Environments]]
 
-  * 
+  * [[https://arxiv.org/pdf/2004.05631][At the Interface of Algrebra and Statistics]] Tae-Danae Bradley
+  * [[https://direct.mit.edu/coli/article/48/4/907/112556/Information-Theory-based-Compositional][Information Theory–based Compositional Distributional Semantics]]

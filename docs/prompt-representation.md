@@ -16,7 +16,7 @@ is ever seen by an LLM when it acts on the prompt.
 
 ## Prompt IDs
 
-Each prompt is assigned an ID the first time it is stored.
+Each prompt is assigned an `id` the first time it is stored.
 The id is a string of the form "Pnnn" where nnn is an integer. It is guaranteed not to
 collide with an existing prompt. The implementation will try to keep the
 integers as small as possible and still guarantee uniqueness.
@@ -24,16 +24,24 @@ integers as small as possible and still guarantee uniqueness.
 NOTE: The code will likely keep a file that holds the next id integer
 and will update it atomically when it draws one.
 
-## File naming
+## File naming and directory organization
 
 Prompt files are written with the extension `.prompt`.
 
 Processors will accept any name with that extension, but
-they always produce new files with the prompt ID as the name.
+they always produce new files with the prompt `id` as the name.
+
+All prompt files are stored under a single directory whose name is specified
+to the tool by the experimenter at runtime.
+
+For now, we store all the files in one directory.
+In the future, we may shard them across a set of subdirectories to shorten
+lookup time by the filesystem.
+
 
 ## File encoding
 
-The file is ALWAYS UTF-8, and the files are written without any UTF marker bytes.
+The file is ALWAYS UTF-8, and the files are written without any UTF-8 BOM bytes.
 Line endings are LF. The parser will tolerate CRLF but will convert it to LF internally.
 The hash computation uses LF canonically (see below).
 
@@ -50,17 +58,21 @@ processors, such as analyzers, will later add other metadata, but we are not
 concerned with those details here, other than to state that the front matter
 will always be parseable as YAML.
 
-## Front matter encoding
+### Front matter encoding
 
 Placement: The YAML front matter must be the very first thing in the file.
 
-Delimiters: It is enclosed between lines containing three dashes (---). The
+Delimiters: It is enclosed between lines containing only three dashes (---). The
 block starts with --- on the first line and ends with another --- .
+NOTE: Some YAML parsers expect the end marker to be three dots ... but we disallow that.
+The end marker MUST be three dashes on a line by themselves with no whitespace anywhere.
 
 Content: The content between the delimiters must be valid YAML. This typically
 includes key-value pairs, arrays, and sometimes multiline strings.
 
-NOTE: The YAML will ALWAYS be UTF-8.
+NOTE: The YAML will ALWAYS be UTF-8.  The file writer will ALWAYS normalize
+it before writing the file, as described below.  Validators should expect
+normalized text.
 
 Because the front matter occurs at the very start of the file, the
 text of the prompt need not be escaped.  It doesn't matter if
@@ -70,7 +82,8 @@ the prompt contains --- because the YAML parser never sees it.
 
 When prompts are generated, some initial metadata is added as front matter.
 This always includes these keys:
-   * `prompt-id` a string of the form "Pnnn" where nnn is an integer starting at 1
+   * `spec-version` currently always "1"
+   * `id` a string of the form "Pnnn" where nnn is an integer starting at 1
    * `created-at` timestamp
    * `sha1-hash` of the body text (see Hashing Algorithm, below)
 
@@ -81,14 +94,29 @@ initial metadata. This allows prompts to be quickly added by hand for testing.
 A CLI utility will also be provided that will rewrite such a file with correct
 metadata.
 
-The initial metadata may also include these keys:
+The initial metadata MAY also include these keys:
    * id's of ancestor prompts if any, as a YAML list
    * the algorithm that generated it (freeform)
    * the model name and id of the meta-prompt that generated it, if any
 
+```YAML
+ancestors: ["P12", "P7"]
+```
+
+The depth of the ancestors list is not bounded by this document.
+
+The precise names of these keys are not yet determined.
+
 As of now, these fields are free-form except
   * Timestamps are ISO-8601 Zulu zone (Z suffix), eg "2022-08-17T14:37:22Z"
   * the hash is a 40-character hexadecimal string (see below)
+
+Future processing is free to add new metadata keys as long as it doesn't
+overwrite these initial ones.  This document otherwise imposes no restrictions
+on the metadata that can be added later, as long as it yields valid YAML.
+
+The sha1-hash is added automatically when the file is first written.
+Other processors may add other hashes under their own keys, such as `sha256-hash`.
 
 ## Prompt text (body) never changes
 
@@ -102,7 +130,7 @@ If a prompt is mutated, a new prompt file will be created to hold the mutated of
 prompt, along with the new prompt's metadata.
 
 Once prompt text has been written into a file, it is immutable.  The *text* is never changed,
-Prompts are often analyzed to compute metrics (entropy, komogorov complexity, and the like)
+Prompts are often analyzed to compute metrics (entropy, kolmogorov complexity, and the like)
 and the computed metrics are added as metadata field in the front matter.
 
 One of the metadata fields is a hash of just the prompt text, computed without any of the metadata.
@@ -125,70 +153,72 @@ NOTE: We might relax this in the future if it becomes useful to do so.
 The prompt body text (NOT the YAML metadata) is protected against corruption by
 a hash code that is stored in the metadata.
 
+Again: NONE of the YAML participates in the hashing computation.
+
 SHA-1 produces a 160-bit (20-byte) hash value, represented as a 40-character hexadecimal string.
 These are written using lowercase characters, but the parser will also accept uppercase.
+NOTE: The purpose of the hash is to detect corruption, NOT to uniquely identify the prompt.
+It is OK if two prompts have the same hash.  It's very likely that they're the same text,
+but it doesn't matter if they don't due to (unlikely) hash collision.
 
 The hash is computed over the prompt text as if it were extracted from the prompt file as follows:
-   * The text is ALWAYS UTF-8
-   * the starting point is the beginning of the first nonblank line after the YAML ending separator
+   * The starting point is the beginning of the first nonblank line after the YAML ending separator.
+     It is ok if that line has leading blanks.  The start of that line is still the starting point of the prompt text.
+   * The prompt body may contain a line containing only three dashes without confusion,
+     because the preceding YAML markers have already been recognized and processed by then.
    * Line endings (CR, LF, or CRLF) are converted to LF.
-   * If there is no LF at the end of the last line, one is added.
+   * If there is no LF at the end of the last line, a LF is appended.
    * The ending point is the end of the file, after the last newline.
+   * If the prompt text contains trailing blank lines, they are considered part of the text.
+   * The text is encoded as UTF-8, and normalized by NFC.
 
 This canonicalization happens to be what the file writer does when it writes the file.
 
-## Concurrency
+## Concurrency – `.lock` file protocol
 
-If two processes try to rewrite the same prompt file simultaneously,
-they might interfere with each other if we don't take steps to avoid it.
+When multiple processes might update a prompt’s metadata concurrently, they coordinate through a per-prompt lock file.
+The lock file lives **next to** the prompt file and has the suffix `.lock` (e.g., `P123.prompt.lock`).
+Creating the lock file with the *exclusive-create* flag (`O_CREAT | O_EXCL` on POSIX) is atomic on local filesystems and therefore sufficient for mutual exclusion in normal operation.
 
-We adopt this protocol for rewriting an existing file.  We'll use a subdirectory
-of the one where the existing prompt file is stored, because moving a file
-from a directory to another on the same filesystem is an atomic operation.
+### Step-by-step procedure
 
-1) Move the file to a subdirectory where nothing else will write to it.
+1. **Acquire lock**
 
-  If that fails, either the file didn't exist after all, or another process has
-  already started this sequence. We assume the latter, because we know that the
-  file is not just now being created. In that case, we wait for a short time and
-  try again.
+   1. Attempt to create `Pnnn.prompt.lock` with exclusive create.
+   2. If creation fails because the file already exists, sleep for a short, random back-off and retry.
+   3. After *N* retries or *T* seconds, give up and report a locking error.
 
-  If, after a few tries, the file still hasn't appeared, we raise an error,
-  saying that the file that was supposed to exist didn't. In this case, the
-  other process that had started this sequence likely died, or is taking a very
-  long time to finish it. The message could give the name where the file would
-  be, in the subdirectory. We could automatically try to recover the abandoned
-  work, but for simplicity we won't do that right now. This is likely an
-  infrequent edge case so raising the error is sufficient.
+2. **Read current prompt file**
+   Open `Pnnn.prompt` **after** the lock is held and load both YAML and body.
 
-2) Read the file from its new location. This guarantees that nobody else is
-   writing to it, because they won't be looking for it there. (They might still
-   be reading from it if they'd opened it already, because of the way Unix
-   renaming works, but that's ok.)
+3. **Write updated version to temporary file**
+   Write the new contents—including updated metadata but identical body—to `Pnnn.prompt.new` and `fsync` it. The `.new` file must reside in the same directory to guarantee that the final rename is atomic.
 
-3) Write the new contents, with updated metadata, into the subdirectory under a different name,
-   and close the new file.
+4. **Atomic replace**
+   Perform `rename("Pnnn.prompt.new", "Pnnn.prompt")`. On POSIX filesystems this is atomic; readers will either see the old or the new complete file.
 
-4) Rename the new file back to its rightful place in the original directory.
-5) Delete the old file from the subdirectory.
+5. **Release lock**
+   Delete `Pnnn.prompt.lock`. This signals that other processes may proceed.
 
-Other processes will see that the file has vanished for a short time, and then reappeared in full.
-They will make the same assumption we did above, and will wait for it to appear.
+### Recovery rules
 
-Note that if files are found in the subdirectory, and it is known that no
-process is in the middle of this sequence, as would be the case after a system
-restart, it is always safe to simply move them into the original directory ONLY IF
-THERE IS NO FILE BY THAT NAME ALREADY THERE.
-If there is, something weird happened that we're not going to try to anticipate just now.
+* A stale `.lock` file older than a configurable threshold *Tₛ* (e.g., 10 minutes) **may** be considered abandoned. Tools should log a warning, remove the stale lock, and continue.
+* Presence of an orphaned `.new` file at start-up indicates a crash during step 4. If its mtime is newer than the corresponding `.prompt` file, a tool **may** continue the rename; otherwise delete the `.new` file.
+
+### Platform notes
+
+* Protocol assumes filesystem semantics supporting atomic exclusive-create and rename (standard POSIX, NTFS).
+* On network filesystems lacking these guarantees, higher-level coordination
+  (e.g., distributed locks) is required but out of scope for this spec.
 
 ## Prompt file example
 
 ```
 ---
 id: "P323"
+created-at: "2022-08-17T14:37:22Z"
+sha1-hash: "7fd8e8e70235bc6fd5c17fd8e8e70235bc6fd5c1"
 generator: "human"
-generated-at: "2022-08-17T14:37:22Z"
-sha1-hash: "7fd8e8e70235bc6fd5c1"
 ---
 
 Find more precise way to state this instruction:
