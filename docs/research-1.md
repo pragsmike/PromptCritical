@@ -1,5 +1,15 @@
 **Abstract**
-Evolutionary prompt generation treats prompts as evolving artifacts whose fitness is measured by the quality of the language-model behaviours they elicit.  Because prompt space is highly non-linear and context-dependent, effective exploration requires semantic representations, principled variation operators, and efficient fitness estimation.  This paper organises the scattered insights below into a coherent framework that joins knowledge-graph semantics, evolutionary search, surrogate modelling, and controlled text generation.  It is aimed at NLP researchers, tool-builders, and advanced prompt engineers who are comfortable with basic machine-learning concepts and symbolic-AI formalisms but seek a unifying roadmap.
+
+Evolutionary prompt generation treats prompts as evolving artifacts whose
+fitness is measured by the quality of the language-model behaviours they elicit.
+Because prompt space is highly non-linear and context-dependent, effective
+exploration requires semantic representations, principled variation operators,
+and efficient fitness estimation. This paper organises the scattered insights
+below into a coherent framework that joins knowledge-graph semantics,
+evolutionary search, surrogate modelling, and controlled text generation. It is
+aimed at NLP researchers, tool-builders, and advanced prompt engineers who are
+comfortable with basic machine-learning concepts and symbolic-AI formalisms but
+seek a unifying roadmap.
 
 ---
 
@@ -48,11 +58,14 @@ Evolutionary prompt generation treats prompts as evolving artifacts whose fitnes
 
 ---
 
-## Rewritten Document
+## Content
 
 ### 1  Introduction
 
-**Audience.** This text is for NLP researchers, prompt-engineering practitioners, and tool developers who (i) understand basic evolutionary algorithms and language-model behaviour, and (ii) are comfortable reading formal semantic diagrams such as AMR or knowledge-graph triples.
+**Audience.** This text is for NLP researchers, prompt-engineering
+practitioners, and tool developers who (i) understand basic evolutionary
+algorithms and language-model behaviour, and (ii) are comfortable reading formal
+semantic diagrams such as AMR or knowledge-graph triples.
 
 **Background needed.** Readers should know:
 
@@ -61,9 +74,15 @@ Evolutionary prompt generation treats prompts as evolving artifacts whose fitnes
 * elementary graph theory, and
 * the idea of surrogate (approximate) objective functions.
 
-**Why evolutionary prompts?** Fixed prompts rarely generalise across tasks or model versions.  Treating prompts as *evolving artefacts* lets us adapt to shifting model capabilities, optimise multiple objectives (accuracy, style, safety), and discover unexpected behaviours.
+**Why evolutionary prompts?** Fixed prompts rarely generalise across tasks or
+model versions. Treating prompts as *evolving artefacts* lets us adapt to
+shifting model capabilities, optimise multiple objectives (accuracy, style,
+safety), and discover unexpected behaviours.
 
-**Why explicit semantics?** Although pure text variation can work, adding knowledge-graph structure makes semantic relationships explicit, enabling principled variation operators that respect meaning instead of merely perturbing syntax.
+**Why explicit semantics?** Although pure text variation can work, adding
+knowledge-graph structure makes semantic relationships explicit, enabling
+principled variation operators that respect meaning instead of merely perturbing
+syntax.
 
 ---
 
@@ -71,17 +90,27 @@ Evolutionary prompt generation treats prompts as evolving artifacts whose fitnes
 
 #### 2.1 Prompt space is non-linear
 
-A language model’s response to “A + B” is not f(A) + f(B).  Analytic tools drawn from linear systems therefore fail.  Instead of Fourier-style impulse responses, we explore *attractor landscapes* whose shape changes as we move.
+A language model’s response to “A + B” is not f(A) + f(B). Analytic tools drawn
+from linear systems therefore fail. Instead of Fourier-style impulse responses,
+we explore *attractor landscapes* whose shape changes as we move.
 
-*Minimal semantic seeds* (highly ambiguous words), *contradiction pairs* (“be creative but precise”), *meta-prompts*, and *random walks* are practical probes for mapping these landscapes.
+*Minimal semantic seeds* (highly ambiguous words), *contradiction pairs* (“be
+creative but precise”), *meta-prompts*, and *random walks* are practical probes
+for mapping these landscapes.
 
 #### 2.2 Closed categories and evolving algebras
 
-Prompt transformations are themselves texts, so the space forms a *closed category*: operations live in the same space as operands.  Moreover, the algebra of operations is *parameterised by context*—the meaning of “then” or “while” shifts after every step.  Prompt engineering is therefore closer to navigation in a morphing topology than to static construction.
+Prompt transformations are themselves texts, so the space forms a *closed
+category*: operations live in the same space as operands. Moreover, the algebra
+of operations is *parameterised by context*—the meaning of “then” or “while”
+shifts after every step. Prompt engineering is therefore closer to navigation in
+a morphing topology than to static construction.
 
 #### 2.3 From impulse to topology
 
-Because linear decomposition fails, we substitute *topology mapping*: charting basins of attraction and their boundaries via exploratory probes, then exploiting smoother regions for local optimisation.
+Because linear decomposition fails, we substitute *topology mapping*: charting
+basins of attraction and their boundaries via exploratory probes, then
+exploiting smoother regions for local optimisation.
 
 ---
 
@@ -98,15 +127,20 @@ AMR graphs treat sentence meaning as a labelled, directed graph—effectively a 
 
 #### 3.2 Semantic templates and constraints
 
-Templates grounded in a domain ontology ensure that slot-fillings are compatible (taxonomic, causal, temporal) and that variations stay “on grid”.
+Templates grounded in a domain ontology ensure that slot-fillings are compatible
+(taxonomic, causal, temporal) and that variations stay “on grid”.
 
 #### 3.3 Compositional distributional semantics
 
-Graph embeddings and vector arithmetic supply continuous semantics; knowledge-graph edges anchor them symbolically, enabling hybrid reasoning and embedding-guided search.
+Graph embeddings and vector arithmetic supply continuous semantics;
+knowledge-graph edges anchor them symbolically, enabling hybrid reasoning and
+embedding-guided search.
 
 #### 3.4 The prompt genome
 
-*Genotype* = textual and graph structure that recombines; *phenotype* = observed behaviour (performance, robustness).  Evolutionary operators act only on genotype, while phenotype supplies training data for surrogate fitness models.
+*Genotype* = textual and graph structure that recombines; *phenotype* = observed
+behaviour (performance, robustness). Evolutionary operators act only on
+genotype, while phenotype supplies training data for surrogate fitness models.
 
 ---
 
