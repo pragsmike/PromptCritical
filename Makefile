@@ -7,7 +7,9 @@ test:
 
 
 pack:
-	(for i in README.md docs/DESIGN.md docs/API.md docs/prompt-representation.md deps.edn Makefile ;\
+	(for i in README.md docs/DESIGN.md docs/API.md docs/prompt-representation.md \
+					copilot/onboard-1.md \
+					deps.edn Makefile ;\
 	   do echo $$i; cat $$i; echo ---- ; done ;\
   echo PROMPTS; echo -----; \
   cat prompts/* ; \
