@@ -1,5 +1,4 @@
 # Prompt file format
-## Attached Metadata in YAML front matter
 
 Here we are concerned with the format of the files used to store the prompts and
 their metadata, and not with the precise items of metadata that may be stored,
@@ -44,7 +43,30 @@ When any of the processors writes a prompt file, it applies this canonicalizatio
    * If there is no LF at the end of the last line, one is added.
 
 
-## Initial metadata
+## Attached Metadata in YAML front matter
+
+Here we describe the metadata stored with the file when it is created. Other
+processors, such as analyzers, will later add other metadata, but we are not
+concerned with those details here, other than to state that the front matter
+will always be parseable as YAML.
+
+## Front matter encoding
+
+Placement: The YAML front matter must be the very first thing in the file.
+
+Delimiters: It is enclosed between lines containing three dashes (---). The
+block starts with --- on the first line and ends with another --- .
+
+Content: The content between the delimiters must be valid YAML. This typically
+includes key-value pairs, arrays, and sometimes multiline strings.
+
+NOTE: The YAML will ALWAYS be UTF-8.
+
+Because the front matter occurs at the very start of the file, the
+text of the prompt need not be escaped.  It doesn't matter if
+the prompt contains --- because the YAML parser never sees it.
+
+### Initial metadata
 
 When prompts are generated, some initial metadata is added as front matter.
 This always includes these keys:
@@ -65,7 +87,7 @@ The initial metadata may also include these keys:
    * the model name and id of the meta-prompt that generated it, if any
 
 As of now, these fields are free-form except
-  * Timestamps are ISO-8601, eg "2022-08-17T14:37:22Z"
+  * Timestamps are ISO-8601 Zulu zone (Z suffix), eg "2022-08-17T14:37:22Z"
   * the hash is a 40-character hexadecimal string (see below)
 
 ## Prompt text (body) never changes
@@ -89,11 +111,14 @@ the pedigree of the prompts descended from it.
 
 The hash is computed over the prompt text starting with first nonblank line after front matter.
 
-The metadata in the prompt file header only describes properties of the prompt itself.
+The metadata in the prompt file header should ideally only describe properties of the prompt itself,
+but for now we will allow that processors might attach data computed from other dependencies
+and we expect they will also name those dependencies in the metadata that they add.
 
 Details of its interactions with other processes, such as scores from contests,
 should be recorded in records of those contests.
-NOTE: We might relax this if it becomes useful to do so.
+
+NOTE: We might relax this in the future if it becomes useful to do so.
 
 ## Hashing algorithm
 
@@ -111,6 +136,50 @@ The hash is computed over the prompt text as if it were extracted from the promp
    * The ending point is the end of the file, after the last newline.
 
 This canonicalization happens to be what the file writer does when it writes the file.
+
+## Concurrency
+
+If two processes try to rewrite the same prompt file simultaneously,
+they might interfere with each other if we don't take steps to avoid it.
+
+We adopt this protocol for rewriting an existing file.  We'll use a subdirectory
+of the one where the existing prompt file is stored, because moving a file
+from a directory to another on the same filesystem is an atomic operation.
+
+1) Move the file to a subdirectory where nothing else will write to it.
+
+  If that fails, either the file didn't exist after all, or another process has
+  already started this sequence. We assume the latter, because we know that the
+  file is not just now being created. In that case, we wait for a short time and
+  try again.
+
+  If, after a few tries, the file still hasn't appeared, we raise an error,
+  saying that the file that was supposed to exist didn't. In this case, the
+  other process that had started this sequence likely died, or is taking a very
+  long time to finish it. The message could give the name where the file would
+  be, in the subdirectory. We could automatically try to recover the abandoned
+  work, but for simplicity we won't do that right now. This is likely an
+  infrequent edge case so raising the error is sufficient.
+
+2) Read the file from its new location. This guarantees that nobody else is
+   writing to it, because they won't be looking for it there. (They might still
+   be reading from it if they'd opened it already, because of the way Unix
+   renaming works, but that's ok.)
+
+3) Write the new contents, with updated metadata, into the subdirectory under a different name,
+   and close the new file.
+
+4) Rename the new file back to its rightful place in the original directory.
+5) Delete the old file from the subdirectory.
+
+Other processes will see that the file has vanished for a short time, and then reappeared in full.
+They will make the same assumption we did above, and will wait for it to appear.
+
+Note that if files are found in the subdirectory, and it is known that no
+process is in the middle of this sequence, as would be the case after a system
+restart, it is always safe to simply move them into the original directory ONLY IF
+THERE IS NO FILE BY THAT NAME ALREADY THERE.
+If there is, something weird happened that we're not going to try to anticipate just now.
 
 ## Prompt file example
 
