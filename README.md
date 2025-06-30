@@ -10,13 +10,13 @@ auditable step at a time.*
 Prompt engineering still feels like folklore.  PromptCritical’s long-term
 mission is to turn it into a **data-driven, evolutionary workflow**:
 
-1. **Store every prompt immutably** with lineage, hashes, and timestamps.  
-2. **Run controlled experiments** that score those prompts on real tasks  
-   (Latency / Cost / Accuracy / Consistency).  
+1. **Store every prompt immutably** with lineage, hashes, and timestamps.
+2. **Run controlled experiments** that score those prompts on real tasks
+   (Latency / Cost / Accuracy / Consistency).
 3. **Breed the next generation**—mutate, crossover, and select—using the
-   recorded scores as fitness.  
+   recorded scores as fitness.
 4. **Repeat automatically**, producing prompts that keep pace with new LLM
-   releases and changing task definitions.  
+   releases and changing task definitions.
 
 When complete, a single command should spin up an experiment, push thousands of
 prompt variants through external evaluators, and surface the winning prompts
@@ -35,8 +35,8 @@ with full provenance.
 
 The existing codebase gives you:
 
-* `pcrit.pdb/create-prompt` – write a prompt file safely.  
-* `pcrit.pdb/read-prompt` – read & checksum-verify.  
+* `pcrit.pdb/create-prompt` – write a prompt file safely.
+* `pcrit.pdb/read-prompt` – read & checksum-verify.
 * Proven concurrency: multiple processes can create or annotate prompts without
   corrupting the store.
 
@@ -46,11 +46,11 @@ Everything else is still ahead of us.
 
 ## 🛠  External Dependency — **Failter**
 
-PromptCritical does **not** implement scoring or judgement itself.  
-Instead we treat [**Failter**](https://github.com/your-org/failter) as a **black
+PromptCritical does **not** implement scoring or judgement itself.
+Instead we treat [**Failter**](https://github.com/pragsmike/failter) as a **black
 box** experiment runner:
 
-* We build a directory that matches Failter’s required structure  
+* We build a directory that matches Failter’s required structure
   (`inputs/`, `templates/`, `model-names.txt`, …).
 * We shell-out to `failter experiment → evaluate → report`.
 * We parse the resulting `report.csv` and write the scores back into each
@@ -65,10 +65,10 @@ PromptCritical milestone.
 
 The immediate goal is a **“seed → Failter → ingest” vertical slice**:
 
-1. **Seed creator**  
+1. **Seed creator**
    ```bash
    pcrit seed my-prompts.txt        # creates P001, P002, …
-````
+   ```
 
 2. **Experiment packager & runner**
 
@@ -82,6 +82,7 @@ The immediate goal is a **“seed → Failter → ingest” vertical slice**:
 
    *Creates the Failter directory, executes the three CLI stages, waits for
    completion.*
+
 3. **Score ingester**
    Updates each prompt file with:
 
