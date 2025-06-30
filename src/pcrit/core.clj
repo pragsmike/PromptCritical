@@ -3,7 +3,7 @@
             [clojure.string :as str]
             [pcrit.llm-interface :as llm]
             [pcrit.log :as log]
-            [pcrit.pdb :as pdb]))
+            [pcrit.pdb.core :as pdb]))
 
 (def cli-options
   [["-h" "--help" "Print this help message"]])

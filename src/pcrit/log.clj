@@ -27,8 +27,7 @@
   ```"
   (:require [taoensso.telemere          :as tel]
             [taoensso.telemere.utils   :as u])
-  (:import (java.time.format DateTimeFormatter)
-           (java.time        ZoneId)))
+  (:import [java.time        ZoneId]))
 
 
 (defn setup-logging!

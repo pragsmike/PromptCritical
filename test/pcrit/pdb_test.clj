@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [pcrit.pdb :as pdb]
+            [pcrit.pdb.core :as pdb]
             [pcrit.util :as util]))
 
 ;; --- Test Fixture for Temp Directory ---
