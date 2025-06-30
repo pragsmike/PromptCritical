@@ -5,12 +5,14 @@
             [pcrit.util :as util]
             [pcrit.log :as log])
   (:import [java.io File]
-           [java.nio.file Files CopyOption StandardCopyOption AtomicMoveNotSupportedException OpenOption StandardOpenOption]
-           [java.nio.channels FileChannel]))
+           [java.nio.channels FileChannel]
+           [java.nio.file Files CopyOption StandardCopyOption AtomicMoveNotSupportedException OpenOption StandardOpenOption]))
 
-(def ^:private front-matter-regex #"(?s)^---\n(.*?)\n?---\n(.*)$")
+(def ^:private front-matter-regex #"(?s)^---\r?\n(.*?)\r?\n---\r?\n?(.*)$")
 
-(defn- fsync! [^File f]
+(defn fsync!
+  "Public helper to force a file channel's writes to the storage device."
+  [^File f]
   (with-open [channel (FileChannel/open (.toPath f) (into-array OpenOption [StandardOpenOption/WRITE]))]
     (.force channel true)))
 
@@ -34,12 +36,12 @@
 
 (defn- prompt-record->string [record]
   (let [{:keys [header body]} record
-        header-str (if (seq header)
-                     (str "---\n"
-                          (yaml/generate-string header :dumper-options {:flow-style :block})
-                          "---\n")
-                     "")
-        canonical-header (util/canonicalize-text header-str)]
+        full-header-str (if (seq header)
+                          (str "---\n"
+                               (yaml/generate-string header :dumper-options {:flow-style :block :sort-keys true})
+                               "---\n")
+                          "")
+        canonical-header (util/canonicalize-text full-header-str)]
     (str canonical-header body)))
 
 (defn write-prompt-record-atomically!
@@ -60,7 +62,7 @@
   (if (str/blank? yaml-str)
     {}
     (try
-      (yaml/parse-string yaml-str)
+      (yaml/parse-string yaml-str :keywords true)
       (catch Exception e
         (log/warn "Failed to parse YAML front matter in" (.getPath source-file) "Error:" (.getMessage e))
         {}))))

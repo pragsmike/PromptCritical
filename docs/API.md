@@ -1,6 +1,6 @@
-# `pcrit.pdb` API Reference
+# `pcrit.pdb.core` API Reference
 
-The `pcrit.pdb` namespace provides a complete library for interacting with a file-based database of LLM prompts. It handles all file I/O, data serialization, and concurrency management, presenting a simple and robust API to the user.
+The `pcrit.pdb.core` namespace provides a complete, high-level library for interacting with a file-based database of LLM prompts. It handles all file I/O, data serialization, and concurrency management, presenting a simple and robust API to the user.
 
 ## The Prompt Record
 
@@ -18,11 +18,15 @@ All functions in this API operate on a consistent data structure called a **Prom
 
 ### Canonical Text Representation
 
-To ensure data integrity and consistent hashing, all prompt bodies are stored and returned in a canonical format. User-provided text is automatically converted upon creation. The canonicalization rules are as follows:
+To ensure data integrity and consistent hashing, all prompt text (both the file body and the YAML header) is stored and returned in a canonical format. User-provided text is automatically converted upon creation. The canonicalization rules are as follows:
 
 1.  The text is normalized to Unicode NFC (Canonical Composition).
 2.  All line endings (CRLF `\r\n` and CR `\r`) are converted to Line Feeds (LF `\n`).
 3.  The text is guaranteed to end with exactly one trailing `\n`.
+
+### Keywordized Headers
+
+To ensure type consistency, all keys in the `:header` map are automatically converted to Clojure keywords upon read (e.g., `(get-in record [:header :id])`).
 
 ### Timestamps
 
@@ -42,7 +46,7 @@ The prompt `:body` is immutable. Once a prompt is created, its text can never be
 (create-prompt db-dir prompt-text & {:keys [metadata]})
 ```
 
-Creates a new prompt in the database, writes it to a file, and returns its complete prompt record.
+Atomically creates a new prompt in the database and returns its complete prompt record. The file write is guaranteed to be all-or-nothing, preventing partial or corrupt files on creation.
 
 **Arguments:**
 
@@ -54,8 +58,8 @@ Creates a new prompt in the database, writes it to a file, and returns its compl
 
 On success, returns a **prompt record map** representing the newly created prompt.
 
-*   The `:body` of the returned record is the **canonicalized** version of the `prompt-text` that was passed in.
-*   The `:header` of the returned record will contain the following system-generated fields, merged with any user-provided `metadata`:
+*   The `:body` of the returned record is the **canonicalized** version of the `prompt-text`.
+*   The `:header` of the returned record will have **keywordized keys** and will contain the following system-generated fields, merged with any user-provided `metadata`:
     *   `:id`: A new, unique string ID (e.g., `"P1"`).
     *   `:created-at`: An ISO-8601 timestamp string.
     *   `:sha1-hash`: The SHA-1 hash of the canonical body.
@@ -63,7 +67,7 @@ On success, returns a **prompt record map** representing the newly created promp
 
 **Side Effects:**
 
-*   Creates a new file named `[id].prompt` in the `db-dir`.
+*   Atomically creates a new file named `[id].prompt` in the `db-dir`.
 *   Atomically updates a counter file within the `db-dir` to generate the next ID.
 
 ### `read-prompt`
@@ -81,12 +85,12 @@ Reads a specific prompt from the database by its ID.
 
 **Return Value:**
 
-*   If the prompt exists, returns the corresponding **prompt record map**.
+*   If the prompt exists, returns the corresponding **prompt record map**, with keywordized keys in the header.
 *   If the prompt file does not exist, returns `nil`.
 
 **Notes:**
 
-*   Upon every read, this function calculates the SHA-1 hash of the body and compares it against the `:sha1-hash` stored in the header. If they do not match, a warning is logged, signaling potential data corruption.
+*   Upon every read, this function calculates the SHA-1 hash of the body and compares it **case-insensitively** against the `:sha1-hash` stored in the header. If they do not match, a warning is logged, signaling potential data corruption.
 
 ### `update-metadata`
 
@@ -100,7 +104,7 @@ Atomically updates the metadata header of an existing prompt. The prompt body is
 
 *   `db-dir`: (String) The path to the prompt database directory.
 *   `id`: (String) The ID of the prompt to update.
-*   `f`: (Function) A function that will be called with the old header map. It must return a new map representing the desired header.
+*   `f`: (Function) A function that will be called with the old header map (with keywordized keys). It must return a new map representing the desired header.
 
 **Return Value:**
 

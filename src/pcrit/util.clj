@@ -14,20 +14,16 @@
   [s]
   (if (nil? s) "" (-> s (str/replace #"\r\n" "\n") (str/replace #"\r" "\n"))))
 
-(defn- ensure-trailing-newline
-  "Ensures the given string ends with exactly one newline."
-  [s]
-  (if (str/ends-with? s "\n")
-    s
-    (str s "\n")))
-
 (defn canonicalize-text
-  "Fully canonicalizes prompt text per the spec: NFC normalization, LF line endings, and a guaranteed trailing newline."
+  "Fully canonicalizes text per the spec: NFC normalization, LF line endings,
+  and **exactly one** trailing newline."
   [s]
-  (-> s
-      (normalize-nfc)
-      (normalize-line-endings)
-      (ensure-trailing-newline)))
+  (let [s' (if (nil? s) "" s)
+        normalized (-> s'
+                       (normalize-nfc)
+                       (normalize-line-endings)
+                       (str/replace #"\n+$" ""))] ; Remove all existing trailing newlines
+    (str normalized "\n"))) ; Add exactly one back
 
 (defn sha1-hex
   "Hash a string (assumed UTF-8) with SHA-1, return hex string."

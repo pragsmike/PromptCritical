@@ -6,8 +6,7 @@
             [pcrit.pdb.io :as pdb-io]
             [pcrit.pdb.lock :as pdb-lock]
             [pcrit.pdb.id :as pdb-id])
-  (:import [java.io File]
-           [java.time Instant]))
+  (:import [java.time Instant]))
 
 (defn- validate-header-update! [old-header new-header]
   (when-not (and (= (:id old-header) (:id new-header))

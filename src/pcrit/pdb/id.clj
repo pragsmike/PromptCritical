@@ -16,6 +16,8 @@
                             (inc (Integer/parseInt (slurp counter-file)))
                             1)]
               (pdb-io/atomic-write-file! counter-file (str next-id))
+              ;; For maximum durability, fsync the counter file even after an atomic move.
+              (pdb-io/fsync! counter-file)
               (str "P" next-id))
             (catch NumberFormatException e
               (log/error "pdb.counter file is corrupt. Could not parse integer.")

@@ -59,8 +59,36 @@
           (is (= original-hash (get-in updated-prompt [:header :sha1-hash])))
           (is (= updated-prompt read-again)))))))
 
+;; --- New Tests for Spec Conformance ---
 
-;; --- New Tests for Concurrency and Robustness ---
+(deftest spec-conformance-test
+  (testing "Body with multiple trailing newlines round-trips to exactly one"
+    (let [body-with-extra-newlines "This body has too many newlines.\n\n\n"
+          p (pdb/create-prompt *db-dir* body-with-extra-newlines)
+          id (get-in p [:header :id])
+          read-p (pdb/read-prompt *db-dir* id)]
+      (is (= "This body has too many newlines.\n" (:body read-p)))))
+
+  (testing "Header keys are keywordized on read"
+    (let [p (pdb/create-prompt *db-dir* "body text" :metadata {:a 1})
+          id (get-in p [:header :id])
+          read-p (pdb/read-prompt *db-dir* id)]
+      (is (contains? (:header read-p) :a) "Should contain keyword :a")
+      (is (not (contains? (:header read-p) "a")) "Should not contain string key \"a\"")
+      (is (keyword? (first (keys (:header read-p)))) "First key of header should be a keyword")))
+
+  (testing "Parser handles missing final newline after header block"
+    (let [malformed-content "---\nid: P999\nauthor: manual\n---\nThis is the body.\n"
+          prompt-file (io/file *db-dir* "P999.prompt")]
+      (spit prompt-file malformed-content)
+      (let [read-p (pdb/read-prompt *db-dir* "P999")]
+        (is (some? read-p) "Prompt should have been read successfully")
+        (is (= "P999" (get-in read-p [:header :id])) "Header :id should be parsed correctly")
+        (is (= "manual" (get-in read-p [:header :author])) "Header :author should be parsed correctly")
+        (is (= "This is the body.\n" (:body read-p)) "Body should be parsed correctly")))))
+
+
+;; --- Existing Tests for Concurrency and Robustness ---
 
 (deftest concurrency-and-robustness-test
   (testing "Atomic ID generation across threads"
