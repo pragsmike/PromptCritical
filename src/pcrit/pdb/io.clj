@@ -11,16 +11,13 @@
   ^File [db-dir id]
   (io/file db-dir (str id ".prompt")))
 
-(defn- canonicalize-line-endings [s]
-  (if (nil? s) "" (-> s (str/replace #"\r\n" "\n") (str/replace #"\r" "\n"))))
-
 (defn parse-prompt-file
   "Reads and parses a prompt file from disk.
   Returns a prompt record map or nil if the file doesn't exist."
   [^File f]
   (when (.exists f)
     (let [content (slurp f)
-          content-lf (canonicalize-line-endings content)]
+          content-lf (util/normalize-line-endings content)]
       (if-not (str/starts-with? content-lf "---")
         {:header {} :body content-lf}
         (if-let [end-delim-idx (str/index-of content-lf "\n---\n" 4)] ; Start search after initial "---"

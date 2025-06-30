@@ -9,19 +9,25 @@
   [s]
   (Normalizer/normalize s Normalizer$Form/NFC))
 
-(defn- canonicalize-line-endings [s]
-  (let [s' (if (nil? s) "" s)
-        s'' (-> s' (str/replace #"\r\n" "\n") (str/replace #"\r" "\n"))]
-    (if (str/ends-with? s'' "\n")
-      s''
-      (str s'' "\n"))))
+(defn normalize-line-endings
+  "Converts all line endings (CRLF, CR) in a string to a single Line Feed (LF)."
+  [s]
+  (if (nil? s) "" (-> s (str/replace #"\r\n" "\n") (str/replace #"\r" "\n"))))
+
+(defn- ensure-trailing-newline
+  "Ensures the given string ends with exactly one newline."
+  [s]
+  (if (str/ends-with? s "\n")
+    s
+    (str s "\n")))
 
 (defn canonicalize-text
-  "Fully canonicalizes prompt text per the spec: NFC normalization and LF line endings."
+  "Fully canonicalizes prompt text per the spec: NFC normalization, LF line endings, and a guaranteed trailing newline."
   [s]
   (-> s
       (normalize-nfc)
-      (canonicalize-line-endings)))
+      (normalize-line-endings)
+      (ensure-trailing-newline)))
 
 (defn sha1-hex
   "Hash a string (assumed UTF-8) with SHA-1, return hex string."

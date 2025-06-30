@@ -14,5 +14,5 @@ pack:
   echo PROMPTS; echo -----; \
   cat prompts/* ; \
 	echo Source files; echo -----; \
-	cat src/pcrit/*.clj ; cat test/pcrit/*.clj) >~/pcrit-pack.txt
+	cat src/pcrit/*.clj src/pcrit/*/*.clj test/pcrit/*.clj) >~/pcrit-pack.txt
 

@@ -32,7 +32,7 @@
                                metadata)
                 :body canonical-body}]
     (pdb-io/write-prompt-record! (pdb-io/->prompt-path db-dir id) record)
-    (log/info "Created new prompt" id "in" db-dir)
+    (log/info "Created new prompt " id " in " db-dir)
     record))
 
 (defn update-metadata
