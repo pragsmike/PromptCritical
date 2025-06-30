@@ -6,8 +6,20 @@
             [pcrit.pdb.io :as pdb-io]
             [pcrit.pdb.lock :as pdb-lock]
             [pcrit.pdb.id :as pdb-id])
-  (:import [java.time Instant]
-           [java.nio.file Files CopyOption StandardCopyOption AtomicMoveNotSupportedException]))
+  (:import [java.io File]
+           [java.time Instant]
+           [java.nio.file Files CopyOption StandardCopyOption AtomicMoveNotSupportedException OpenOption StandardOpenOption]
+           [java.nio.channels FileChannel]))
+
+(defn- validate-header-update! [old-header new-header]
+  (when-not (and (= (:id old-header) (:id new-header))
+                 (= (:sha1-hash old-header) (:sha1-hash new-header)))
+    (throw (ex-info "Updater function MUST NOT remove or change :id or :sha1-hash."
+                    {:id (:id old-header) :old-header old-header :new-header new-header}))))
+
+(defn- fsync! [^File f]
+  (with-open [channel (FileChannel/open (.toPath f) (into-array OpenOption [StandardOpenOption/WRITE]))]
+    (.force channel true)))
 
 (defn read-prompt
   "Reads the prompt with the given id from the database directory."
@@ -46,19 +58,16 @@
     (pdb-lock/execute-with-lock lock-file
       (fn []
         (let [new-path (.toPath (io/file db-dir (str id ".prompt.new")))
-              ;; IMPORTANT: Read inside the lock to get the most current state.
               current-record (or (read-prompt db-dir id)
                                  (throw (ex-info (str "Prompt " id " disappeared after lock acquisition.") {:id id})))
               new-header (f (:header current-record))
-              _ (when-not (and (= (get new-header :id) id)
-                               (= (get new-header :sha1-hash) (get-in current-record [:header :sha1-hash])))
-                  (throw (ex-info "Updater function MUST NOT remove or change :id or :sha1-hash."
-                                  {:id id :old-header (:header current-record) :new-header new-header})))
+              _ (validate-header-update! (:header current-record) new-header)
               updated-record (assoc current-record :header new-header)]
           (pdb-io/write-prompt-record! (.toFile new-path) updated-record)
           (try
             (Files/move new-path (.toPath prompt-file) (into-array CopyOption [StandardCopyOption/ATOMIC_MOVE StandardCopyOption/REPLACE_EXISTING]))
             (catch AtomicMoveNotSupportedException _
               (log/warn "ATOMIC_MOVE not supported on this filesystem. Falling back to non-atomic move for prompt" id)
-              (Files/move new-path (.toPath prompt-file) (into-array CopyOption [StandardCopyOption/REPLACE_EXISTING]))))
+              (Files/move new-path (.toPath prompt-file) (into-array CopyOption [StandardCopyOption/REPLACE_EXISTING]))
+              (fsync! prompt-file)))
           updated-record)))))

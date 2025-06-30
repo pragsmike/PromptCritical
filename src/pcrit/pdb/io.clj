@@ -6,6 +6,29 @@
             [pcrit.log :as log])
   (:import [java.io File]))
 
+(def ^:private front-matter-regex #"(?s)^---\n(.*?)\n---\n(.*)$")
+
+(defn- split-front-matter
+  "Splits raw file content into a map of {:yaml-str, :body-raw}.
+  If no front matter is found, :yaml-str will be nil."
+  [raw-content]
+  (if-let [match (re-find front-matter-regex raw-content)]
+    (let [[_ yaml-str body-raw] match]
+      {:yaml-str yaml-str :body-raw body-raw})
+    {:yaml-str nil :body-raw raw-content}))
+
+(defn- parse-header
+  "Parses a YAML string into a Clojure map. Handles nil/blank strings
+  and logs a warning on parsing failure, returning an empty map."
+  [yaml-str ^File source-file]
+  (if (str/blank? yaml-str)
+    {}
+    (try
+      (yaml/parse-string yaml-str)
+      (catch Exception e
+        (log/warn "Failed to parse YAML front matter in" (.getPath source-file) "Error:" (.getMessage e))
+        {}))))
+
 (defn ->prompt-path
   "Returns a File object pointing to the prompt file."
   ^File [db-dir id]
@@ -17,24 +40,12 @@
   [^File f]
   (when (.exists f)
     (let [content (slurp f)
-          content-lf (util/normalize-line-endings content)]
-      (if-not (str/starts-with? content-lf "---")
-        {:header {} :body content-lf}
-        (if-let [end-delim-idx (str/index-of content-lf "\n---\n" 4)] ; Start search after initial "---"
-          (let [yaml-str (subs content-lf 4 end-delim-idx) ; From after "---\n" to before "\n---\n"
-                body (subs content-lf (+ end-delim-idx 5))
-                body (util/canonicalize-text body)] ; From after "\n---\n"
-
-            (if (str/blank? yaml-str)
-              {:header {} :body body}
-              (try
-                {:header (yaml/parse-string yaml-str)
-                 :body body}
-                (catch Exception e
-                  (log/warn "Failed to parse YAML front matter in" (.getPath f) "Error:" (.getMessage e))
-                  {:header {} :body body}))))
-          ;; No closing delimiter found, treat as all body
-          {:header {} :body content-lf})))))
+          ;; Line endings must be normalized before regex splitting.
+          content-lf (util/normalize-line-endings content)
+          {:keys [yaml-str body-raw]} (split-front-matter content-lf)
+          header (parse-header yaml-str f)
+          body (util/canonicalize-text body-raw)]
+      {:header header :body body})))
 
 (defn write-prompt-record!
   "Writes a prompt record map to the given file."
