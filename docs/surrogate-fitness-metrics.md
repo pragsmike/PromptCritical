@@ -40,7 +40,13 @@ We're essentially proposing to build a **surrogate fitness function** - a cheap 
 - Readability indices (Flesch-Kincaid, etc.)
 - Lexical diversity measures
 - Grammatical complexity scores
-- Register consistency metrics
+- Register consistency metrics**
+
+**Some measures that capture the "meta-linguistic awareness" of prompts**
+- **Reflexivity indicators**: How well does the prompt anticipate and guide the model's own reasoning process?
+- **Constraint specificity**: Measures of how precisely the prompt constrains the solution space without over-constraining
+- **Contextual anchoring**: How well the prompt establishes stable reference points for the model's reasoning
+
 
 **Meta-textual properties:**
 - Self-reference density

@@ -50,7 +50,16 @@ What data is easy to compute, that are useful features in training a prediction 
 - Creation timestamp (evolution in model capabilities over time)
 - Compute cost of evaluation
 - Human annotation time required
-- Degradation over time (some prompts may become less effective)
+- Degradation over time (some prompts may become less effective**
+
+**Measures that capture intrinsic properties of the text
+  Some measures that capture the "meta-linguistic awareness" of prompts:
+
+- **Reflexivity indicators**: How well does the prompt anticipate and guide the model's own reasoning process?
+- **Constraint specificity**: Measures of how precisely the prompt constrains the solution space without over-constraining
+- **Contextual anchoring**: How well the prompt establishes stable reference points for the model's reasoning
+
+
 
 # Genotype vs. Phenotype
 
