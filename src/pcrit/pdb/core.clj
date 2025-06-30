@@ -8,12 +8,13 @@
             [pcrit.pdb.id :as pdb-id])
   (:import [java.io File]
            [java.time Instant]
-           [java.nio.file Files CopyOption StandardCopyOption AtomicMoveNotSupportedException OpenOption StandardOpenOption]
+           [java.nio.file Files Path CopyOption StandardCopyOption AtomicMoveNotSupportedException OpenOption StandardOpenOption]
            [java.nio.channels FileChannel]))
 
 (defn- validate-header-update! [old-header new-header]
   (when-not (and (= (:id old-header) (:id new-header))
-                 (= (:sha1-hash old-header) (:sha1-hash new-header)))
+                 (= (some-> old-header :sha1-hash str/lower-case)
+                    (some-> new-header :sha1-hash str/lower-case)))
     (throw (ex-info "Updater function MUST NOT remove or change :id or :sha1-hash."
                     {:id (:id old-header) :old-header old-header :new-header new-header}))))
 

@@ -6,10 +6,11 @@
             [pcrit.log :as log])
   (:import [java.io File]))
 
-(def ^:private front-matter-regex #"(?s)^---\n(.*?)\n---\n(.*)$")
+(def ^:private front-matter-regex #"(?s)^---\n(.*?)\n?---\n(.*)$")
 
 (defn- split-front-matter
   "Splits raw file content into a map of {:yaml-str, :body-raw}.
+  The regex is relaxed to allow the final newline in the yaml block to be optional.
   If no front matter is found, :yaml-str will be nil."
   [raw-content]
   (if-let [match (re-find front-matter-regex raw-content)]
@@ -18,13 +19,14 @@
     {:yaml-str nil :body-raw raw-content}))
 
 (defn- parse-header
-  "Parses a YAML string into a Clojure map. Handles nil/blank strings
-  and logs a warning on parsing failure, returning an empty map."
+  "Parses a YAML string into a Clojure map. Handles nil/blank strings,
+  logs a warning on parsing failure, and relies on the default :keywords true
+  option for key conversion."
   [yaml-str ^File source-file]
   (if (str/blank? yaml-str)
     {}
     (try
-      (yaml/parse-string yaml-str)
+      (yaml/parse-string yaml-str) ; Note: :keywords true is the default
       (catch Exception e
         (log/warn "Failed to parse YAML front matter in" (.getPath source-file) "Error:" (.getMessage e))
         {}))))
@@ -48,10 +50,15 @@
       {:header header :body body})))
 
 (defn write-prompt-record!
-  "Writes a prompt record map to the given file."
+  "Writes a prompt record map to the given file. The header and body
+  are canonicalized before writing to enforce spec guarantees."
   [^File f record]
   (let [{:keys [header body]} record
         header-str (if (seq header)
-                     (str "---\n" (yaml/generate-string header) "---\n")
-                     "")]
-    (spit f (str header-str body))))
+                     (str "---\n"
+                          (yaml/generate-string header :dumper-options {:flow-style :block})
+                          "---\n")
+                     "")
+        ;; The body is already canonical, but the generated header string is not.
+        canonical-header (util/canonicalize-text header-str)]
+    (spit f (str canonical-header body))))

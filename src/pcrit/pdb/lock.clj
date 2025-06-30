@@ -16,9 +16,9 @@
     (let [lock-age (- (System/currentTimeMillis) (.lastModified lock-file))]
       (if (> lock-age stale-lock-threshold-ms)
         (do
-          (log/warn "Deleting stale lock file" (.getName lock-file) "(age:" lock-age "ms)")
+          (log/warn "Deleting stale lock file " (.getName lock-file) " (age:" lock-age "ms)")
           (io/delete-file lock-file))
-        (log/info "Lock file" (.getName lock-file) "is too new to be stale. Waiting."))))
+        (log/info "Lock file " (.getName lock-file) " is too new to be stale. Waiting."))))
 
   (loop [retries-left lock-max-retries]
     (cond
