@@ -1,16 +1,14 @@
-These are disorganized notes and references.
-
-* [Plan](plan.md)
-
-* [Compositional Semantics for Prompt Combination](compositional-semantics-for-prompt-combination.md)
-
-* [DESIGN](DESIGN.md)
+These are notes and references in the process of being organized.
 
 * [Prompt File Database format ](prompt-representation.md)
+* [DESIGN](DESIGN.md)
 
+* [Plan](plan.md)
 * [Research directions](research-1.md)
-
 * [References](References.org)
+
+
+* [Compositional Semantics for Prompt Combination](compositional-semantics-for-prompt-combination.md)
 
 * [Surrogate Fitness Metrics to lower costs](surrogate-fitness-metrics.md)
 

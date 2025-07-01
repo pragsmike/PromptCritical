@@ -47,8 +47,24 @@ Using git for population snapshots is attractive because:
 
 ## Surrogate fitness metrics for cheaper evolution
 
-PromptCritical, as an evolutionary system, computes fitness metrics:
+PromptCritical, as an evolutionary system, computes two types of fitness metrics:
    * about each prompt individually (eg complexity)
    * about the population of prompts as a whole (eg diversity)
 
 The real test of a prompt is how well it causes an LLM to perform the task.
+However, submitting the prompt to an LLM is extremely expensive.
+Even a small evolutionary experiment could require hundreds of evaluations.
+
+We hope to reduce this number by eliminating prompts from the population
+that are unlikely to be succesful.  To do this, we analyze the prompts
+for complexity, semantic consistency, and other measures, and record
+these metrics in the prompt's metadata.
+
+We begin by evaluating many prompts in expensive LLM trials.
+This produces a dataset of intrinsic prompt metrics along
+with their performance metrics.  We use this to develop
+a predictor of prompt performance.  We may use an ML model
+trained on the intrinsic measures to predict performance.
+
+We can then use the surrogate metric to eliminate likely bad performers
+from the trials without spending money on LLM evaluations.
