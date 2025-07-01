@@ -1,9 +1,9 @@
-(ns pcrit.core
+(ns pcrit.cli.core
   (:require [clojure.tools.cli :as cli]
             [clojure.string :as str]
             [pcrit.llm-interface :as llm]
             [pcrit.log :as log]
-            [pcrit.pdb.core :as pdb]))
+            [pcrit.pdb :as pdb]))
 
 (def cli-options
   [["-h" "--help" "Print this help message"]])
@@ -34,7 +34,7 @@
       (if (str/blank? prompt-text)
         (log/error "Cannot create a prompt with empty text from standard input.")
         (let [new-prompt (pdb/create-prompt db-dir prompt-text)]
-          (log/info "Successfully created prompt" (get-in new-prompt [:header :id]))
+          (log/info "Successfully created prompt " (get-in new-prompt [:header :id]))
           (println (get-in new-prompt [:header :id])))))))
 
 (defn -main [& args]

@@ -1,4 +1,4 @@
-(ns pcrit.util
+(ns pcrit.util.util
   (:require [clojure.string :as str])
   (:import [java.text Normalizer Normalizer$Form]
            [java.security MessageDigest]

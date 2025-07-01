@@ -1,0 +1,2 @@
+(ns pcrit.log.interface)
+
