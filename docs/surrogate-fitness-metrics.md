@@ -14,7 +14,9 @@ derive a predictive model. It may be a formula, or an ML model.
 
 What are some promising avenues here?
 
-We're essentially proposing to build a **surrogate fitness function** - a cheap predictor that approximates expensive LLM evaluations. This is a classic optimization problem where the evaluation itself is the bottleneck.
+We're essentially proposing to build a **surrogate fitness function** - a cheap
+predictor that approximates expensive LLM evaluations. This is a classic
+optimization problem where the evaluation itself is the bottleneck.
 
 **Intrinsic text measures we can compute cheaply:**
 
@@ -43,9 +45,12 @@ We're essentially proposing to build a **surrogate fitness function** - a cheap 
 - Register consistency metrics**
 
 **Some measures that capture the "meta-linguistic awareness" of prompts**
-- **Reflexivity indicators**: How well does the prompt anticipate and guide the model's own reasoning process?
-- **Constraint specificity**: Measures of how precisely the prompt constrains the solution space without over-constraining
-- **Contextual anchoring**: How well the prompt establishes stable reference points for the model's reasoning
+- **Reflexivity indicators**: How well does the prompt anticipate and guide the
+  model's own reasoning process?
+- **Constraint specificity**: Measures of how precisely the prompt constrains
+  the solution space without over-constraining
+- **Contextual anchoring**: How well the prompt establishes stable reference
+  points for the model's reasoning
 
 
 **Meta-textual properties:**
@@ -55,10 +60,17 @@ We're essentially proposing to build a **surrogate fitness function** - a cheap 
 
 **Promising research directions:**
 
-**Multi-scale analysis:** Measure properties at character, word, sentence, and document levels simultaneously. Fitness might emerge from specific relationships between scales.
+**Multi-scale analysis:** Measure properties at character, word, sentence, and
+document levels simultaneously. Fitness might emerge from specific relationships
+between scales.
 
-**Trajectory features:** Don't just measure individual prompts - measure properties of the evolutionary path that led to them. Success might correlate with diversity of ancestors, rate of change, or convergence patterns.
+**Trajectory features:** Don't just measure individual prompts - measure
+properties of the evolutionary path that led to them. Success might correlate
+with diversity of ancestors, rate of change, or convergence patterns.
 
-**Ensemble predictors:** Train multiple cheap models on different aspects, then combine their predictions. Some measures might predict fitness in certain domains but not others.
+**Ensemble predictors:** Train multiple cheap models on different aspects, then
+combine their predictions. Some measures might predict fitness in certain
+domains but not others.
 
-**Active learning approaches:** Use uncertainty sampling to identify which expensive evaluations would most improve your surrogate model.
+**Active learning approaches:** Use uncertainty sampling to identify which
+expensive evaluations would most improve your surrogate model.

@@ -1,6 +1,9 @@
-# Tell me about genetic algorithms for generating optimized prompts using evolutionary algorithms.  What research papers can you find?
+# genetic algorithms for generating optimized prompts using evolutionary algorithms
 
-Genetic algorithms are increasingly used to automate and optimize prompt engineering for large language models (LLMs), evolving prompts through mutation, crossover, and selection to maximize performance. Below are key research papers advancing this approach:
+Genetic algorithms are increasingly used to automate and optimize prompt
+engineering for large language models (LLMs), evolving prompts through mutation,
+crossover, and selection to maximize performance. Below are key research papers
+advancing this approach.
 
 ### Key Research Papers
 
@@ -45,7 +48,11 @@ Genetic algorithms are increasingly used to automate and optimize prompt enginee
 
 ### Conclusion
 
-Research confirms that genetic algorithms significantly enhance prompt optimization by automating iterative refinement. **EvoPrompt** and **GAAPO** represent leading frameworks, leveraging evolutionary principles to reduce human effort while improving accuracy and efficiency. For implementation, **PromptOptimization** offers a practical starting point[^7][^6].
+Research confirms that genetic algorithms significantly enhance prompt
+optimization by automating iterative refinement. **EvoPrompt** and **GAAPO**
+represent leading frameworks, leveraging evolutionary principles to reduce human
+effort while improving accuracy and efficiency. For implementation,
+**PromptOptimization** offers a practical starting point[^7][^6].
 
 <div style="text-align: center">⁂</div>
 

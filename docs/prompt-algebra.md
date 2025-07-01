@@ -69,13 +69,6 @@ becomes the next step's input, with each prompt in the chain designed to refine
 a specific aspect of the transformation. The path-dependence becomes a feature
 rather than a bug.
 
-**Operator Algebra Development**: Start with your basic operators, then you can discover composed operators:
-```
-enhance = improve ∘ variants ∘ select_best
-diverge = variants ∘ variants  
-converge = crossover ∘ (best_pair ∘ tournament)
-```
-
 **Judge Prompt Evolution**: Since Failter judges are also prompts, they can
 evolve too! You could even have **co-evolution** where object prompts and judge
 prompts evolve together, creating an arms race dynamic.
@@ -85,7 +78,7 @@ prompts evolve together, creating an arms race dynamic.
 
 **Meta Prompts as Operators** - This is where the closed categorical structure really shines:
 - `improve: Prompt → Prompt` (unary mutation)
-- `variants: Prompt → Prompt³` (1-to-many generation)  
+- `variants: Prompt → Prompt³` (1-to-many generation)
 - `crossover: Prompt × Prompt → Prompt` (binary recombination)
 - `critique: Prompt × Goal → Score` (evaluation morphism)
 
@@ -93,15 +86,24 @@ And since these operations are themselves text, you can have **meta-meta
 prompts** that operate on the meta prompts! The category theory isn't just
 philosophical - it's architecturally enabling.
 
+## Operator Algebra Development
+
+Starting with the basic operators, then you can discover composed operators by combining them:
+```
+enhance = improve ∘ variants ∘ select_best
+diverge = variants ∘ variants
+converge = crossover ∘ (best_pair ∘ tournament)
+```
+
 ## Population Dynamics as Endofunctions
 
-Your insight about `winnow_and_breed: Population → Population` is mathematically precise. This is an endofunction on `P(Prompts)` (the power set), and you can:
-
+Consider the evolution operation `winnow_and_breed: Population → Population`.
+This is an endofunction on `P(Prompts)` (the power set of the set of all prompts).
+We can
 - **Compose these functions** to see multi-generation effects
-- **Study their fixed points** (stable populations)  
+- **Study their fixed points** (stable populations)
 - **Analyze their dynamics** (does diversity increase or decrease?)
 - **Evolve the evolution function itself** using meta-parametric evolution
-
 
 
 ## Prompt Algebra is Context Dependent

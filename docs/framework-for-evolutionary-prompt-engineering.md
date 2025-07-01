@@ -4,10 +4,15 @@
 
 ### The Nature of LLMs and Prompts
 
-- **LLMs as compressed projections**: Models are “statistical ghosts of human discourse” - lossy compression of training data that preserves essential patterns
-- **Prompts as acoustic probes**: Text that excites resonances in high-dimensional correlation webs, like striking a complex instrument
-- **Path-dependent fitness landscapes**: The terrain of possible responses reshapes itself as we traverse it - “semi-controlled demolition of potentials”
-- **Closed categorical structure**: Transformations are themselves text, enabling meta-operations on our own operations
+- **LLMs as compressed projections**: Models are “statistical ghosts of human
+  discourse” - lossy compression of training data that preserves essential
+  patterns
+- **Prompts as acoustic probes**: Text that excites resonances in
+  high-dimensional correlation webs, like striking a complex instrument
+- **Path-dependent fitness landscapes**: The terrain of possible responses
+  reshapes itself as we traverse it - “semi-controlled demolition of potentials”
+- **Closed categorical structure**: Transformations are themselves text,
+  enabling meta-operations on our own operations
 
 ### The Algebraic Framework
 
@@ -82,11 +87,14 @@ Target research areas for principled prompt combination:
 
 ### 1. The Measurement Problem
 
-Since we can’t access model weights, we must infer the “instrument’s properties from the sounds it makes” - using response patterns as sonar to map hidden correlation topology.
+Since we can’t access model weights, we must infer the “instrument’s properties
+from the sounds it makes” - using response patterns as sonar to map hidden
+correlation topology.
 
 ### 2. Multi-Scale Optimization
 
-Success emerges from relationships between different linguistic scales (character, word, sentence, document) rather than single-level metrics.
+Success emerges from relationships between different linguistic scales
+(character, word, sentence, document) rather than single-level metrics.
 
 ### 3. Creative vs. Semantic Fidelity Trade-off
 

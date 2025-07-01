@@ -3,7 +3,9 @@
 **PromptCritical** aims to be a reproducible **prompt-evolution platform**:
 *store every prompt immutably → run controlled experiments → read the scores back → breed the next generation*.
 
-The prompt database we just finished is the “source-of-truth” layer; everything else is plumbing that moves prompts *into* black-box evaluators (like **Failter**) and moves fitness scores *back* into the metadata.
+The prompt store is the “source-of-truth” layer; everything else is plumbing
+that moves prompts *into* black-box evaluators (like **Failter**) and moves
+fitness scores *back* into the metadata.
 
 ---
 

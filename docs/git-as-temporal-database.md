@@ -1,6 +1,6 @@
 ## Git as Temporal Database
 
-Using git for population snapshots is genius because:
+Using git for population snapshots is attractive because:
 - Every generation is a commit with full diff history
 - You can branch for experimental evolution strategies
 - Merge conflicts become meaningful (competing evolutionary pressures)

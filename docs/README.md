@@ -10,54 +10,38 @@ These are disorganized notes and references.
 
 * [Research directions](research-1.md)
 
-* [References](References.org) 
+* [References](References.org)
 
-* [Surrogate Fitness Metrics to lower costs](surrogate-fitness-metrics.md) 
+* [Surrogate Fitness Metrics to lower costs](surrogate-fitness-metrics.md)
 
+
+Overview
+  * overview.md
+  * framework-for-evolutionary-prompt-engineering.md
 
 LLM vs Formal Methods
   * llm-vs-formal-methods.md
   * knowledge-graph-contributions.md
-  * compositional-semantics-for-prompt-combination.md
   * llm-vs-amr+kg-general.md
   * llm-vs-amr+kb-prompt-refinement.md
 
-- **Causal structure preservation**: Using causal inference techniques to identify which parts of prompts actually drive desired behaviors vs. mere correlation
-- **Modular composition**: Treating prompts as compositions of functional modules (context-setting, constraint-specification, output-formatting) that can be independently evolved
+Formal Methods
+  * compositional-semantics-for-prompt-combination.md
+  * formal-methods.md
 
 Prompt Ecology
-
-  Rather than just evolving individual prompts, consider evolving
-  **ecosystems*** of interacting prompts. Some prompts might specialize in
-  different cognitive functions:
-
-- **Scout prompts**: Optimized for exploration and creativity
-- **Validator prompts**: Specialized for checking outputs against constraints
-- **Synthesizer prompts**: Good at combining outputs from multiple sources
-- **Meta-prompts**: Evolved to generate other prompts for specific contexts
-
-  This could lead to more robust and adaptable prompt systems that maintain
-  diversity while specializing for different aspects of complex tasks.
+  * prompt-ecology.md
 
 Data structures
   * prompt-representation.md
   * git-as-temporal-database.md
-
-  **The Immutable Prompt Store Design** treats prompts as content-addressable
-  objects with SHA-1 integrity and full lineage tracking. This solves the
-  reproducibility crisis in prompt engineering where people can't even remember
-  what they tried last week. The `.prompt` file format with UTF-8 + NFC
-  canonicalization shows serious attention to the subtle details that make or
-  break data integrity.
-
+  * contest-architecture.md
 
 Prompt Algebra
   * prompt-algebra.md
   * prompt-folding.md
 
-
-
-Evoluationary Algorithm
+Evolutionary Algorithm
   * population-bootstrapping.md
   * operation-enumeration.md
   * prompt-breeding.md

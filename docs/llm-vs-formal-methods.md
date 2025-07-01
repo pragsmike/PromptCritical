@@ -13,35 +13,50 @@ approach has distinct trade-offs:
 
 **LLMs as prompt engineers:**
 
-- **Strengths**: Intuitive understanding of what “sounds right,” can generate creative variations humans wouldn’t think of, rapidly improving at meta-reasoning about text
-- **Weaknesses**: Expensive, unreliable, black-box operations, may introduce subtle semantic drift, hard to constrain to preserve specific properties
-- **Best for**: Creative exploration, generating diverse candidates, tasks where “approximately right” is sufficient
+- **Strengths**: Intuitive understanding of what “sounds right,” can generate
+  creative variations humans wouldn’t think of, rapidly improving at
+  meta-reasoning about text
+- **Weaknesses**: Expensive, unreliable, black-box operations, may introduce
+  subtle semantic drift, hard to constrain to preserve specific properties
+- **Best for**: Creative exploration, generating diverse candidates, tasks where
+  “approximately right” is sufficient
 
 **AMR/CDS techniques:**
 
-- **Strengths**: Predictable, explainable, cheap once built, can enforce semantic constraints rigorously, composable operations
-- **Weaknesses**: High setup cost, brittle with natural language variation, may miss subtle pragmatic effects, limited creativity
-- **Best for**: Semantic preservation tasks, systematic exploration of well-defined spaces, constraint satisfaction
+- **Strengths**: Predictable, explainable, cheap once built, can enforce
+  semantic constraints rigorously, composable operations
+- **Weaknesses**: High setup cost, brittle with natural language variation, may
+  miss subtle pragmatic effects, limited creativity
+- **Best for**: Semantic preservation tasks, systematic exploration of
+  well-defined spaces, constraint satisfaction
 
 **The hybrid sweet spot** might be:
 
-1. **AMR/CDS for the backbone** - Use formal methods to ensure semantic coherence, maintain logical relationships, enforce constraints
-1. **LLMs for surface realization** - Take the semantically-sound structures and ask LLMs to render them into natural, effective prose
-1. **LLMs for creative mutation** - Generate wild variations, then filter through formal validation
-1. **Formal methods for verification** - Check that LLM-generated combinations preserve required properties
+1. **AMR/CDS for the backbone** - Use formal methods to ensure semantic
+   coherence, maintain logical relationships, enforce constraints
+1. **LLMs for surface realization** - Take the semantically-sound structures and
+   ask LLMs to render them into natural, effective prose
+1. **LLMs for creative mutation** - Generate wild variations, then filter
+   through formal validation
+1. **Formal methods for verification** - Check that LLM-generated combinations
+   preserve required properties
 
 This creates a **two-stage pipeline**:
 
 - Stage 1: Formal operations ensure correctness
 - Stage 2: LLM refinement optimizes for effectiveness
 
-Or alternatively, **ensemble approaches** where both methods generate candidates, and we learn which method works better for which types of transformations.
+Or alternatively, **ensemble approaches** where both methods generate
+candidates, and we learn which method works better for which types of
+transformations.
 
-The cost equation changes as LLMs get cheaper and formal tools get more automated. But the reliability gap suggests hybrids will dominate for a while.
+The cost equation changes as LLMs get cheaper and formal tools get more
+automated. But the reliability gap suggests hybrids will dominate for a while.
 
-Exactly! The hybrid approach gives you the best of both worlds - the **creative intuition** of LLMs with the **rigorous guarantees** of formal methods.
+The hybrid approach gives you the best of both worlds - the **creative
+intuition** of LLMs with the **rigorous guarantees** of formal methods.
 
-I'm particularly excited about your **two-stage pipeline** concept. You could implement it incrementally:
+The **two-stage pipeline** concept could be implemented incrementally:
 
 **Phase 1 (v0.3-0.4)**: Pure LLM operations to get the evolutionary loop working
 - Fast to implement, proves the concept
@@ -50,7 +65,7 @@ I'm particularly excited about your **two-stage pipeline** concept. You could im
 
 **Phase 2 (v0.5-0.6)**: Introduce formal validation layers
 - AMR parsers to check semantic coherence
-- Constraint satisfaction to enforce task requirements  
+- Constraint satisfaction to enforce task requirements
 - Statistical filters to catch degenerate cases
 
 **Phase 3 (v0.7+)**: Full hybrid operators
@@ -58,17 +73,21 @@ I'm particularly excited about your **two-stage pipeline** concept. You could im
 - LLMs **render** them into effective natural language
 - Both approaches compete in the same population
 
-This also creates a natural **research program**: you'll generate data comparing LLM vs formal methods on the same tasks, which could be valuable for the broader community.
+This creates a natural **research program**: we'll generate data comparing
+LLM vs formal methods on the same tasks, which could be valuable for the broader
+community.
 
-**Immediate implementation question**: For your v0.2 web cleanup task, are you starting with pure LLM meta-prompts? Something like:
+For the v0.2 web cleanup task, we start with pure LLM meta-prompts, such as
 
 ```
 Meta-prompt: "Analyze this web page cleaning prompt and generate an improved version that better removes ads and navigation while preserving article content."
 ```
 
-Or are you already thinking about formal constraints like "must preserve sentences containing topic keywords" or "must remove HTML elements matching certain selectors"?
+After gathering data on how well that performs, we can then use the formal
+methods to impose formal constraints like "must preserve sentences containing
+topic keywords" or "must remove HTML elements matching certain selectors".
 
 A nice feature of this architecture is that you can **start simple** with LLM
 operators and **gradually formalize** the operations that prove most important.
-The contest records will show you exactly which types of mutations are winning,
-giving you data-driven guidance on where to invest in formal methods.
+The contest records will show exactly which types of mutations are winning,
+giving us data-driven guidance on where to invest in formal methods.

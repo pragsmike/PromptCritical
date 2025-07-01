@@ -1,6 +1,21 @@
-Each meta prompt corresponds to an algebraic operation. These are the starter set of operations. Soon we’ll have crossover operators. And maybe an operator algebra! It’s a closed category after all! 2. Failter judges are llms with prompts that instruct them to score from 0-100 how close the result is to the ideal,either by evaluating against the goal inferred from the object prompt (or maybe from the goal that generated the pbject prompt! Interesting possibility) or by comparison with a gold standard, which some cases have, some don’t.
-Good point. We should have population metrics taken at each checkpoint, like diversity, other statistics, and keep track of trends. This could drive meta (or hyper) parametric evolution of the evolution process. Also, we should use git to snapshot the population at each checkpoint. This gives us a Time Machine to do temporal studies.
-Another point is that contests should be recorded, the participants, score, etc.  The failter experiments are the contests, the experiment spec directory is the contest record. I think these should have symlinks to the paticipant prompts. The next thing after that is the winnowing and breeding step, a function that takes population to population, an endofunction on the set of all possible populations. I think that’s the power set of all possible prompts.
+Each meta prompt corresponds to an algebraic operation. These are the starter
+set of operations. Soon we’ll have crossover operators. And maybe an operator
+algebra! It’s a closed category after all! 2. Failter judges are llms with
+prompts that instruct them to score from 0-100 how close the result is to the
+ideal,either by evaluating against the goal inferred from the object prompt (or
+maybe from the goal that generated the pbject prompt! Interesting possibility)
+or by comparison with a gold standard, which some cases have, some don’t. Good
+point. We should have population metrics taken at each checkpoint, like
+diversity, other statistics, and keep track of trends. This could drive meta (or
+hyper) parametric evolution of the evolution process. Also, we should use git to
+snapshot the population at each checkpoint. This gives us a Time Machine to do
+temporal studies. Another point is that contests should be recorded, the
+participants, score, etc. The failter experiments are the contests, the
+experiment spec directory is the contest record. I think these should have
+symlinks to the paticipant prompts. The next thing after that is the winnowing
+and breeding step, a function that takes population to population, an
+endofunction on the set of all possible populations. I think that’s the power
+set of all possible prompts.
 
 
 ## The Algebraic Structure
