@@ -16,10 +16,11 @@ These are disorganized notes and references.
 
 
 LLM vs Formal Methods
-  * llm-vs-amr+kg-general.md
-  * llm-vs-amr+kb-prompt-refinement.md
+  * llm-vs-formal-methods.md
   * knowledge-graph-contributions.md
   * compositional-semantics-for-prompt-combination.md
+  * llm-vs-amr+kg-general.md
+  * llm-vs-amr+kb-prompt-refinement.md
 
 - **Causal structure preservation**: Using causal inference techniques to identify which parts of prompts actually drive desired behaviors vs. mere correlation
 - **Modular composition**: Treating prompts as compositions of functional modules (context-setting, constraint-specification, output-formatting) that can be independently evolved

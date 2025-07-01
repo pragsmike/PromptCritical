@@ -64,7 +64,7 @@ Then evolve these parameters based on population health trends.
 **Operator Algebra Development**: Start with your basic operators, then you can discover composed operators:
 ```
 enhance = improve ∘ variants ∘ select_best
-diverge = variants ∘ variants  
+diverge = variants ∘ variants
 converge = crossover ∘ (best_pair ∘ tournament)
 ```
 
