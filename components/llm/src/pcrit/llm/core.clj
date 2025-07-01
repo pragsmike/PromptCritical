@@ -1,4 +1,4 @@
-(ns pcrit.llm.llm-interface
+(ns pcrit.llm.core
   (:require [clj-http.client :as http]
             [clojure.data.json :as json]
             [pcrit.config :as config]

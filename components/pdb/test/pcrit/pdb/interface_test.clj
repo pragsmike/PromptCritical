@@ -1,6 +1,6 @@
-(ns pcrit.util.interface-test
+(ns pcrit.pdb.interface-test
   (:require [clojure.test :as test :refer :all]
-            [pcrit.util.interface :as util]))
+            [pcrit.pdb.interface :as pdb.core]))
 
 (deftest dummy-test
   (is (= 1 1)))

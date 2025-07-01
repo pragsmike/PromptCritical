@@ -1,4 +1,4 @@
-(ns pcrit.log.log
+(ns pcrit.log.core
   "Central logging façade for PromptCritical.
 
   * Wraps Taoensso Telemere so that callers only import this namespace.

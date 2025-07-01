@@ -1,4 +1,4 @@
-(ns pcrit.config)
+(ns pcrit.config.core)
 
 (def config
   "A centralized map for all application configuration."

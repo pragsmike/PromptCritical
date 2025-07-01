@@ -1,4 +1,4 @@
-(ns pcrit.pdb-test
+(ns pcrit.pdb.core-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.string :as str]
