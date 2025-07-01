@@ -1,8 +1,8 @@
 (ns pcrit.llm.core
   (:require [clj-http.client :as http]
             [clojure.data.json :as json]
-            [pcrit.config :as config]
-            [pcrit.log :as log]))
+            [pcrit.config.interface :as config]
+            [pcrit.log.interface :as log]))
 
 (def LITELLM_API_KEY (System/getenv "LITELLM_API_KEY"))
 

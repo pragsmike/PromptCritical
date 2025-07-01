@@ -1,7 +1,7 @@
 (ns pcrit.pdb.lock
   (:require [clojure.java.io :as io]
-            [pcrit.log :as log]
-            [pcrit.config :as config])
+            [pcrit.log.interface :as log]
+            [pcrit.config.interface :as config])
   (:import [java.io File]))
 
 (defn execute-with-lock

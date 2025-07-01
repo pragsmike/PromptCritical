@@ -9,7 +9,7 @@
   [s]
   (Normalizer/normalize s Normalizer$Form/NFC))
 
-(defn- normalize-line-endings
+(defn normalize-line-endings
   "Converts all line endings (CRLF, CR) in a string to a single Line Feed (LF)."
   [s]
   (if (nil? s) "" (-> s (str/replace #"\r\n" "\n") (str/replace #"\r" "\n"))))

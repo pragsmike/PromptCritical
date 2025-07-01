@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [pcrit.pdb.lock :as lock]
             [pcrit.pdb.io :as pdb-io]
-            [pcrit.log :as log]))
+            [pcrit.log.interface :as log]))
 
 (defn get-next-id!
   "Atomically reads and increments a counter file, returning the next ID as a string."

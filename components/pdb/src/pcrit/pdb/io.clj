@@ -2,8 +2,8 @@
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
             [clj-yaml.core :as yaml]
-            [pcrit.util :as util]
-            [pcrit.log :as log])
+            [pcrit.pdb.util :as util]
+            [pcrit.log.interface :as log])
   (:import [java.io File]
            [java.nio.channels FileChannel]
            [java.nio.file Files CopyOption StandardCopyOption AtomicMoveNotSupportedException OpenOption StandardOpenOption]))

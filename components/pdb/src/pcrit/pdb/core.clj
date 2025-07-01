@@ -1,8 +1,8 @@
 (ns pcrit.pdb.core
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
-            [pcrit.util :as util]
-            [pcrit.log :as log]
+            [pcrit.log.interface :as log]
+            [pcrit.pdb.util :as util]
             [pcrit.pdb.io :as pdb-io]
             [pcrit.pdb.lock :as pdb-lock]
             [pcrit.pdb.id :as pdb-id])
