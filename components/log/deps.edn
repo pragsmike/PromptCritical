@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps {}
+ :deps {com.taoensso/telemere {:mvn/version "1.0.1"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}
 
