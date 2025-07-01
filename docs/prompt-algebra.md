@@ -1,3 +1,39 @@
+Each meta prompt corresponds to an algebraic operation. These are the starter
+set of operations.
+
+Soon we’ll have crossover operators, and maybe an operator algebra. It’s a
+closed category after all!
+
+Failter judges are llms with prompts that instruct them to score from 0-100 how
+close the result is to the ideal, either by
+   * evaluating against the goal inferred from the object prompt or
+   * by comparison with a gold standard, which some cases have, some don’t.
+
+Perhaps the goal that generated the pbject prompt will be available.
+
+We should have population metrics taken at each checkpoint, like diversity,
+and other statistics, and keep track of trends.
+This could drive meta parametric evolution of the evolution process.
+
+We use git to snapshot the population at each checkpoint. This gives us a Time
+Machine to do temporal studies.
+
+Contests are recorded: the participants, prompts, score, etc.
+
+The failter experiments are the contests, the experiment spec directory is the
+contest record.
+
+Instead of copying prompts into contest directories, the experiment directory
+refers to prompts by having symlinks to them in the prompt store directory. This
+symlink scheme maintains the single source of truth while creating the
+participation record.
+
+The next thing after the contest is the winnowing and breeding step, which
+applies a function that takes population to population. winnow-and-breed is an
+endofunction on the set of all possible populations -- the power set of all
+possible prompts.
+
+
 ## Prompts are text: Closed Category
 
 We're working in a closed category where transformations are themselves texts,
@@ -32,6 +68,41 @@ composition operators: "First do X, then Y" vs "Do X while considering Y" vs
 becomes the next step's input, with each prompt in the chain designed to refine
 a specific aspect of the transformation. The path-dependence becomes a feature
 rather than a bug.
+
+**Operator Algebra Development**: Start with your basic operators, then you can discover composed operators:
+```
+enhance = improve ∘ variants ∘ select_best
+diverge = variants ∘ variants  
+converge = crossover ∘ (best_pair ∘ tournament)
+```
+
+**Judge Prompt Evolution**: Since Failter judges are also prompts, they can
+evolve too! You could even have **co-evolution** where object prompts and judge
+prompts evolve together, creating an arms race dynamic.
+
+
+## The Algebraic Structure
+
+**Meta Prompts as Operators** - This is where the closed categorical structure really shines:
+- `improve: Prompt → Prompt` (unary mutation)
+- `variants: Prompt → Prompt³` (1-to-many generation)  
+- `crossover: Prompt × Prompt → Prompt` (binary recombination)
+- `critique: Prompt × Goal → Score` (evaluation morphism)
+
+And since these operations are themselves text, you can have **meta-meta
+prompts** that operate on the meta prompts! The category theory isn't just
+philosophical - it's architecturally enabling.
+
+## Population Dynamics as Endofunctions
+
+Your insight about `winnow_and_breed: Population → Population` is mathematically precise. This is an endofunction on `P(Prompts)` (the power set), and you can:
+
+- **Compose these functions** to see multi-generation effects
+- **Study their fixed points** (stable populations)  
+- **Analyze their dynamics** (does diversity increase or decrease?)
+- **Evolve the evolution function itself** using meta-parametric evolution
+
+
 
 ## Prompt Algebra is Context Dependent
 

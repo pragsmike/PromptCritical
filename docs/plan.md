@@ -63,3 +63,10 @@ Each step is still thin and testable because **Failter stays a black box**: we o
 5. Add one integration test that seeds two prompts, runs a tiny Failter job with a stub harness, and asserts that `failter-score` appears in the DB.
 
 With that slice shipped, we can finally *see* numbers attached to our prompts—making subsequent evolution work concrete and test-driven.
+
+**The Milestone Progression** is incremental. Each version delivers real value:
+- v0.2 proves the round-trip evaluation pipeline
+- v0.3-0.4 gets basic evolution working
+- v0.5's surrogate critic is crucial for scaling (expensive LLM evals are the bottleneck)
+- v1.0's distributed workers and semantic validators bring in the advanced features
+

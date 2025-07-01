@@ -1,4 +1,8 @@
-This is a fascinating framework that bridges evolutionary computation with the peculiar nature of language models. Your characterization of LLMs as "statistical ghosts of human discourse" and prompts as "acoustic probes" is particularly evocative - it captures how we're essentially doing archaeology on compressed linguistic patterns.
+This is a fascinating framework that bridges evolutionary computation with the
+peculiar nature of language models. Your characterization of LLMs as
+"statistical ghosts of human discourse" and prompts as "acoustic probes" is
+particularly evocative - it captures how we're essentially doing archaeology on
+compressed linguistic patterns.
 
 A few thoughts on extending this framework:
 
