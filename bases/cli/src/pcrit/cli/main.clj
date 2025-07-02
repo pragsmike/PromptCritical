@@ -1,9 +1,9 @@
-(ns pcrit.cli.core
+(ns pcrit.cli.main
   (:require [clojure.tools.cli :as cli]
             [clojure.string :as str]
-            [pcrit.llm-interface :as llm]
-            [pcrit.log :as log]
-            [pcrit.pdb :as pdb]))
+            [pcrit.llm.interface :as llm]
+            [pcrit.log.interface :as log]
+            [pcrit.pdb.interface :as pdb]))
 
 (def cli-options
   [["-h" "--help" "Print this help message"]])

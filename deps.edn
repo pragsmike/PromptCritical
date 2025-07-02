@@ -2,7 +2,8 @@
  :mvn/repos {"clojars" {:url "https://repo.clojars.org/"}}
 
  :aliases
- {:run {:main-opts ["-m" "pcrit.core"]}
+ {:run {:main-opts ["-m" "pcrit.cli.main"]}
+
   :poly {:extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}
          :main-opts  ["-m" "polylith.clj.core.poly-cli.core"]}
 

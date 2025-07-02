@@ -1,11 +1,13 @@
 {:deps      {pcrit/log      {:local/root "../../components/log"}
-             pcrit/llm      {:local/root "../../components/cllmomment"}
+             pcrit/llm      {:local/root "../../components/llm"}
              pcrit/config   {:local/root "../../components/config"}
              pcrit/pdb      {:local/root "../../components/pdb"}
              pcrit/cli      {:local/root "../../bases/cli"}
 
              org.clojure/clojure {:mvn/version "1.12.1"}}
 
- :aliases {:test {:extra-paths []
+ :aliases {:run {:main-opts ["-m" "pcrit.cli.main"]}
+
+           :test {:extra-paths []
                   :extra-deps  {}}}}
 
