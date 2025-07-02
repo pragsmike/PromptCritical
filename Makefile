@@ -1,6 +1,6 @@
 .PHONY: test
 run:
-	clj -M:run help
+	cd projects/pcrit-cli && clj -M:run
 
 test:
 	clj -X:test

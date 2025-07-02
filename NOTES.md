@@ -7,6 +7,11 @@ To use the command-line `poly` tool, just use this alias.  The poly library is a
   alias poly='clj -M:poly '
   ```
 
+To run the CLI,
+  ```
+  cd projects/pcrit-cli && clj -M:run <command>
+  ```
+
 To use Emacs CIDER, be sure to start the REPL using the top-level `deps.edn`.
 There is a `.dir-locals` directory that tells Emacs CIDER to use the `:dev`
 alias when starting a REPL.
