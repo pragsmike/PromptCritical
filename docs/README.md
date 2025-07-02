@@ -32,8 +32,9 @@ Prompt Ecology
 
 Data structures
   * prompt-representation.md
-  * git-as-temporal-database.md
+  * prompt-templating.md
   * contest-architecture.md
+  * git-as-temporal-database.md
 
 Prompt Algebra
   * prompt-algebra.md
