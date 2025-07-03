@@ -76,7 +76,7 @@
     (is (.exists pf))))
 
 (comment
-  (def filename (-> (io/resource "test-prompts/manifest.edn") (.getPath)))
+  (def filename (-> (io/resource "test-prompts/bootstrap-manifest.edn") (.getPath)))
   (def pm (pop/read-prompt-map filename))
   (pop/intern-prompts "/tmp/pdb" pm)
   (pop/ingest-from-manifest "/tmp/pdb" filename)

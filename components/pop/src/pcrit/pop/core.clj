@@ -66,5 +66,11 @@
 (defn evolve [pdbdir])
 
 (defn bootstrap [pdbdir prompt-manifest-filename]
-  (ingest-from-manifest pdbdir prompt-manifest-filename)
-  )
+  (let [prompt-map (ingest-from-manifest pdbdir prompt-manifest-filename)
+        seed (:seed prompt-map)
+        refine (:refine prompt-map)
+        vary (:vary prompt-map)
+
+
+  ;; make symlinks with those logical names pointing into the store
+        ]))
