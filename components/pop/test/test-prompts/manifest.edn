@@ -1,0 +1,2 @@
+{:test-greeting "prompts/greeting.txt"
+ :test-summary  "prompts/summary.txt"}

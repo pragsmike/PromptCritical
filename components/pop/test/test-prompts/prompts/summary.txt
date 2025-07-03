@@ -1,0 +1,2 @@
+Please summarize the following content:
+{{content}}
