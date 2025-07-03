@@ -2,7 +2,7 @@
   (:require [clojure.test :refer (deftest is use-fixtures)]
             [clojure.java.io :as io]
             [pcrit.pop.core :as pop]
-            [prcit.pop.temp-dir :refer [with-temp-dir *tmp-dir*]]))
+            [pcrit.pop.temp-dir :refer [with-temp-dir *tmp-dir*]]))
 
 (use-fixtures :each with-temp-dir)
 

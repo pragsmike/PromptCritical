@@ -1,6 +1,7 @@
 (ns pcrit.pop.temp-dir
   (:require [clojure.java.io :as io])
-  (:import [java.nio.file Files Path]))
+  (:import [java.nio.file Files Path]
+           [java.nio.file.attribute FileAttribute]))
 
 ;; Tests can refer to the directory via this dynamic var.
 (def ^:dynamic *tmp-dir* nil)
@@ -16,7 +17,7 @@
 (defn with-temp-dir
   "A clojure.test :each fixture that binds *tmp-dir* and cleans up afterwards."
   [test-fn]
-  (let [^Path tmp-path (Files/createTempDirectory "poly-test-")
+  (let [^Path tmp-path (Files/createTempDirectory "poly-test-" (make-array FileAttribute 0))
         tmp-dir        (.toFile tmp-path)]
     (try
       (binding [*tmp-dir* (.getAbsolutePath tmp-dir)]
