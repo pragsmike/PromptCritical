@@ -37,10 +37,6 @@
     (is (= 4 (:word-count md)))
     (is (= ["MOM" "DAD"] (:template-field-names md)))))
 
-(deftest test-bootstrap
-  (pop/bootstrap *tmp-dir* "hi")
-  (let [pf (io/file *tmp-dir* "P1.prompt")]
-    (is (.exists pf))))
 
 (def prompt-map-1
   {:seed "The seed!"
@@ -70,3 +66,21 @@
             clojure.lang.ExceptionInfo
             #"Prompt file not found for key: :bad-key"
             (pop/read-prompt-map (.getPath bad-manifest-resource)))))))
+
+(deftest test-bootstrap
+  (let [manifest-resource (io/resource "test-prompts/manifest.edn")]
+    (is (some? manifest-resource) "Test manifest 'manifest.edn' must be on the classpath.")
+    (let [filename (.getPath manifest-resource)]
+      (pop/bootstrap *tmp-dir* filename)))
+  (let [pf (io/file *tmp-dir* "P1.prompt")]
+    (is (.exists pf))))
+
+(comment
+  (def filename (-> (io/resource "test-prompts/manifest.edn") (.getPath)))
+  (def pm (pop/read-prompt-map filename))
+  (pop/intern-prompts "/tmp/pdb" pm)
+  (pop/ingest-from-manifest "/tmp/pdb" filename)
+  (pop/bootstrap "/tmp/pdb" filename)
+
+  ;
+  )

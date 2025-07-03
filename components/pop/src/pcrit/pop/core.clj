@@ -51,6 +51,20 @@
                              :manifest edn-filename}))
             [prompt-key (slurp prompt-file)]))))))
 
+(defn ingest-from-manifest
+  "Ingests a set of raw prompt files listed in the manifest.
 
-(defn bootstrap [pdbdir seed-prompt]
-  (ingest-prompt pdbdir seed-prompt))
+  The EDN file must define a map where keys are prompt-keys (keywords) and values
+  are string paths to raw prompt text files. These paths are relative to the
+  location of the EDN file itself.
+
+  Throws an ExceptionInfo if any of the referenced prompt files do not exist."
+  [pdbdir prompt-manifest-filename]
+  (->> (read-prompt-map prompt-manifest-filename)
+       (intern-prompts pdbdir)))
+
+(defn evolve [pdbdir])
+
+(defn bootstrap [pdbdir prompt-manifest-filename]
+  (ingest-from-manifest pdbdir prompt-manifest-filename)
+  )
