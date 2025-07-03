@@ -9,10 +9,12 @@ test:
 pack:
 	(for i in README.md docs/DESIGN.md docs/API.md docs/prompt-representation.md \
 					copilot/onboard-*.md \
-					deps.edn Makefile ;\
+					Makefile `find . -name deps.edn` ;\
 	   do echo $$i; cat $$i; echo ---- ; done ;\
   echo PROMPTS; echo -----; \
   cat prompts/* ; \
 	echo Source files; echo -----; \
-	cat src/pcrit/*.clj src/pcrit/*/*.clj test/pcrit/*.clj) >~/pcrit-pack.txt
+  (find components -name '*.clj' | xargs cat) ;\
+  (find bases -name '*.clj' | xargs cat) \
+  ) >~/pcrit-pack.txt
 

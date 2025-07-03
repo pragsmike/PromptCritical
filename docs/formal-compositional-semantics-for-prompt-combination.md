@@ -1,7 +1,8 @@
 ## Compositional semantics for combining prompts
 
-Consider the algebra of prompts. They are analogous to programs, so program synthesis is relevant.
-But they are natural language, so nlp techniques are also relevant.
+Consider the algebra of prompts. They are analogous to programs, so program
+synthesis is relevant. But they are natural language, so nlp techniques are also
+relevant.
 
 Syntactic manipulations can induce semantic changes. Recombination at the
 semantic level is also possible and may be fruitful to investigate.
@@ -21,7 +22,19 @@ The core challenge: we need **compositional semantics for prompt engineering** -
 operations that respect meaning while enabling controlled creativity. Here are
 the key research areas:
 
-**Formal semantic composition:**
+## Desirable properties
+
+- **Causal structure preservation**: Using causal inference techniques to
+  identify which parts of prompts actually drive desired behaviors vs. mere
+  correlation
+
+- **Modular composition**: Treating prompts as compositions of functional
+  modules (context-setting, constraint-specification, output-formatting) that
+  can be independently evolved
+
+
+## Formal semantic composition methods
+
 - **Combinatory Categorial Grammar (CCG)** - extends Lambek's pregroups with more flexible composition rules
 - **Abstract Meaning Representation (AMR)** - graph-based semantic representations that could enable semantic-level recombination
 - **Discourse Representation Theory (DRT)** - handles context and reference resolution, crucial for multi-part prompts

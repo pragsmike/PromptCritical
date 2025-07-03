@@ -1,33 +1,28 @@
-{:paths ["src" "test" "scripts"]
+{:paths []
  :mvn/repos {"clojars" {:url "https://repo.clojars.org/"}}
 
- :aliases
- {:run {:main-opts ["-m" "pcrit.cli.main"]}
+ :aliases {:run {:main-opts ["-m" "pcrit.cli.main"]}
 
-  :poly {:extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}
-         :main-opts  ["-m" "polylith.clj.core.poly-cli.core"]}
+           :poly {:extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}
+                  :main-opts  ["-m" "polylith.clj.core.poly-cli.core"]}
 
-  :dev  {:extra-paths ["development/src"]
+           :dev  {:extra-paths ["development/src"]
 
-         :extra-deps  {; Components
-                       pcrit/config {:local/root "components/config"}
-                       pcrit/llm {:local/root "components/llm"}
-                       pcrit/log {:local/root "components/log"}
-                       pcrit/pdb {:local/root "components/pdb"}
+                  :extra-deps  {; Components
+                                pcrit/config {:local/root "components/config"}
+                                pcrit/llm {:local/root "components/llm"}
+                                pcrit/log {:local/root "components/log"}
+                                pcrit/pop {:local/root "components/pop"}
+                                pcrit/pdb {:local/root "components/pdb"}
 
                                         ; Bases
-                       pcrit/pcrit-cli {:local/root "bases/cli"}
+                                pcrit/pcrit-cli {:local/root "bases/cli"}
 
                                         ; Development dependencies
-                       org.clojure/clojure {:mvn/version "1.12.1"}}}
+                                org.clojure/clojure {:mvn/version "1.12.1"}}}
 
-  :test {:extra-paths ["components/llm/test"
-                       "components/log/test"
-                       "components/pdb/test"
-                       "components/pop/test"
-                       "bases/cli/test"]}
-
-  #_#_:test {:extra-paths ["src" "test"]
-             :extra-deps {io.github.cognitect-labs/test-runner
-                          {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
-             :exec-fn cognitect.test-runner.api/test}}}
+           :test {:extra-paths ["components/llm/test"
+                                "components/log/test"
+                                "components/pdb/test"
+                                "components/pop/test"
+                                "bases/cli/test"]}}}

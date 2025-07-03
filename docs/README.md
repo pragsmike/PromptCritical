@@ -4,13 +4,13 @@ These are notes and references in the process of being organized.
 * [DESIGN](DESIGN.md)
 
 * [Plan](plan.md)
-* [Research directions](research-1.md)
-* [References](References.org)
+* [Research directions](intro-research-1.md)
+* [References](refs-list.org)
 
 
-* [Compositional Semantics for Prompt Combination](compositional-semantics-for-prompt-combination.md)
+* [Compositional Semantics for Prompt Combination](formal-compositional-semantics-for-prompt-combination.md)
 
-* [Surrogate Fitness Metrics to lower costs](surrogate-fitness-metrics.md)
+* [Surrogate Fitness Metrics to lower costs](evo-surrogate-fitness-metrics.md)
 
 
 Overview
@@ -28,6 +28,7 @@ Formal Methods
   * formal-knowledge-graph-contributions.md
   * formal-compositional-semantics-for-prompt-combination.md
   * formal-methods-amr-cds-described.md
+  * formal-amr-implementation.md
 
 Prompt Ecology
   * prompt-ecology.md
