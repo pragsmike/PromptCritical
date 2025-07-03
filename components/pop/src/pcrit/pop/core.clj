@@ -5,13 +5,11 @@
 
 (defn ingest-prompt
   "Stores given prompt with some computed metadata.
-  NOTE: The metadata is computed on the NON-NORMALIZED form of the prompt!
-  Later computations that read from the file may get a slightly different string.
-  The most noticable effect is that the count won't include the trailing newline that
-  normalization might add if there isn't one already."
+  NOTE: The metadata is computed on the canonicalized form of the prompt!
+  Later computations that read from the file will use exactly that same text."
   [pdbdir prompt]
-  (let [metadata (analyze-prompt-body prompt)]
-    (pdb/create-prompt pdbdir prompt :metadata metadata)))
+  (let [metadata-fn (fn [rec] (analyze-prompt-body (:body rec)))]
+    (pdb/create-prompt pdbdir prompt :metadata-fn metadata-fn)))
 
 (defn bootstrap [pdbdir seed-prompt]
   (ingest-prompt pdbdir seed-prompt))

@@ -6,13 +6,14 @@
 
 (use-fixtures :each with-temp-dir)
 
+
 (deftest test-ingest-prompt-no-template-fields
   (let [record (pop/ingest-prompt *tmp-dir* "hello")
         md (:header record)]
     (is (= "hello\n" (:body record)))
     (is (= "1" (:spec-version md)))
     (is (= "P1" (:id md)))
-    (is (= 5 (:character-count md)))
+    (is (= 6 (:character-count md)))
     (is (= 1 (:word-count md)))
     (is (empty? (:template-field-names md)))))
 
@@ -22,7 +23,7 @@
     (is (= "hello {{MOM}}\n" (:body record)))
     (is (= "1" (:spec-version md)))
     (is (= "P1" (:id md)))
-    (is (= 13 (:character-count md)))
+    (is (= 14 (:character-count md)))
     (is (= 2 (:word-count md)))
     (is (= ["MOM"] (:template-field-names md)))))
 
@@ -32,7 +33,7 @@
     (is (= "hello {{MOM}} and {{DAD}}\n" (:body record)))
     (is (= "1" (:spec-version md)))
     (is (= "P1" (:id md)))
-    (is (= 25 (:character-count md)))
+    (is (= 26 (:character-count md)))
     (is (= 4 (:word-count md)))
     (is (= ["MOM" "DAD"] (:template-field-names md)))))
 
