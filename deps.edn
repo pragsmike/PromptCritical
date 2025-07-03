@@ -21,8 +21,7 @@
                                         ; Development dependencies
                        org.clojure/clojure {:mvn/version "1.12.1"}}}
 
-  :test {:exec-fn polylith.test/run!
-         :extra-paths ["components/llm/test"
+  :test {:extra-paths ["components/llm/test"
                        "components/log/test"
                        "components/pdb/test"
                        "bases/cli/test"]}

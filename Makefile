@@ -3,7 +3,7 @@ run:
 	cd projects/pcrit-cli && clj -M:run
 
 test:
-	clj -X:test
+	clj -M:poly test
 
 
 pack:

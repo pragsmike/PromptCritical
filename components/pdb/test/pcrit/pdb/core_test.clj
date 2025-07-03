@@ -1,9 +1,8 @@
 (ns pcrit.pdb.core-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.string :as str]
             [pcrit.pdb.core :as pdb]
-            [pcrit.util :as util]))
+            [pcrit.pdb.util :as util]))
 
 ;; --- Test Fixture for Temp Directory ---
 
