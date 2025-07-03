@@ -7,6 +7,8 @@ To use the command-line `poly` tool, just use this alias.  The poly library is a
   alias poly='clj -M:poly '
   ```
 
+To run tests, do `poly test` .
+
 To run the CLI,
   ```
   cd projects/pcrit-cli && clj -M:run <command>

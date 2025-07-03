@@ -4,7 +4,7 @@
 - Removal of specific junk patterns (ads, buttons, etc.)
 - Human annotation on a sample set
 
-  **On the "Path-Dependent Fitness Landscapes":**
+**On the "Path-Dependent Fitness Landscapes":**
 
     This insight about landscapes reshaping themselves is crucial. It suggests
     we need evolutionary strategies that are robust to non-stationarity -

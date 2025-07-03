@@ -1,8 +1,8 @@
-Your plan—to evolve a **population of prompts** with LLM-driven mutation +
+This plan—to evolve a **population of prompts** with LLM-driven mutation +
 crossover and use **Failter’s quantitative grades as the fitness signal**—is
 squarely in line with a fast-growing research thread sometimes called *automatic
 prompt engineering* or *prompt evolution*. Below is a short map of the landscape
-and how your idea fits into it.
+and how this idea fits into it.
 
 ---
 

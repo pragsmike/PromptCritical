@@ -14,18 +14,20 @@ These are notes and references in the process of being organized.
 
 
 Overview
-  * overview.md
-  * framework-for-evolutionary-prompt-engineering.md
+  * intro-overview.md
+  * intro-framework-for-evolutionary-prompt-engineering.md
+  * intro-research-1.md
 
 LLM vs Formal Methods
   * llm-vs-formal-methods.md
-  * knowledge-graph-contributions.md
   * llm-vs-amr+kg-general.md
   * llm-vs-amr+kb-prompt-refinement.md
 
 Formal Methods
-  * compositional-semantics-for-prompt-combination.md
   * formal-methods.md
+  * formal-knowledge-graph-contributions.md
+  * formal-compositional-semantics-for-prompt-combination.md
+  * formal-methods-amr-cds-described.md
 
 Prompt Ecology
   * prompt-ecology.md
@@ -33,7 +35,7 @@ Prompt Ecology
 Data structures
   * prompt-representation.md
   * prompt-templating.md
-  * contest-architecture.md
+  * evo-contest-architecture.md
   * git-as-temporal-database.md
 
 Prompt Algebra
@@ -41,24 +43,24 @@ Prompt Algebra
   * prompt-folding.md
 
 Evolutionary Algorithm
-  * population-bootstrapping.md
-  * operation-enumeration.md
+  * evo-population-bootstrapping.md
+  * evo-operation-enumeration.md
   * prompt-breeding.md
-  * contest-architecture.md
+  * evo-contest-architecture.md
 
 
 Prompt Metrics
   * prompt-metadata.md
-  * fitness-function.md
-  * surrrogate-fitness-metrics.md
+  * evo-fitness-function.md
+  * evo-surrrogate-fitness-metrics.md
 
 Population Metrics
-  * population-metrics.md
+  * evo-population-metrics.md
 
 Philosophical Jazz
   * llm-resonances.md
 
 
 Research References
-  * evolutionary-prompts-papers.md
-  * References.org
+  * refs-evolutionary-prompts-papers.md
+  * refs-list.md
