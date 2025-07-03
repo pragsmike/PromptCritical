@@ -16,10 +16,10 @@ Preserve:
 - Relevant images with captions
 
 Example Input:
-{{example-input}}
+{{EXAMPLE-INPUT}}
 
 Example Output:
-{{example-output}}
+{{EXAMPLE-OUTPUT}}
 
 Instructions: Process the following web page content and return only the cleaned version.
-{{input}}
+{{INPUT}}
