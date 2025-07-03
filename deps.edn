@@ -9,7 +9,7 @@
 
   :dev  {:extra-paths ["development/src"]
 
-         :extra-deps  {                 ; Components
+         :extra-deps  {; Components
                        pcrit/config {:local/root "components/config"}
                        pcrit/llm {:local/root "components/llm"}
                        pcrit/log {:local/root "components/log"}
@@ -24,6 +24,7 @@
   :test {:extra-paths ["components/llm/test"
                        "components/log/test"
                        "components/pdb/test"
+                       "components/pop/test"
                        "bases/cli/test"]}
 
   #_#_:test {:extra-paths ["src" "test"]
