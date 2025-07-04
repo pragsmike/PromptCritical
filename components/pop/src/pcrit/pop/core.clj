@@ -2,6 +2,7 @@
   (:require [pcrit.pdb.interface :as pdb]
             [pcrit.pop.analysis :refer (analyze-prompt-body)]
             [pcrit.llm.interface :as llm]
+            [pcrit.pop.util :as util]
             [clojure.java.io :as io]
             [clojure.edn :as edn]))
 
@@ -63,14 +64,20 @@
   (->> (read-prompt-map prompt-manifest-filename)
        (intern-prompts pdbdir)))
 
-(defn evolve [pdbdir])
+(defn evolve [expdir]
+  )
 
-(defn bootstrap [pdbdir prompt-manifest-filename]
-  (let [prompt-map (ingest-from-manifest pdbdir prompt-manifest-filename)
+(defn get-pdbdir [expdir] (io/file (io/file expdir) "pdb"))
+(defn get-linkdir [expdir] (io/file (io/file expdir) "links"))
+
+(defn bootstrap [expdir prompt-manifest-filename]
+  (let [pdbdir (get-pdbdir expdir)
+        linkdir (get-linkdir expdir)
+        prompt-map (ingest-from-manifest pdbdir prompt-manifest-filename)
         seed (:seed prompt-map)
         refine (:refine prompt-map)
-        vary (:vary prompt-map)
+        vary (:vary prompt-map)]
 
-
-  ;; make symlinks with those logical names pointing into the store
-        ]))
+    ;(util/create-link (pdb-file-of seed) (io/file linkdir "seed"))
+;; make symlinks with those logical names pointing into the store
+    ))

@@ -44,6 +44,7 @@ Prompt Algebra
   * prompt-folding.md
 
 Evolutionary Algorithm
+  * evo-process.md
   * evo-population-bootstrapping.md
   * evo-operation-enumeration.md
   * prompt-breeding.md

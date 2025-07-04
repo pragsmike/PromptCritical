@@ -1,4 +1,4 @@
-# Bootstrap population
+# Population Bootstrapping in Detail
 
 Recall that our overall goal is: Generate a population of prompts to do text
 transformation, on a narrowly focused task to clean junk from scraped web pages
@@ -55,16 +55,6 @@ We have introduced these terms:
    - Meta prompt A: "Improve this prompt" → generates P002
    - Meta prompt B: "Generate 3 variants" → generates P003, P004, P005
    - Population: [P001, P002, P003, P004, P005]
-
-3. Failter evaluation:
-   - Package all 5 prompts for Failter
-   - Run on blog post corpus
-   - Ingest fitness scores back to prompt files
-
-4. Simple selection + mutation:
-   - Eliminate worst performer
-   - Mutate best performer → new prompt
-   - Population: [4 survivors + 1 new mutant]
 
 # Prompts for bootstrapping
 
