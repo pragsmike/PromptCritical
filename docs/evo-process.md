@@ -1,6 +1,40 @@
-# Evolution Experiment
+# Evolution Process
 
-The unit of work is the experiment.
+PromptCritical optimizes prompts for a particular task by carrying out
+an evolutionary process to explore a prompt fitness landscape.
+
+## Evolution Cycle Theory
+
+Each "generation" has as its population a set of prompts.
+Briefly, each generation undergoes a "breed-vie-winnow" cycle.
+That is, the population is replaced by a new one computed by a composite function `evolve`,
+which takes a set of prompts (the population) and returns a new set of prompts (the new population).
+
+`evolve` : population -> population is thus an endofunction on the powerset of the set of all prompts.
+
+`evolve` is composed from a number of other functions on the population:
+  * `breed` : population -> population
+  * `contest` : population -> scores
+  * `select` : population x scores -> population
+
+You can think of scores as a function from the population to integers 0-100.
+You can think of select as a function from population to population, parameterized by scores.
+
+## Evolution Experiment
+
+The unit of work is the experiment.  It consists of a number of generations, or breed-vie-winnow cycles.
+Each generation has:
+   * a population - a set of prompts, or members
+   * an evolution - application of the `evolve` function, with specified parameters
+      * a birthing - (breed) produce new members
+      * a contest - (vie) an evaluation that assigns fitness to each member
+      * a selection - (winnow) purges unfit members from the population, using contest results
+
+The experiment process runs several cycles, each producing a new generation.
+The experiment ends when a specified condition becomes true.  Examples of
+exit conditions:
+    * a certain number of generations is reached
+    * fitness score of a generation's "champion" prompt reaches a threshold
 
 The specification of the experiment and its state all reside under a single
 directory, known as the experiment directory.
@@ -9,7 +43,7 @@ NOTE: The `failter` tool also uses the term "experiment" to refer to a set of tr
 that it runs.  Those are actually sub-experiments of our evolution experiment.
 We'll use the term *contest* to refer to a `failter` experiment.
 
-## Experiment directory structure
+### Experiment directory structure
 
 The specification and current state of an experiment reside under a directory.
 We'll call this directory the experiment specification directory, the experiment
@@ -19,8 +53,12 @@ An experiment specification is a directory containing
    * `seeds`
       * the seed prompt
       * the initial metaprompts
-   * `links`
+   * `links` symlinks to notable prompts, both object and meta
    * `pdb` prompt store directory
+   * `generations`
+      * `gen-NNN`
+        * `evolution` specification and results of evolution operations (winnow, mutate, breed)
+        * `contests` contest specifications and results
    * `bootstrap.edn` manifest
    * `evolution-parameters.edn`
 
@@ -33,7 +71,7 @@ They are given names as specified in the `bootstrap.edn` file.
 
 The evolution parameter file gives the parameter settings that control the evolution algorithm.
 
-## Bootstrapping
+### Bootstrapping
 
 An experiment starts with bootstrapping a population.
 In the bootstrap step, it sets up generation zero from the bootstrap manifest specification.
@@ -64,7 +102,7 @@ We must supply values to fill in their fields before we can submit them to an LL
 The names of the fields that must be supplied are found in the `template-field-names`
 key in the metadata.
 
-## Evaluation and Selection
+#### Evaluation and Selection
 
 In this first increment of development, we are restricting ourselves to very
 simple methods for the `winnow-and-breed` operation on the population.
@@ -73,6 +111,20 @@ simple methods for the `winnow-and-breed` operation on the population.
    - Package all 5 prompts for Failter
    - Run on blog post corpus
    - Ingest fitness scores back to prompt files
+
+#### Contest Architecture
+
+```
+generations/gen-NNN/contests/
+├── 2025-07-01-web-cleanup/
+│   ├── participants/           # symlinks to P001, P002, etc.
+│   ├── failter-spec/          # experiment definition
+│   ├── results.csv            # scores and rankings
+│   └── contest-metadata.yaml  # timestamp, generation, etc.
+```
+
+This creates a **complete audit trail** where you can trace any prompt's
+evolutionary performance history through the contests it participated in.
 
 2. Simple selection + mutation:
    - Eliminate worst performer

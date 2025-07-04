@@ -26,19 +26,24 @@ with full provenance.
 
 ## 📦 Current State (v0.1)
 
+NOTE: This codebase is organized using [Polylith](https://polylith.gitbook.io/polylith) conventions for Clojure code.
+These are slightly different than for Python code, so be careful not to be confused.
+
 | Layer | Status | Notes |
 |-------|--------|-------|
 | **Prompt database** | **Implemented** | Immutable file format (`*.prompt`), UTF-8 + NFC canonicalisation, SHA-1 integrity, per-file `.lock` protocol, atomic writes, unique `Pnnn` IDs. |
-| **Seed generation** | *Not yet* | |
+| **Seed generation** | *partial* | pcrit.pop |
 | **Failter experiment packaging** | *Not yet* | |
 | **Score ingestion & evolution loop** | *Not yet* | |
 
 The existing codebase gives you:
 
-* `pcrit.pdb/create-prompt` – write a prompt file safely.
-* `pcrit.pdb/read-prompt` – read & checksum-verify.
+* `pcrit.pdb.core/create-prompt` – write a prompt file safely.
+* `pcrit.pdb.core/read-prompt` – read & checksum-verify.
+* `pcrit.pdb.core/update-metadata` - write new metadata to a prompt file
 * Proven concurrency: multiple processes can create or annotate prompts without
   corrupting the store.
+* `pcrit.pop.core` - data structures for evolution experiment, bootstrapping population
 
 Everything else is still ahead of us.
 
@@ -63,40 +68,48 @@ PromptCritical milestone.
 
 ## 🚧 Next Incremental Step (v0.2)
 
-The immediate goal is a **“seed → Failter → ingest” vertical slice**:
+The immediate goal is a **“bootstrap → contest → record” vertical slice**:
 
 1. **Seed creator**
+   Creates initial population
+
    ```bash
-   pcrit seed my-prompts.txt        # creates P001, P002, …
+   pcrit bootstrap experiment-spec-dir        # creates P001, P002, …
    ```
 
-2. **Experiment packager & runner**
+2. **Contest packager & runner**
 
    ```bash
-   pcrit run-failter \
+   pcrit contest \
          --prompt-ids P001 P002 \
          --inputs   data/inputs/ \
          --models   models.txt \
          --exp-id   exp-2025-07-01
    ```
 
-   *Creates the Failter directory, executes the three CLI stages, waits for
+   *Creates the contest directory, executes the three CLI stages, waits for
    completion.*
 
-3. **Score ingester**
-   Updates each prompt file with:
+3. **Score recorder**
+
+   Ingests the raw scores from the contest runner (failter) into the contest directory,
+   and creates a record with information about the contest and its participants that is
+   not provided by failter.
+
+   The prompt files are NOT changed by this, because a prompt's performance
+   is not intrinsic to the prompt itself.
 
    ```yaml
-   failter-score: 87.5
-   failter-model: openai/gpt-4o-mini
-   failter-exp:   exp-2025-07-01
+   contest-score: 87.5
+   contest-model: openai/gpt-4o-mini
+   contest-directory:   contest-2025-07-01
    ```
 
 This slice will prove that PromptCritical can:
 
 * translate its internal prompt store into Failter’s format,
 * call an external evaluator, and
-* round-trip fitness data back into the immutable prompt history.
+* round-trip fitness data back into the immutable evolution history.
 
 ---
 
