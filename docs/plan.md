@@ -9,14 +9,14 @@ fitness scores *back* into the metadata.
 
 ---
 
-### 2   Immediate next increment — *“seed → Failter → ingest”* vertical slice
+### 2   Immediate next increment — *“bootstrap → contest → record”* vertical slice
 
 | Stage                        | What it does                                                                                                                                                                          | Why it’s the next, smallest useful step                                     |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | **2.1  Seed creator**        | Pull a handful of prompt templates (or let the user type them), write them to the DB with `generator:"seed-cli"`.                                                                     | Gives us real prompt files to play with and exercise the write path.        |
 | **2.2  Experiment packager** | Materialise a **Failter experiment directory** from a set of prompt IDs, an `inputs/` bundle, and a list of LLM model names.  (Exactly the structure shown in the Failter guide.)     | Proves we can translate our internal store into Failter’s on-disk contract. |
 | **2.3  Failter runner**      | Shell-out: `clj -M:run experiment …`, `evaluate …`, `report …`.  Wait for completion.                                                                                                 | Lets us treat Failter purely as a black box.  No new scoring code needed.   |
-| **2.4  Result ingester**     | Parse `report.csv` (and optionally the per-trial `.eval` YAMLs) and write the numeric score back into each prompt’s YAML (`failter-score`, `failter-model`, `failter-experiment-id`). | Closes the loop: DB → Failter → DB.  Now every prompt has a fitness value.  |
+| **2.4  Result ingester**     | Parse `report.csv` (and optionally the per-trial `.eval` YAMLs) and write the numeric score back into each prompt’s YAML (`contest-score`, `contest-model`, `contest-id`).            | Closes the loop: DB → Failter → DB.  Now every prompt has a fitness value.  |
 
 *Success criterion:* running one CLI command (`pcrit run-failter --inputs dir/ --prompts P1 P2 P3`) produces (a) a populated Failter folder and (b) updated prompt files with `failter-score` fields.
 

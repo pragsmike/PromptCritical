@@ -71,6 +71,56 @@ They are given names as specified in the `bootstrap.edn` file.
 
 The evolution parameter file gives the parameter settings that control the evolution algorithm.
 
+
+In detail:
+
+Of course. Here is a clear, hierarchical presentation of the refined PromptCritical experiment directory structure, using the "line art" style for clarity.
+
+This structure integrates the requirements of the Failter tool directly into the contest subdirectory, addressing the concerns we discussed.
+
+```
+<experiment-root>/
+├── seeds/
+│   └── (Raw .txt files for the initial seed and meta-prompts)
+├── links/
+│   └── (Symbolic links to key prompts like 'seed', 'refine', 'vary' in pdb/)
+├── pdb/
+│   ├── P001.prompt
+│   ├── P002.prompt
+│   └── ... (The central, immutable store for all prompt artifacts)
+├── generations/
+│   └── gen-001/
+│       ├── evolution/
+│       │   └── (Specifications and results for mutation, crossover, etc.)
+│       └── contests/
+│           └── 2025-07-01-web-cleanup/
+│               ├── failter-spec/
+│               │   ├── inputs/
+│               │   │   ├── article_to_clean.md
+│               │   │   └── another_document.txt
+│               │   ├── templates/
+│               │   │   ├── P001.prompt  -> ../../../../pdb/P001.prompt
+│               │   │   └── P002.prompt  -> ../../../../pdb/P002.prompt
+│               │   ├── ground_truth/
+│               │   │   ├── article_to_clean.md
+│               │   │   └── another_document.txt
+│               │   └── model-names.txt
+│               ├── results.csv
+│               └── contest-metadata.yaml
+├── bootstrap.edn
+└── evolution-parameters.edn
+```
+
+### Key ideas
+
+*   **Contest Directory:** The `generations/gen-NNN/contests/<contest-name>/`
+    directory is the self-contained record of a single evaluation run.
+*   **`failter-spec/`:** This is the crucial integration point. It is prepared specifically for the Failter tool.
+    *   The `inputs/` and `ground_truth/` directories will be populated with the necessary test data for the contest.
+    *   The `templates/` directory within it will contain **symbolic links** pointing directly to the canonical `.prompt` files in the main `pdb/`. This avoids data duplication and ensures Failter reads the correct, version-controlled prompt bodies.
+*   **Results:** The output from Failter (`results.csv`) and the PromptCritical-specific metadata (`contest-metadata.yaml`) are stored alongside the `failter-spec`, creating a complete and auditable record of the contest.
+
+
 ### Bootstrapping
 
 An experiment starts with bootstrapping a population.

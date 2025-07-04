@@ -64,14 +64,23 @@
   (->> (read-prompt-map prompt-manifest-filename)
        (intern-prompts pdbdir)))
 
-(defn evolve [expdir]
-  )
 
+(defn create-experiment-dirs!
+  "Creates the standard subdirectories (pdb, generations, links, seeds)
+  within a given experiment root directory. This operation is idempotent."
+  [exp-root-dir]
+  (doseq [subdir ["pdb" "generations" "links" "seeds"]]
+    (.mkdirs (io/file exp-root-dir subdir))))
+
+(defn get-seeds [expdir] (io/file (io/file expdir) "seeds"))
 (defn get-pdbdir [expdir] (io/file (io/file expdir) "pdb"))
 (defn get-linkdir [expdir] (io/file (io/file expdir) "links"))
 
-(defn bootstrap [expdir prompt-manifest-filename]
+(defn bootstrap-spec-file [expdir] (io/file (io/file "boostrap.edn")))
+
+(defn bootstrap [expdir ]
   (let [pdbdir (get-pdbdir expdir)
+        prompt-manifest-filename (bootstrap-spec-file expdir)
         linkdir (get-linkdir expdir)
         prompt-map (ingest-from-manifest pdbdir prompt-manifest-filename)
         seed (:seed prompt-map)
@@ -81,3 +90,9 @@
     ;(util/create-link (pdb-file-of seed) (io/file linkdir "seed"))
 ;; make symlinks with those logical names pointing into the store
     ))
+
+
+
+
+(defn evolve [expdir]
+  )

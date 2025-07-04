@@ -167,10 +167,10 @@ This slice will prove that PromptCritical can:
 
 | Milestone | New Capability                                                   |
 | --------- | ---------------------------------------------------------------- |
-| **v0.2**  | Seed → Failter → Ingest (described above)                        |
+| **v0.2**  | Bootstrap → Contest → Record (described above)                   |
 | **v0.3**  | Basic mutation & crossover operators writing new prompt files    |
-| **v0.4**  | Simple (µ+λ) evolutionary loop driven by `failter-score`         |
-| **v0.5**  | Surrogate critic to pre-filter variants before Failter       |
+| **v0.4**  | Simple (µ+λ) evolutionary loop driven by `contest-score`         |
+| **v0.5**  | Surrogate critic to pre-filter variants before Failter           |
 | **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability              |
 | **v0.7**  | Reporting dashboard (CLI table + optional web UI)                |
 | **v1.0**  | Distributed workers, KG/AMR semantic validators, SHA-256 upgrade |
