@@ -9,6 +9,7 @@ test:
 pack:
 	(for i in README.md docs/DESIGN.md docs/API.md \
 					docs/evo-process.md \
+					docs/evo-population-bootstrapping.md \
 					docs/prompt-representation.md \
 					copilot/onboard-*.md \
 					Makefile `find . -name deps.edn` ;\

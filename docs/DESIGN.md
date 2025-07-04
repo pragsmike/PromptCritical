@@ -1,92 +1,152 @@
-# PromptCritical System Design (Current State)
+# PromptCritical System Design
 
-**Version:** 1.1
-**Date:** 2025-06-29
-**Author:** Engineering Assistant
+**Version 1.2  ·  2025‑07‑04**
+**Status:** *In development (milestone v0.2 ➜ v0.3)*
 
-## 1. Overview
+---
 
-PromptCritical is a framework designed to facilitate the evolutionary optimization of Large Language Model (LLM) prompts. The central goal is to create a closed-loop system where prompts can be generated, tested, and mutated in a controlled and reproducible manner.
+## 1  Purpose & Scope
 
-The integrity of the experimental process is paramount. This requires a robust and reliable system for storing and managing the core artifacts: the prompts themselves. This document outlines the design of the foundational component of PromptCritical: the file-based prompt database.
+PromptCritical is a **data‑driven, evolutionary framework** for discovering
+high‑performance prompts for Large Language Models (LLMs). This document
+describes the *current* (v0.2) architecture after the migration to the
+**Polylith** structure and outlines how each building block collaborates to
+realise an experiment loop of ***bootstrap → contest (Failter) → record →
+evolve***.
 
-## 2. Core Component: The Prompt Database (`pcrit.pdb.*`)
+The design has two guiding principles:
 
-The prompt database is implemented as a self-contained library, decomposed into several namespaces under `pcrit.pdb.*` to ensure a clean separation of concerns. This modular design isolates high-level business logic from low-level file I/O, concurrency management, and ID generation, making the system easier to maintain, reason about, and extend.
+1. **Immutable provenance.** Every prompt artefact carries its full lineage, cryptographic hash and creation timestamp.
+2. **Replaceable adapters.** External tools (Failter, future surrogate critics, dashboards) are integrated behind thin, testable boundaries.
 
-*   **`pcrit.pdb.core`**: The public-facing API. This is the main entry point for all prompt operations (`create-prompt`, `read-prompt`, `update-metadata`). It coordinates the other, lower-level namespaces to execute its tasks.
-*   **`pcrit.pdb.io`**: Responsible for all direct file interactions, including parsing prompt files, serializing prompt records to strings, and the critical atomic file writing logic.
-*   **`pcrit.pdb.id`**: Dedicated solely to the atomic generation of new prompt IDs (`P1`, `P2`, etc.), including managing the on-disk counter file.
-*   **`pcrit.pdb.lock`**: Contains the robust, self-healing file-locking protocol used to manage concurrent access to prompt files and the ID counter.
+---
 
-### 2.1. Public API (`pcrit.pdb.core`)
+## 2  Polylith Architecture Overview
 
-The library exposes a minimal but complete API for all prompt operations:
+PromptCritical follows [Polylith](https://polylith.gitbook.io/polylith) conventions for Clojure code, organising the codebase into **components** (re‑usable building blocks) and **bases** (runnable entry‑points).  At the time of writing the workspace contains:
 
-*   **`(create-prompt db-dir prompt-text & {:keys [metadata]})`**
-    *   **Purpose:** Atomically creates a new, unique prompt in the database.
-    *   **Design Rationale:** This function orchestrates the creation of a complete prompt record and uses the system's atomic writing protocol to commit it to disk, preventing partial writes in the event of a crash.
+| Layer         | Name (ns prefix) | Role                                                         |
+| ------------- | ---------------- | ------------------------------------------------------------ |
+| **Component** | `pcrit.pdb`      | Immutable prompt database (file I/O, locking, ID generation) |
+| **Component** | `pcrit.pop`      | Population & evolution data‑model and algorithms             |
+| **Component** | `pcrit.config`   | Central configuration map & helpers                          |
+| **Component** | `pcrit.log`      | Structured logging and log setup                             |
+| **Component** | `pcrit.llm`      | Thin HTTP client façade for LLM and future surrogate critic  |
+| **Base**      | `pcrit.cli`      | Command‑line interface (`pcrit …`) powering automation       |
 
-*   **`(read-prompt db-dir id)`**
-    *   **Purpose:** Loads a prompt from the database.
-    *   **Design Rationale:** Performs an integrity check on every read by comparing the stored `sha1-hash` with a freshly computed hash of the body. The comparison is case-insensitive to gracefully handle hashes that may have been hand-edited.
-
-*   **`(update-metadata db-dir id f)`**
-    *   **Purpose:** Atomically updates the metadata of an existing prompt.
-    *   **Design Rationale:** Enforces the immutability of the prompt body by only allowing metadata to be changed. It takes a function `f` to prevent race conditions. The entire process is protected by the locking protocol and uses the atomic writing protocol for the final commit.
-
-## 3. Data Model: The Prompt Record
-
-A prompt is represented consistently across the system.
-
-### 3.1. On-Disk Representation
-
-*   **Format:** A single UTF-8 encoded text file with a `.prompt` extension, named by its ID (e.g., `P123.prompt`).
-*   **Structure:**
-    1.  **YAML Front Matter:** A block of human-readable, block-style YAML containing all prompt metadata.
-    2.  **Prompt Body:** The raw prompt text, beginning after the closing `---` delimiter.
-*   **Parsing:** The parser is designed to be robust, using a regular expression (`(?s)^---\n(.*?)\n?---\n(.*)$`) that correctly handles cases where the YAML block is not terminated by a final newline before the `---`.
-
-### 3.2. In-Memory Representation
-
-A prompt is a Clojure map with keywordized keys, ensuring type consistency.
-
-```clojure
-{:header {:id "P123", :created-at "...", :sha1-hash "..."}
- :body   "Canonical prompt text...\n"}
+```
+workspace/
+├── components/
+│   ├── pdb/        ; prompt DB internals
+│   ├── pop/        ; population + evo logic
+│   ├── config/     ; runtime config
+│   ├── log/        ; logging helpers
+│   └── llm/        ; LLM HTTP client
+└── bases/
+    └── cli/        ; main – invokes components
 ```
 
-*   **Design Rationale (Keywordizing Keys):** The `clj-yaml` library's default `:keywords true` option is used during parsing to ensure all keys in the `:header` are keywords (e.g., `:id`). This prevents subtle bugs that could arise from mixed `String`/`Keyword` types.
+### 2.1  Why Polylith?
 
-### 3.3. The Canonical Text Representation
+* **Clear contracts.** Components expose stable, *public* interfaces; internal details are private by default.  Down‑stream code can only depend on “what is promised”.
+* **Incremental builds/tests.** Polylith’s tooling runs unit tests only for components affected by a change – vital for fast, experiment‑heavy workflows.
+* **Multi‑base future.** Additional bases (e.g., `pcrit.web` dashboard, distributed worker daemons) can reuse the same components without code duplication.
 
-To guarantee data integrity and consistent hashing, all prompt text (both the body *and* the YAML front matter string) is converted to a **canonical form** before being hashed or written to disk.
+---
 
-*   **Definition:** The canonical form is UTF-8, normalized to Unicode NFC. All line endings are converted to a single Line Feed (LF), and the text is guaranteed to end with exactly one LF.
-*   **Rationale:** This ensures that semantically identical prompts always have the same byte representation, which is critical for reliable hashing and corruption detection. This logic is centralized in `pcrit.util/canonicalize-text`.
+## 3  Core Components
 
-## 4. Concurrency and Data Integrity
+### 3.1  Prompt Database (`pcrit.pdb.*`)
 
-The system is designed to be robust against data corruption and race conditions.
+* **Atomic writes & fsync.** All file operations go through `pcrit.pdb.io/atomic‑write!`, guaranteeing crash‑safe updates.
+* **Per‑file **\`\`**.** `pcrit.pdb.lock` implements a self‑healing lockfile protocol with stale‑lock recovery.
+* **ID generation.** `pcrit.pdb.id/get‑next‑id!` atomically assigns `Pnnn` identifiers.
+* **Public API.** `pcrit.pdb.core` exposes `create‑prompt`, `read‑prompt`, `update‑metadata`.
 
-### 4.1. The Atomic Write Protocol
+### 3.2  Population & Evolution (`pcrit.pop.*`)
 
-*   **Challenge:** A simple `spit` or `write` operation is not atomic. A system crash during a write can leave a file in a corrupt, zero-byte, or partially-written state.
-*   **Solution (Centralized in `pcrit.pdb.io/atomic-write-file!`)**: All durable writes in the system use a single, robust atomic-write helper. This protocol is used for creating new prompts, updating metadata, and updating the ID counter.
-    1.  **Write to Temp:** The entire new content is written to a temporary file (e.g., `.P123.prompt.new`) in the same directory.
-    2.  **Atomic Replace:** `java.nio.file.Files/move` with the `ATOMIC_MOVE` option is used to instantly replace the original file with the new one. This is an atomic operation on POSIX-compliant filesystems.
-    3.  **Fallback with `fsync`:** If `ATOMIC_MOVE` is not supported (e.g., on some network filesystems), the system logs a warning and falls back to a non-atomic move, immediately followed by an `fsync` call to request that the operating system flush the file's contents to the physical storage, ensuring data durability.
+Holds the *domain model* of an evolutionary experiment:
 
-### 4.2. The Lock Protocol for Concurrency
+* `Population` – a vector of **prompt records** plus derived fitness metadata.
+* `bootstrap` – ingests seed prompts & mutation operators from a manifest to create **generation 0**.
+* `evolve` ( composite of breed-vie-winnow steps) (planned v0.3) – selects survivors, applies mutation/crossover operators, and writes new prompts back to the PDB.
 
-*   **Challenge:** When multiple processes attempt to update the same prompt, they can interfere with each other, leading to lost updates.
-*   **Solution (The `.lock` Protocol)**: The `pcrit.pdb.lock/execute-with-lock` function implements a robust locking protocol. Before any write operation, a process must acquire a lock by atomically creating a file like `P123.prompt.lock`.
-    *   **Stale Lock Recovery:** The lock protocol is self-healing. If a lock file is older than a configurable threshold, it is considered stale (left behind by a crashed process) and is automatically removed, allowing the system to proceed. This same logic applies to the ID counter's lock file, preventing stalled batch jobs.
-    *   **Configurable Timeouts:** The retry timings and stale-lock thresholds are not hard-coded. They are read from `pcrit.config/config` to allow for tuning in different environments (e.g., systems with high-latency network storage).
+### 3.3  Configuration (`pcrit.config.*`)
 
-## 5. Supporting Modules
+Centralised EDN map loaded at startup (LLM endpoint, lock‑timeouts, etc.) so ops teams can override via ENV or profiles.
 
-*   **`pcrit.config`**: A centralized map for application configuration. This decouples behavior (like LLM endpoints or locking timeouts) from the code itself.
-*   **`pcrit.util`**: A collection of pure, stateless utility functions for text canonicalization and hashing.
-*   **`pcrit.log`**: A facade for the logging library, standardizing log formatting.
-*   **`pcrit.llm-interface`**: The module responsible for communicating with LLMs.
+### 3.4  LLM Client (`pcrit.llm.*`)
+
+Thin wrapper around HTTP JSON endpoints.  Initially used only for *health checks* in the CLI, but will host the **surrogate critic** in v0.5.
+
+### 3.5  Logging (`pcrit.log.*`)
+
+Unified `log/info | warn | error` macros; auto‑initialised in every base.
+
+---
+
+## 4  Data Model – Prompt Record
+
+The on‑disk and in‑memory shape is unchanged since v1.1, retaining:
+
+```clojure
+{:header {:id "P123" :created-at "…" :sha1-hash "…" :spec-version "1" …}
+ :body   "Canonical prompt text…\n"}
+```
+
+*Canonicalisation* (UTF‑8 + NFC, single LF line‑end, trailing newline) ensures deterministic hashes.
+
+---
+
+## 5  Experiment Flow (v0.2)
+
+```
+bootstrap → contest (pack → run Failter) → ingest (report.csv) → prepare generation N+1
+```
+
+1. **Bootstrap** (`pcrit bootstrap manifest.edn`)
+      *Seeds* the PDB with seed & mutator prompts and writes `gen‑000/`.
+2. **Contest** (`pcrit contest …`)
+      Packages selected prompts plus input corpus & model list into a contest (what failter calls an experiment) directory and shell‑executes:
+
+   ```bash
+   failter experiment && failter evaluate && failter report
+   ```
+3. **Record**
+      Parses `report.csv`, updates the generation's contest record.
+
+*All steps persist artefacts in structured sub‑directories under **`generations/`** to guarantee full audit‑trail.*
+
+---
+
+## 6  Concurrency & Integrity Guarantees
+
+1. **Atomic replace** for every file write.
+2. **Per‑resource lockfiles** with jittered retries and stale‑lock healing.
+3. **Hash verification** on every read; warnings logged if mismatch detected.
+
+---
+
+## 7  Extensibility Roadmap
+
+| Milestone | Increment                                                               |
+| --------- | ----------------------------------------------------------------------- |
+| **v0.3**  | Mutation & crossover operators – produce new prompts via meta‑prompting |
+| **v0.4**  | Simple `(µ + λ)` evolutionary loop driven by `contest-score`            |
+| **v0.5**  | Local surrogate critic to pre‑filter variants before Failter        |
+| **v0.6**  | Experiment recipe DSL (EDN/YAML) & CLI replayability                    |
+| **v0.7**  | Reporting dashboard (`pcrit.web` base)                                  |
+| **v1.0**  | Distributed workers, KG/AMR semantic validators, SHA‑256 upgrade        |
+
+---
+
+## 8  Open Issues & Next Steps
+
+* Expose lock back‑off parameters via `pcrit.config`.
+* Expand `pcrit.pop` tests to cover template field extraction edge‑cases.
+* Add an end‑to‑end smoke test (bootstrap → Failter mock → ingest) to the CI matrix.
+* Document Python‑side Polylith conventions for future surrogate critic code.
+
+---
+
+*Last updated 2025‑07‑04*

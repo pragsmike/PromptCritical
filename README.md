@@ -3,6 +3,26 @@
 *A reproducible platform for evolving large–language–model prompts, one small,
 auditable step at a time.*
 
+## ✨ What is PromptCritical?
+
+PromptCritical is a **data‑driven, experiment‑oriented toolchain** that breeds and evaluates prompts for LLMs.  It automates the cycle of
+
+```
+seed → contest (Failter) → ingest → evolve
+```
+
+so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing.
+
+Key ingredients:
+
+| Ingredient                   | Purpose                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| **Polylith workspace**       | Re‑usable components, clean boundaries, lightning‑fast incremental tests |
+| **Immutable Prompt DB**      | Atomic, hash‑verified store with per‑file lock‑healing                   |
+| **Failter integration**      | Runs large‑scale prompt contests and collects scores                     |
+| **Evolution engine** (*WIP*) | Selects, mutates & cross‑breeds prompts toward higher fitness            |
+
+
 ---
 
 ## ✨ Aspirational Goals
@@ -24,6 +44,36 @@ with full provenance.
 
 ---
 
+## 🏗  Workspace Layout (Polylith)
+
+```
+workspace/
+├── components/
+│   ├── pdb/      ; immutable prompt DB (file I/O, locks)
+│   ├── pop/      ; population & evolution logic
+│   ├── config/   ; runtime configuration (EDN → map)
+│   ├── log/      ; structured logging facade
+│   └── llm/      ; thin HTTP client & future surrogate critic
+└── bases/
+    └── cli/      ; `pcrit` command‑line entry point
+```
+
+Components expose **public APIs** only; everything else is private.  Polylith’s tooling ensures dependency hygiene and incremental builds.
+
+### CLI Overview
+
+| Command     | Status | Description                                     |
+| ----------- | ------ | ----------------------------------------------- |
+| `bootstrap` | ✅      | Seed the Prompt DB from a manifest (EDN)        |
+| `contest`   | ✅      | Package prompts, run Failter, collect report    |
+| `ingest`    | ✅      | Annotate prompts with scores from `report.csv`  |
+| `evolve`    | 🔜     | Generate next generation via mutation/crossover |
+
+Run `./bin/pcrit help <command>` for full usage.
+
+
+---
+
 ## 📦 Current State (v0.1)
 
 NOTE: This codebase is organized using [Polylith](https://polylith.gitbook.io/polylith) conventions for Clojure code.
@@ -33,7 +83,7 @@ These are slightly different than for Python code, so be careful not to be confu
 |-------|--------|-------|
 | **Prompt database** | **Implemented** | Immutable file format (`*.prompt`), UTF-8 + NFC canonicalisation, SHA-1 integrity, per-file `.lock` protocol, atomic writes, unique `Pnnn` IDs. |
 | **Seed generation** | *partial* | pcrit.pop |
-| **Failter experiment packaging** | *Not yet* | |
+| **Failter contest packaging** | *Not yet* | |
 | **Score ingestion & evolution loop** | *Not yet* | |
 
 The existing codebase gives you:
@@ -120,7 +170,7 @@ This slice will prove that PromptCritical can:
 | **v0.2**  | Seed → Failter → Ingest (described above)                        |
 | **v0.3**  | Basic mutation & crossover operators writing new prompt files    |
 | **v0.4**  | Simple (µ+λ) evolutionary loop driven by `failter-score`         |
-| **v0.5**  | Surrogate LLM critic to pre-filter variants before Failter       |
+| **v0.5**  | Surrogate critic to pre-filter variants before Failter       |
 | **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability              |
 | **v0.7**  | Reporting dashboard (CLI table + optional web UI)                |
 | **v1.0**  | Distributed workers, KG/AMR semantic validators, SHA-256 upgrade |
@@ -134,7 +184,7 @@ Small steps, each one shippable and testable.
 1. **Clone** and run the tests
 
    ```bash
-   git clone https://github.com/your-org/promptcritical
+   git clone https://github.com/pragsmike/promptcritical
    cd promptcritical
    clj -M:test
    ```

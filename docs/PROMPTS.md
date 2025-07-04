@@ -1,61 +1,63 @@
-* Crossover (binary recombination) prompt
+Here are sample prompts we're considering.
+
+# Crossover (binary recombination) prompt
 
   Given two prompts, produce a new one that combines the best parts of each
   to produce a stronger one that is likely to give better results.
 
 
   Prompt_Crossover
-  #+begin_src text
+  ```
       Combine the useful parts of these two prompts:
-      A) {prompt_A}
-      B) {prompt_B}
-      Make {m} hybrids that integrate the best instructions from each while satisfying: {constraints}.
+      A) {{prompt_A}}
+      B) {{prompt_B}}
+      Make {{m}} hybrids that integrate the best instructions from each while satisfying: {{constraints}}.
       Give one hybrid per bullet.
-  #+end_src
+  ```
 
-***  Inputs:
+##  Inputs:
 
     * prompt_A
     * prompt_B
     * m
     * constraints
 
-* Mutation (Unary improvement) prompt
+# Mutation (Unary improvement) prompt
 
    Given a prompt, produce a stronger one that is likely to give better results.
 
    Prompt_Mutation
-   #+begin_src text
+   ```
       Here is a parent prompt:
-      >>> {parent_prompt}
+      >>> {{parent_prompt}}
       ---
-      Make {k} variants that preserve intent but differ in wording, order, or emphasis.
-      Keep them ≤ {token_limit} tokens and obey these constraints: {constraints}.
-   #+end_src
+      Make {{k}} variants that preserve intent but differ in wording, order, or emphasis.
+      Keep them ≤ {{token_limit}} tokens and obey these constraints: {{constraints}}.
+   ```
 
-***  Inputs:
+###  Inputs:
     * parent_prompt
     * k
     * token_limit
     * constraints
 
-* Transformation prompt
+# Transformation prompt
 
    Given a prompt, an input text, and a gold standard output text,
    produce a prompt that instructs an LLM to transform the input into the output.
    It's best if there are multiple sample text+output pairs.
 
-* Seed prompt generation
+# Seed prompt generation
 
 
   Seed_Prompt_Generation
-  #+begin_src text
-          You are designing prompts for the task {task_description}.
-          Produce {n} diverse candidate prompts that: 1) follow the style guide {style_rules}, 2) stay within {token_limit} tokens, 3) avoid prohibited content {policy_summary}.
-          List each prompt on its own line.
-  #+end_src
+  ```
+    You are designing prompts for the task {{task_description}}.
+    Produce {{n}} diverse candidate prompts that: 1) follow the style guide {{style_rules}}, 2) stay within {{token_limit}} tokens, 3) avoid prohibited content {{policy_summary}}.
+    List each prompt on its own line.
+  ```
 
-*** Inputs:
+### Inputs:
     * task_description
     * n
     * style_rules
@@ -63,38 +65,38 @@
     * policy_summary
 
 
-* Constraint-aware drafting prompt
+# Constraint-aware drafting prompt
 
   Constraint_Aware_Drafting
-  #+begin_src text
-    Write {k} brand-new prompts for {task_description} that explicitly satisfy all domain rules:
-    {domain_rules}
-    Each prompt ≤ {token_limit} tokens.
-  #+end_src
+  ```
+    Write {{k}} brand-new prompts for {{task_description}} that explicitly satisfy all domain rules:
+    {{domain_rules}}
+    Each prompt ≤ {{token_limit}} tokens.
+  ```
 
-*** Inputs:
+### Inputs:
     * task_description
     * domain_rules
     * k
     * token_limit
 
 
-* Semantic Policy Filter
+# Semantic Policy Filter
 
   Semantic_Policy_Filter
-  #+begin_src text
+  ```
   Evaluate the following prompt for (a) contradiction, (b) policy violations, (c) missing mandatory clauses.
   Output PASS or FAIL plus a short reason.\nPrompt:
-  >>> {candidate_prompt}
+  >>> {{candidate_prompt}}
   Rules:
-  {policy_rules}
-  #+end_src
+  {{policy_rules}}
+  ```
 
-*** Inputs:
+### Inputs:
      * candidate_prompt
      * policy_rules
 
-* Prompt quality evaluation prompt
+# Prompt quality evaluation prompt
 
   Given a prompt, evaluate it on some quality aspects.
   Produce a score for each area, and a composite score.
@@ -105,36 +107,36 @@
   Are the assumptions explicitly stated?
   Are there unstated assumptions?
 
-* Surrogate Fitness Estimate (optional)
+# Surrogate Fitness Estimate (optional)
 
   Surrogate_Fitness_Estimate
-  #+begin_src text
-      Predict on a 0–100 scale how well this prompt will perform on {task_metric} for {task_description}.
+  ```
+      Predict on a 0–100 scale how well this prompt will perform on {{task_metric}} for {{task_description}}.
       Give only the numeric estimate and ≤ 20-word justification.
       Prompt:
-      >>> {candidate_prompt}
-  #+end_src
+      >>> {{candidate_prompt}}
+  ```
 
 
-*** Inputs:
+### Inputs:
     * candidate_prompt
     * task_description
     * task_metric
 
-* Best Prompt Summary
+# Best Prompt Summary
 
   Best_Prompt_Summary
-  #+begin_src text
-      Summarise the strengths and weaknesses of the top {top_k} prompts below, then recommend the single best prompt.
+  ```
+      Summarise the strengths and weaknesses of the top {{top_k}} prompts below, then recommend the single best prompt.
       Prompts + scores:
-      {prompt_score_table}
-  #+end_src
+      {{prompt_score_table}}
+  ```
 
-*** Inputs:
+### Inputs:
      * prompt_score_table
      * top_k
 
-* Transformation Evaluation prompt
+# Transformation Evaluation prompt
 
   These are given to failter as part of the experiment spec.
   There are two cases in general, depending on whether there is a known
@@ -150,6 +152,6 @@
   If it produced exactly the gold output, it gets the highest score.
 
 
-* NOTES
+# NOTES
 
-Prompts are most often imperative commands.
+  Prompts are most often imperative commands.

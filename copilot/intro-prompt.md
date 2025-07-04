@@ -4,7 +4,7 @@ document a software system.
 
 The attached files are the documentation, support
 files, and source code for an existing system written in Clojure,
-organized using Polylith conventions.
+organized using Polylith Clojure conventions.
 The text of the first files are preceded by their filename.
 
 Read these documents and pay close attention to the onboarding documents written
