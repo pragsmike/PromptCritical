@@ -2,9 +2,11 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [pcrit.pdb.core :as pdb]
-            [pcrit.pdb.util :as util]))
+            [pcrit.pdb.util :as util]
+            [pcrit.test-helper.interface :refer [with-quiet-logging]]))
 
 ;; --- Test Fixture for Temp Directory ---
+(use-fixtures :once with-quiet-logging)
 
 (def ^:dynamic *db-dir* nil)
 

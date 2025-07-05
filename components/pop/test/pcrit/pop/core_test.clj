@@ -3,10 +3,11 @@
             [clojure.java.io :as io]
             [pcrit.pop.core :as pop]
             [pcrit.expdir.interface :as expdir]
-            [pcrit.pop.temp-dir :refer [with-temp-dir *tmp-dir*]])
+            [pcrit.pop.temp-dir :refer [with-temp-dir *tmp-dir*]]
+            [pcrit.test-helper.interface :refer [with-quiet-logging]])
   (:import [java.nio.file Files]))
 
-(use-fixtures :each with-temp-dir)
+(use-fixtures :each with-quiet-logging with-temp-dir)
 
 ;; --- Test Helper ---
 
