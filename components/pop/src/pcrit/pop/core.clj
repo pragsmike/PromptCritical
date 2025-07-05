@@ -72,23 +72,45 @@
   (doseq [subdir ["pdb" "generations" "links" "seeds"]]
     (.mkdirs (io/file exp-root-dir subdir))))
 
-(defn get-seeds [expdir] (io/file (io/file expdir) "seeds"))
-(defn get-pdbdir [expdir] (io/file (io/file expdir) "pdb"))
-(defn get-linkdir [expdir] (io/file (io/file expdir) "links"))
+(defn get-seeds-dir [expdir] (io/file (io/file expdir) "seeds"))
+(defn get-pdb-dir [expdir] (io/file (io/file expdir) "pdb"))
+(defn get-link-dir [expdir] (io/file (io/file expdir) "links"))
 
-(defn bootstrap-spec-file [expdir] (io/file (io/file "boostrap.edn")))
+(defn bootstrap-spec-file [expdir] (io/file expdir (io/file "bootstrap.edn")))
 
-(defn bootstrap [expdir ]
-  (let [pdbdir (get-pdbdir expdir)
+(defn pdb-file-of-prompt-record
+  "Given an experiment directory and a prompt record, return a File object
+  representing the prompt's canonical path within the experiment's pdb."
+  [exp-dir record]
+  (let [pdb-dir (get-pdb-dir exp-dir)
+        prompt-id (get-in record [:header :id])]
+    (if-not (and pdb-dir prompt-id)
+      (throw (ex-info "Cannot determine prompt path. Missing experiment directory or prompt ID."
+                      {:exp-dir exp-dir
+                       :prompt-id prompt-id}))
+      (io/file pdb-dir (str prompt-id ".prompt")))))
+
+(defn link-prompt
+  "Given a prompt record, symlink its pdb file into links directory under given name."
+  [expdir prompt-record name]
+  (let [pdbfile (pdb-file-of-prompt-record expdir prompt-record)
+        linkdir  (get-link-dir expdir)
+        target  (io/file linkdir name)]
+    (util/create-link pdbfile target)))
+
+(defn bootstrap [expdir]
+  (create-experiment-dirs! expdir)
+
+  (let [pdbdir (get-pdb-dir expdir)
         prompt-manifest-filename (bootstrap-spec-file expdir)
-        linkdir (get-linkdir expdir)
         prompt-map (ingest-from-manifest pdbdir prompt-manifest-filename)
         seed (:seed prompt-map)
         refine (:refine prompt-map)
         vary (:vary prompt-map)]
 
-    ;(util/create-link (pdb-file-of seed) (io/file linkdir "seed"))
-;; make symlinks with those logical names pointing into the store
+    (link-prompt expdir seed "seed")
+    (link-prompt expdir refine "refine")
+    (link-prompt expdir vary "vary")
     ))
 
 
