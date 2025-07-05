@@ -3,8 +3,7 @@
             [clojure.java.io :as io]
             [pcrit.pop.core :as pop]
             [pcrit.expdir.interface :as expdir]
-            [pcrit.pop.temp-dir :refer [with-temp-dir *tmp-dir*]]
-            [pcrit.test-helper.interface :refer [with-quiet-logging]])
+            [pcrit.test-helper.interface :refer [with-quiet-logging with-temp-dir get-temp-dir]])
   (:import [java.nio.file Files]))
 
 (use-fixtures :each with-quiet-logging with-temp-dir)
@@ -29,8 +28,8 @@
 
 (deftest ingest-prompt-test
   (testing "ingest-prompt adds analysis metadata"
-    (expdir/create-experiment-dirs! *tmp-dir*) ;; <--- FIX: Ensure pdb dir exists
-    (let [record (pop/ingest-prompt (expdir/get-pdb-dir *tmp-dir*) "Hello {{NAME}}")
+    (expdir/create-experiment-dirs! (get-temp-dir))
+    (let [record (pop/ingest-prompt (expdir/get-pdb-dir (get-temp-dir)) "Hello {{NAME}}")
           md (:header record)]
       (is (= "Hello {{NAME}}\n" (:body record)))
       (is (= "P1" (:id md)))
@@ -40,9 +39,9 @@
 
 (deftest intern-prompts-test
   (testing "intern-prompts converts a map of strings to a map of records"
-    (expdir/create-experiment-dirs! *tmp-dir*) ;; <--- FIX: Ensure pdb dir exists
+    (expdir/create-experiment-dirs! (get-temp-dir))
     (let [prompt-map {:seed "The seed!" :refine "Make it better."}
-          interned (pop/intern-prompts (expdir/get-pdb-dir *tmp-dir*) prompt-map)]
+          interned (pop/intern-prompts (expdir/get-pdb-dir (get-temp-dir)) prompt-map)]
       (is (some? (:seed interned)))
       (is (map? (:seed interned)))
       (is (= "P1" (get-in interned [:seed :header :id])))
@@ -51,7 +50,7 @@
 
 (deftest read-prompt-map-test
   (testing "Successfully reads a valid, programmatically created prompt manifest"
-    (let [manifest-dir (io/file *tmp-dir* "manifest-test")
+    (let [manifest-dir (io/file (get-temp-dir) "manifest-test")
           prompts-subdir (io/file manifest-dir "prompts")]
       (.mkdirs prompts-subdir)
       (spit (io/file prompts-subdir "greeting.txt") "Hello, {{name}}.")
@@ -66,7 +65,7 @@
           (is (= "Summarize: {{content}}." (:summary prompt-map)))))))
 
   (testing "Throws an ExceptionInfo for a manifest with a missing prompt file"
-    (let [manifest-file (io/file *tmp-dir* "bad-manifest.edn")]
+    (let [manifest-file (io/file (get-temp-dir) "bad-manifest.edn")]
       (spit manifest-file (pr-str {:bad-key "path/to/nonexistent.txt"}))
       (is (thrown-with-msg?
             clojure.lang.ExceptionInfo
@@ -76,14 +75,14 @@
 (deftest bootstrap-test
   (testing "bootstrap process creates directories, ingests prompts, and creates links"
     ;; Setup: This helper only creates the seed files, not the experiment dirs.
-    (make-test-bootstrap-files! *tmp-dir*)
+    (make-test-bootstrap-files! (get-temp-dir))
 
     ;; Execute the bootstrap function, which is responsible for creating dirs.
-    (pop/bootstrap *tmp-dir*)
+    (pop/bootstrap (get-temp-dir))
 
     ;; Verify the results
-    (let [pdb-dir (expdir/get-pdb-dir *tmp-dir*)
-          links-dir (expdir/get-link-dir *tmp-dir*)]
+    (let [pdb-dir (expdir/get-pdb-dir (get-temp-dir))
+          links-dir (expdir/get-link-dir (get-temp-dir))]
       (is (.exists (io/file pdb-dir "P1.prompt")))
       (is (.exists (io/file pdb-dir "P2.prompt")))
       (is (.exists (io/file pdb-dir "P3.prompt")))

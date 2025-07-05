@@ -1,4 +1,4 @@
-(ns pcrit.pop.temp-dir
+(ns pcrit.test-helper.temp-dir
   (:require [clojure.java.io :as io])
   (:import [java.nio.file Files Path]
            [java.nio.file.attribute FileAttribute]))
