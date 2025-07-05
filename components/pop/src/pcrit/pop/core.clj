@@ -41,20 +41,3 @@
   (->> (read-prompt-map prompt-manifest-filename)
        (intern-prompts pdbdir)))
 
-(defn bootstrap
-  "Initializes an experiment directory by creating its structure, ingesting
-  prompts from its bootstrap.edn manifest, and creating named symlinks."
-  [exp-dir]
-  (expdir/create-experiment-dirs! exp-dir) ;; <-- Delegated
-
-  (let [pdb-dir (expdir/get-pdb-dir exp-dir) ;; <-- Delegated
-        manifest-file (expdir/bootstrap-spec-file exp-dir) ;; <-- Delegated
-        prompt-map (ingest-from-manifest pdb-dir manifest-file)
-        {:keys [seed refine vary]} prompt-map]
-
-    (expdir/link-prompt! exp-dir seed "seed") ;; <-- Delegated
-    (expdir/link-prompt! exp-dir refine "refine")
-    (expdir/link-prompt! exp-dir vary "vary")))
-
-(defn evolve [exp-dir]
-  )

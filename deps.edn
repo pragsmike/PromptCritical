@@ -15,6 +15,7 @@
                                 pcrit/pop         {:local/root "components/pop"}
                                 pcrit/pdb         {:local/root "components/pdb"}
                                 pcrit/expdir      {:local/root "components/expdir"}
+                                pcrit/command     {:local/root "components/command"}
                                 pcrit/test-helper	{:local/root "components/test-helper"}
 
                                         ; Bases
@@ -29,5 +30,6 @@
                                 "components/pdb/test"
                                 "components/pop/test"
                                 "components/expdir/test"
+                                "components/command/test"
                                 "components/test-helper/src"
                                 "bases/cli/test"]}}}

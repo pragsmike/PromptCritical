@@ -1,7 +1,7 @@
 (ns pcrit.cli.main
   (:require [clojure.tools.cli :as cli]
             [clojure.string :as str]
-            [pcrit.llm.interface :as llm]
+            [pcrit.command.interface :as cmd]
             [pcrit.log.interface :as log]
             [pcrit.pdb.interface :as pdb]))
 
@@ -39,8 +39,7 @@
 
 (defn -main [& args]
   (try
-    (log/setup-logging!)
-    (llm/pre-flight-checks)
+    (cmd/init!)
 
     (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
       (cond

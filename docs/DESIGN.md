@@ -101,7 +101,7 @@ The on‑disk and in‑memory shape is unchanged since v1.1, retaining:
 ## 5  Experiment Flow (v0.2)
 
 ```
-bootstrap → contest (pack → run Failter) → ingest (report.csv) → prepare generation N+1
+bootstrap → contest (pack → run Failter) → record (report.csv) → prepare generation N+1
 ```
 
 1. **Bootstrap** (`pcrit bootstrap manifest.edn`)
@@ -144,7 +144,7 @@ bootstrap → contest (pack → run Failter) → ingest (report.csv) → prep
 
 * Expose lock back‑off parameters via `pcrit.config`.
 * Expand `pcrit.pop` tests to cover template field extraction edge‑cases.
-* Add an end‑to‑end smoke test (bootstrap → Failter mock → ingest) to the CI matrix.
+* Add an end‑to‑end smoke test (bootstrap → Failter mock → record) to the CI matrix.
 * Document Python‑side Polylith conventions for future surrogate critic code.
 
 ---

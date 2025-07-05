@@ -8,7 +8,7 @@ auditable step at a time.*
 PromptCritical is a **data‑driven, experiment‑oriented toolchain** that breeds and evaluates prompts for LLMs.  It automates the cycle of
 
 ```
-seed → contest (Failter) → ingest → evolve
+boostrap → contest (Failter) → record → evolve
 ```
 
 so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing.
@@ -64,9 +64,9 @@ Components expose **public APIs** only; everything else is private.  Polylith’
 
 | Command     | Status | Description                                     |
 | ----------- | ------ | ----------------------------------------------- |
-| `bootstrap` | ✅      | Seed the Prompt DB from a manifest (EDN)        |
-| `contest`   | ✅      | Package prompts, run Failter, collect report    |
-| `ingest`    | ✅      | Annotate prompts with scores from `report.csv`  |
+| `bootstrap` | ✅     | Seed the Prompt DB from a manifest (EDN)        |
+| `contest`   | ✅     | Package prompts, run Failter, collect report    |
+| `record`    | ✅     | Record and analyze scores from `report.csv`     |
 | `evolve`    | 🔜     | Generate next generation via mutation/crossover |
 
 Run `./bin/pcrit help <command>` for full usage.
@@ -84,7 +84,7 @@ These are slightly different than for Python code, so be careful not to be confu
 | **Prompt database** | **Implemented** | Immutable file format (`*.prompt`), UTF-8 + NFC canonicalisation, SHA-1 integrity, per-file `.lock` protocol, atomic writes, unique `Pnnn` IDs. |
 | **Seed generation** | *partial* | pcrit.pop |
 | **Failter contest packaging** | *Not yet* | |
-| **Score ingestion & evolution loop** | *Not yet* | |
+| **Score recording & evolution loop** | *Not yet* | |
 
 The existing codebase gives you:
 
