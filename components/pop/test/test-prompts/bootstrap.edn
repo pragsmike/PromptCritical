@@ -1,4 +1,0 @@
-{:seed    "prompts/seed-1.md"
- :refine  "prompts/unary-refine-1.md"
- :vary    "prompts/variant-generator-1.md"
- }
