@@ -1,8 +1,8 @@
 (ns pcrit.pop.core-test
   (:require [clojure.test :refer (deftest is use-fixtures testing)]
             [clojure.java.io :as io]
-            [pcrit.pop.util :as util]
             [pcrit.pop.core :as pop]
+            [pcrit.expdir.interface :as expdir]
             [pcrit.pop.temp-dir :as tutil :refer [with-temp-dir *tmp-dir*]]))
 
 (use-fixtures :each with-temp-dir)
@@ -70,35 +70,17 @@
 
 (deftest test-link-prompt
   (tutil/make-temp-exp-dir! *tmp-dir*)
-  (spit (io/file (pop/get-pdb-dir *tmp-dir*) "P1.prompt") "hello")
+  (spit (io/file (expdir/get-pdb-dir *tmp-dir*) "P1.prompt") "hello")
   (let [prec {:header {:id "P1"}  :body {}}]
-    (pop/link-prompt *tmp-dir* prec "boat"))
-  (is (.exists (io/file (pop/get-link-dir *tmp-dir*) "boat"))))
+    (expdir/link-prompt! *tmp-dir* prec "boat"))
+  (is (.exists (io/file (expdir/get-link-dir *tmp-dir*) "boat"))))
 
 (deftest test-bootstrap
   (tutil/make-temp-exp-dir! *tmp-dir*)
   (let [manifest-resource (io/resource "test-prompts/bootstrap.edn")
-        prompt-file (io/file (pop/get-pdb-dir *tmp-dir*) "P1.prompt")]
-    (spit prompt-file "hello")
+        prompt-file (io/file (expdir/get-pdb-dir *tmp-dir*) "P1.prompt")]
     (is (some? manifest-resource) "Test manifest 'manifest.edn' must be on the classpath.")
-    (let [filename (.getPath manifest-resource)]
-      (pop/bootstrap *tmp-dir*))
+
+    (pop/bootstrap *tmp-dir*)
     (is (.exists prompt-file))))
 
-(comment
-  (tutil/make-temp-exp-dir! "/tmp/foo")
-  (pop/get-link-dir "/tmp/foo")
-  (util/->path (pop/get-link-dir "/tmp/foo"))
-  (util/->path (io/file "/tmp" "baz"))
-  (util/create-link "/tmp/foo" "/tmp/baz")
-  (let [prec {:header {:id "P1"}  :body {}}]
-    (pop/link-prompt "/tmp/foo" prec "boat"))
-  (.exists (io/file (pop/get-link-dir "/tmp/foo") "boat"))
-  (def filename (-> (io/resource "test-prompts/bootstrap.edn") (.getPath)))
-  (def pm (pop/read-prompt-map filename))
-  (pop/intern-prompts "/tmp/pdb" pm)
-  (pop/ingest-from-manifest "/tmp/pdb" filename)
-  (pop/bootstrap "/tmp/pdb")
-
-  ;
-  )

@@ -3,6 +3,7 @@
              pcrit/config   {:local/root "../../components/config"}
              pcrit/pdb      {:local/root "../../components/pdb"}
              pcrit/pop      {:local/root "../../components/pop"}
+             pcrit/expdir   {:local/root "../../components/expdir"}
              pcrit/cli      {:local/root "../../bases/cli"}
 
              org.clojure/clojure {:mvn/version "1.12.1"}}
