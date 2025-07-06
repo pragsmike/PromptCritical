@@ -1,5 +1,6 @@
 (ns pcrit.expdir.core
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str])
   (:import [java.io File]
            [java.nio.file Files Path Paths]
            [java.nio.file.attribute FileAttribute]))
@@ -16,7 +17,7 @@
     :else (throw (IllegalArgumentException.
                    (str "Cannot convert value of type " (class p) " to a Path.")))))
 
-;; --- Directory Structure Getters ---
+;; --- Top-Level Directory Getters ---
 
 (defn get-seeds-dir [{:keys [exp-dir]}] (io/file exp-dir "seeds"))
 (defn get-pdb-dir [{:keys [exp-dir]}] (io/file exp-dir "pdb"))
@@ -44,22 +45,63 @@
                       {:record record}))
       (io/file pdb-dir (str prompt-id ".prompt")))))
 
-;; --- Linking Function ---
-
 (defn link-prompt!
   "Creates a relative symbolic link to a prompt file in the experiment's 'links' directory."
   [ctx prompt-record link-name]
   (let [target-file (pdb-file-of-prompt-record ctx prompt-record)
         link-file   (io/file (get-link-dir ctx) link-name)
         link-dir    (.getParentFile link-file)
-
-        ;; Convert to Path objects for relativization
         link-dir-path (->path link-dir)
         target-path   (->path target-file)
-
-        ;; Calculate the relative path from the link's directory to the target
         relative-target-path (.relativize link-dir-path target-path)]
-
     (Files/createSymbolicLink (->path link-file)
                               relative-target-path
                               (make-array FileAttribute 0))))
+
+
+;; --- Generation and Contest Path Getters ---
+
+(defn get-generation-dir
+  "Returns a File object for a specific generation directory (e.g., '.../generations/gen-007')."
+  [ctx gen-number]
+  (io/file (get-generations-dir ctx) (format "gen-%03d" gen-number)))
+
+(defn get-population-dir
+  "Returns a File object for the 'population' subdirectory of a specific generation."
+  [ctx gen-number]
+  (io/file (get-generation-dir ctx gen-number) "population"))
+
+(defn get-contests-dir
+  "Returns a File object for the 'contests' subdirectory of a specific generation."
+  [ctx gen-number]
+  (io/file (get-generation-dir ctx gen-number) "contests"))
+
+(defn get-contest-dir
+  "Returns a File object for a uniquely named contest within a specific generation."
+  [ctx gen-number contest-name]
+  (io/file (get-contests-dir ctx gen-number) contest-name))
+
+(defn get-failter-spec-dir
+  "Returns a File object for the 'failter-spec' subdirectory within a contest."
+  [ctx gen-number contest-name]
+  (io/file (get-contest-dir ctx gen-number contest-name) "failter-spec"))
+
+
+;; --- Discovery Functions ---
+
+(defn find-latest-generation-number
+  "Scans the 'generations' directory and returns the highest generation number found.
+  Returns nil if no valid 'gen-NNN' directories exist."
+  [ctx]
+  (let [gens-dir (get-generations-dir ctx)]
+    (when (.exists gens-dir)
+      (let [gen-files (.listFiles gens-dir)
+            gen-name-pattern #"^gen-(\d{3})$"
+            gen-numbers (->> gen-files
+                             (map #(.getName %))
+                             (map #(re-matches gen-name-pattern %))
+                             (remove nil?)
+                             (map second)
+                             (map #(Integer/parseInt %)))]
+        (when (seq gen-numbers)
+          (apply max gen-numbers))))))

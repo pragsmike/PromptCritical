@@ -3,26 +3,27 @@
             [clojure.java.io :as io]
             [pcrit.context.interface :as context]
             [pcrit.expdir.core :as expdir]
-            [pcrit.expdir.temp-dir :refer [with-temp-dir *tmp-dir*]])
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]
+            )
   (:import [java.nio.file Files Path]))
 
 (use-fixtures :each with-temp-dir)
 
 (defn- get-test-ctx []
-  (context/new-context *tmp-dir*))
+  (context/new-context (get-temp-dir)))
 
 (deftest path-getter-functions-test
   (testing "Getter functions return correct File objects for subdirectories"
     (let [ctx (get-test-ctx)]
-      (is (= (.getCanonicalPath (io/file *tmp-dir* "pdb"))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "pdb"))
              (.getCanonicalPath (expdir/get-pdb-dir ctx))))
-      (is (= (.getCanonicalPath (io/file *tmp-dir* "generations"))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations"))
              (.getCanonicalPath (expdir/get-generations-dir ctx))))
-      (is (= (.getCanonicalPath (io/file *tmp-dir* "links"))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "links"))
              (.getCanonicalPath (expdir/get-link-dir ctx))))
-      (is (= (.getCanonicalPath (io/file *tmp-dir* "seeds"))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "seeds"))
              (.getCanonicalPath (expdir/get-seeds-dir ctx))))
-      (is (= (.getCanonicalPath (io/file *tmp-dir* "bootstrap.edn"))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "bootstrap.edn"))
              (.getCanonicalPath (expdir/bootstrap-spec-file ctx)))))))
 
 (deftest create-experiment-dirs-test
@@ -93,3 +94,55 @@
 
           (is (= (.normalize canonical-target-path) (.normalize resolved-target-path))
               "The relative link should resolve to the correct target file."))))))
+
+;; --- NEW TESTS ---
+
+(deftest generation-path-getters-test
+  (testing "Generation-specific path getters return correct File objects"
+    (let [ctx (get-test-ctx)]
+      (testing "get-generation-dir"
+        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-000"))
+               (.getCanonicalPath (expdir/get-generation-dir ctx 0))))
+        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-012"))
+               (.getCanonicalPath (expdir/get-generation-dir ctx 12)))))
+
+      (testing "get-population-dir"
+        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-001" "population"))
+               (.getCanonicalPath (expdir/get-population-dir ctx 1)))))
+
+      (testing "get-contests-dir"
+        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-002" "contests"))
+               (.getCanonicalPath (expdir/get-contests-dir ctx 2)))))
+
+      (testing "get-contest-dir"
+        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-003" "contests" "my-contest"))
+               (.getCanonicalPath (expdir/get-contest-dir ctx 3 "my-contest")))))
+
+      (testing "get-failter-spec-dir"
+        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-004" "contests" "another-run" "failter-spec"))
+               (.getCanonicalPath (expdir/get-failter-spec-dir ctx 4 "another-run"))))))))
+
+
+(deftest find-latest-generation-number-test
+  (let [ctx (get-test-ctx)]
+    (testing "Returns nil when generations directory does not exist"
+      (is (nil? (expdir/find-latest-generation-number ctx))))
+
+    (testing "Returns nil when generations directory is empty"
+      (.mkdirs (expdir/get-generations-dir ctx))
+      (is (nil? (expdir/find-latest-generation-number ctx))))
+
+    (testing "Finds the highest number among valid generation directories"
+      (let [gens-dir (expdir/get-generations-dir ctx)]
+        (.mkdirs (io/file gens-dir "gen-000"))
+        (.mkdirs (io/file gens-dir "gen-002"))
+        (.mkdirs (io/file gens-dir "gen-001"))
+        (is (= 2 (expdir/find-latest-generation-number ctx)))))
+
+    (testing "Ignores files and directories that do not match the pattern"
+      (let [gens-dir (expdir/get-generations-dir ctx)]
+        (.mkdirs (io/file gens-dir "gen-005"))
+        (spit (io/file gens-dir "gen-006.tmp") "temp")
+        (spit (io/file gens-dir "notes.txt") "notes")
+        (.mkdirs (io/file gens-dir "gen-abc"))
+        (is (= 5 (expdir/find-latest-generation-number ctx)))))))
