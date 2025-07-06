@@ -3,7 +3,7 @@ linguistic intelligence** - not just how these systems work, but what kind of
 entities they are, what space they inhabit, and how we can navigate that space
 deliberately rather than accidentally.
 
-**Your purpose seems threefold:**
+**Our purpose is threefold:**
 - **Theoretical**: Developing a rigorous conceptual framework for understanding prompt engineering
 - **Practical**: Finding systematic methods for combining and evolving prompts
 - **Philosophical**: Probing the nature of meaning-making in artificial systems

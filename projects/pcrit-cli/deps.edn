@@ -1,4 +1,5 @@
-{:deps      {pcrit/log      {:local/root "../../components/log"}
+{:deps      {pcrit/context  {:local/root "../../components/context"}
+             pcrit/log      {:local/root "../../components/log"}
              pcrit/llm      {:local/root "../../components/llm"}
              pcrit/config   {:local/root "../../components/config"}
              pcrit/pdb      {:local/root "../../components/pdb"}

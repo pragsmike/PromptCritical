@@ -4,8 +4,12 @@ Many prompts are actually templates, with placeholders that get filled in. To
 produce a complete prompt, you must supply some strings that are substituted for
 the placeholders.  We call these placeholders *fields*.
 
-The placeholder is encoded as the field name, kebab-case in all caps, surrounded by pairs of curly braces
+The placeholder is encoded as the field name, conventionally in all caps, surrounded by pairs of curly braces
 like this `{{FIELD-NAME}}`.
+
+NOTE: Certain types of prompts MUST have particular field names.
+   * Object prompts MUST have a field `{{INPUT_TEXT}}`.
+   * Meta prompts MUST have a field `{{OBJECT_PROMPT}}`
 
 There is a function `llm.templater/expand` that accepts a prompt template and a set of strings,
 and returns a filled-in, complete template.

@@ -1,4 +1,4 @@
-# genetic algorithms for generating optimized prompts using evolutionary algorithms
+# Genetic algorithms for generating optimized prompts using evolutionary algorithms
 
 Genetic algorithms are increasingly used to automate and optimize prompt
 engineering for large language models (LLMs), evolving prompts through mutation,

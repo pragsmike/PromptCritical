@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.12.1"}}
+ :deps {}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {pcrit/test-helper {:local/root "../../components/test-helper"}
                                pcrit/expdir {:local/root "../../components/expdir"}}}}}

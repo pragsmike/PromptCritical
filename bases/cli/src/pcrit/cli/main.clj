@@ -2,8 +2,8 @@
   (:require [clojure.tools.cli :as cli]
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
-            [pcrit.log.interface :as log]
-            [pcrit.pdb.interface :as pdb]))
+            [pcrit.context.interface :as context]
+            [pcrit.log.interface :as log]))
 
 (def cli-options
   [["-h" "--help" "Print this help message"]])
@@ -11,12 +11,11 @@
 (defn- usage [options-summary]
   (->> ["PromptCritical: A Prompt Evolution Experimentation Framework"
         ""
-        "Usage: pcrit <command> [options]"
+        "Usage: pcrit <command> [options] <args...>"
         ""
         "Commands:"
-        "  help                      Show this help message."
-        "  create <db-dir>           Create a new prompt in the database specified by <db-dir>."
-        "                            The prompt text is read from standard input."
+        "  help                         Show this help message."
+        "  bootstrap <experiment-dir>   Initializes a new experiment directory."
         ""
         "Options:"
         options-summary]
@@ -26,16 +25,14 @@
   (str "The following errors occurred while parsing your command:\n\n"
        (str/join \newline errors)))
 
-(defn- do-create-prompt [args]
+(defn- do-bootstrap [args]
   (if (empty? args)
-    (log/error "The 'create' command requires a <db-dir> argument.")
-    (let [db-dir (first args)
-          prompt-text (slurp *in*)]
-      (if (str/blank? prompt-text)
-        (log/error "Cannot create a prompt with empty text from standard input.")
-        (let [new-prompt (pdb/create-prompt db-dir prompt-text)]
-          (log/info "Successfully created prompt " (get-in new-prompt [:header :id]))
-          (println (get-in new-prompt [:header :id])))))))
+    (log/error "The 'bootstrap' command requires an <experiment-dir> argument.")
+    (let [exp-dir (first args)
+          ctx (context/new-context exp-dir)]
+      (log/info "Bootstrapping experiment in:" exp-dir)
+      (cmd/bootstrap! ctx)
+      (log/info "Bootstrap complete."))))
 
 (defn -main [& args]
   (try
@@ -54,8 +51,9 @@
 
       (let [[command & params] arguments]
         (case command
-          "help"   (log/info (usage summary))
-          "create" (do-create-prompt params)
+          "help"      (log/info (usage summary))
+          "bootstrap" (do-bootstrap params)
+          ;; The old "create" command is removed for clarity as it's not part of the main workflow
           (log/error "Unknown command:" command "\n" (usage summary)))))
 
     (finally

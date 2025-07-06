@@ -11,6 +11,7 @@
                   :extra-deps  {; Components
                                 pcrit/config      {:local/root "components/config"}
                                 pcrit/llm         {:local/root "components/llm"}
+                                pcrit/context     {:local/root "components/context"}
                                 pcrit/log         {:local/root "components/log"}
                                 pcrit/pop         {:local/root "components/pop"}
                                 pcrit/pdb         {:local/root "components/pdb"}
@@ -31,5 +32,6 @@
                                 "components/pop/test"
                                 "components/expdir/test"
                                 "components/command/test"
+                                "components/context/test"
                                 "components/test-helper/src"
                                 "bases/cli/test"]}}}
