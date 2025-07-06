@@ -47,10 +47,19 @@
 ;; --- Linking Function ---
 
 (defn link-prompt!
-  "Creates a symbolic link to a prompt file in the experiment's 'links' directory."
+  "Creates a relative symbolic link to a prompt file in the experiment's 'links' directory."
   [ctx prompt-record link-name]
   (let [target-file (pdb-file-of-prompt-record ctx prompt-record)
-        link-file   (io/file (get-link-dir ctx) link-name)]
+        link-file   (io/file (get-link-dir ctx) link-name)
+        link-dir    (.getParentFile link-file)
+
+        ;; Convert to Path objects for relativization
+        link-dir-path (->path link-dir)
+        target-path   (->path target-file)
+
+        ;; Calculate the relative path from the link's directory to the target
+        relative-target-path (.relativize link-dir-path target-path)]
+
     (Files/createSymbolicLink (->path link-file)
-                              (->path target-file)
+                              relative-target-path
                               (make-array FileAttribute 0))))

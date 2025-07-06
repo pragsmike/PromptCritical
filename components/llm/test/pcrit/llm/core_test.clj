@@ -2,7 +2,10 @@
   (:require [clojure.test :refer :all]
             [pcrit.llm.core :as llm]
             [pcrit.config.interface :as config]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [pcrit.test-helper.interface :refer [with-quiet-logging]]))
+
+(use-fixtures :once with-quiet-logging)
 
 (deftest parse-llm-response-test
   (testing "Successfully parsing a valid response"

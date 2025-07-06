@@ -44,17 +44,7 @@ I made several avoidable errors in the last session. Understanding them is key t
 
 The `bootstrap` command is fully implemented and well-factored. The next step is to implement the `contest` and `record` commands. However, before we add more complexity, we must address the remaining complexity in the existing code. As our user noted, **removing complexity is our most critical refactoring task, as it directly impacts our ability to provide effective assistance.**
 
-Your next task is to implement the refactoring plan we discussed just before this handover.
+Consider what can be refactored to reduce complexity of the existing code.
+After that your next task is to plan the management of active prompt population and the running of the contest.
 
-#### **Immediate Refactoring Plan: The Context Map**
 
-*   **The Problem:** Core functions are starting to take `exp-dir` as a string argument. Soon they will also need configuration, logging contexts, and more, leading to cluttered function signatures like `(my-fn exp-dir config logger ...)`. This is hard to maintain and reason about.
-*   **The Solution:** We will introduce a "Context Map" (`ctx`).
-    1.  **Creation:** At the top level of a command (e.g., in the `cli` base), create a single map containing all shared application state. Initially, this will be `{:exp-dir "/path/to/exp"}`.
-    2.  **Passing:** Pass this single `ctx` map as the argument to the high-level command functions (like `command/bootstrap!`).
-    3.  **Usage:** Functions that need access to the experiment directory will destructure it from the map: `(defn bootstrap! [{:keys [exp-dir]}] ...)`
-*   **The Benefit:** This simplifies function signatures across the board. It makes dependencies explicit. Most importantly, it makes the code easier to read, understand, and reason about, which is our primary goal.
-
-By implementing this refactoring first, you will further improve the foundation of the system, making the subsequent implementation of the `contest` and `evolve` commands much safer and more efficient.
-
-Good luck.

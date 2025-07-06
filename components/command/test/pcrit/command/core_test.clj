@@ -5,7 +5,7 @@
             [pcrit.context.interface :as context]
             [pcrit.expdir.interface :as expdir]
             [pcrit.test-helper.interface :refer [with-quiet-logging with-temp-dir get-temp-dir]])
-  (:import [java.nio.file Files]))
+  (:import [java.nio.file Files Path]))
 
 (use-fixtures :each with-quiet-logging with-temp-dir)
 
@@ -46,7 +46,23 @@
         (is (.exists (io/file pdb-dir "P3.prompt")))
         (is (.exists (io/file links-dir "seed")))
         (is (.exists (io/file links-dir "refine")))
-        (is (.exists (io/file links-dir "vary")))
-        (let [seed-link-target (-> (io/file links-dir "seed") .toPath Files/readSymbolicLink)
-              p1-path (.toPath (io/file pdb-dir "P1.prompt"))]
-          (is (= p1-path seed-link-target)))))))
+        (is (.exists (io/file links-dir "vary")))))))
+
+
+(deftest bootstrap-link-relativity-test
+  (testing "bootstrap! command creates relative symbolic links"
+    (let [exp-dir (get-temp-dir)
+          ctx (context/new-context exp-dir)]
+      (make-test-bootstrap-files! exp-dir)
+
+      ;; Execute the command
+      (cmd/bootstrap! ctx)
+
+      (let [links-dir (expdir/get-link-dir ctx)
+            seed-link-file (io/file links-dir "seed")]
+
+        (is (Files/isSymbolicLink (.toPath seed-link-file)) "File 'seed' should be a symbolic link.")
+
+        (let [link-target-path (Files/readSymbolicLink (.toPath seed-link-file))]
+          (is (not (.isAbsolute link-target-path))
+              "The symbolic link created by bootstrap! should be relative."))))))

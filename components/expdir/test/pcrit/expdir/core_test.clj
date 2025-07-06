@@ -4,7 +4,7 @@
             [pcrit.context.interface :as context]
             [pcrit.expdir.core :as expdir]
             [pcrit.expdir.temp-dir :refer [with-temp-dir *tmp-dir*]])
-  (:import [java.nio.file Files]))
+  (:import [java.nio.file Files Path]))
 
 (use-fixtures :each with-temp-dir)
 
@@ -64,7 +64,7 @@
             (expdir/pdb-file-of-prompt-record ctx bad-record))))))
 
 (deftest link-prompt-test
-  (testing "Correctly creates a symbolic link to a prompt file"
+  (testing "Correctly creates a relative symbolic link to a prompt file"
     (let [ctx (get-test-ctx)]
       ;; Setup: Create directories and a dummy prompt file to link to
       (expdir/create-experiment-dirs! ctx)
@@ -83,6 +83,13 @@
         (is (.exists link-file) "Link should be created.")
         (is (Files/isSymbolicLink (.toPath link-file)) "Created file should be a symbolic link.")
 
-        (let [target-path (Files/readSymbolicLink (.toPath link-file))
-              expected-target-path (.toPath prompt-file)]
-          (is (= expected-target-path target-path) "Link should point to the correct prompt file."))))))
+        (let [link-target-path (Files/readSymbolicLink (.toPath link-file))
+              link-dir-path (.toPath (.getParentFile link-file))
+              resolved-target-path (.toAbsolutePath (.resolve link-dir-path link-target-path))
+              canonical-target-path (.toPath (.getCanonicalFile prompt-file))]
+
+          (is (not (.isAbsolute link-target-path))
+              "The symbolic link target path should be relative.")
+
+          (is (= (.normalize canonical-target-path) (.normalize resolved-target-path))
+              "The relative link should resolve to the correct target file."))))))
