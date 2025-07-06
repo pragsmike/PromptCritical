@@ -7,14 +7,15 @@
 (def LITELLM_API_KEY (System/getenv "LITELLM_API_KEY"))
 
 (defn pre-flight-checks []
-  (when-not (seq LITELLM_API_KEY)
-    (log/error "---")
-    (log/error "LITELLM_API_KEY environment variable not set.")
-    (log/error "Please set it before running the application.")
-    (System/exit 1))
-  true)
+  (if (seq LITELLM_API_KEY)
+    true
+    (do
+      (log/error "---")
+      (log/error "LITELLM_API_KEY environment variable not set.")
+      (log/error "Please set it before running the application.")
+      false)))
 
-(defn- parse-llm-response [response-body model-name]
+(defn parse-llm-response [response-body model-name]
   (log/debug (str "Response from " model-name "\n" response-body))
   (try
     (let [parsed-body (json/read-str response-body :key-fn keyword)
@@ -31,22 +32,24 @@
       {:error (str "Malformed JSON from LLM: " (.getMessage e))})))
 
 (defn call-model
-  [model-name prompt-string & {:keys [timeout] :or {timeout (get-in config/config [:llm :default-timeout-ms])}}]
+  [model-name prompt-string & {:keys [timeout post-fn]
+                               :or {timeout (get-in config/config [:llm :default-timeout-ms])
+                                    post-fn http/post}}]
   (let [endpoint (get-in config/config [:llm :endpoint])]
-    (log/info (str "\n;; --- ACTUALLY Calling LLM: " model-name " via " endpoint " ---"))
+    (log/info (str "\n;; --- Calling LLM: " model-name " via " endpoint " ---"))
     (log/info (str ";; --- Using timeout: " timeout "ms ---"))
     (try
       (let [request-body {:model model-name
                           :messages [{:role "user" :content prompt-string}]}
             headers {"Authorization" (str "Bearer " LITELLM_API_KEY)}
-            response (http/post endpoint
-                                {:body (json/write-str request-body)
-                                 :content-type :json
-                                 :accept :json
-                                 :headers headers
-                                 :throw-exceptions false
-                                 :socket-timeout timeout
-                                 :connection-timeout timeout})]
+            response (post-fn endpoint
+                              {:body (json/write-str request-body)
+                               :content-type :json
+                               :accept :json
+                               :headers headers
+                               :throw-exceptions false
+                               :socket-timeout timeout
+                               :connection-timeout timeout})]
         (if (= 200 (:status response))
           (parse-llm-response (:body response) model-name)
           (do
