@@ -2,34 +2,40 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [pcrit.pop.core :as pop]
+            [pcrit.context.interface :as context]
             [pcrit.expdir.interface :as expdir]
             [pcrit.test-helper.interface :refer [with-quiet-logging with-temp-dir get-temp-dir]]))
 
 (use-fixtures :each with-quiet-logging with-temp-dir)
 
+(defn- get-test-ctx []
+  (context/new-context (get-temp-dir)))
+
 ;; --- Core Tests ---
 
 (deftest ingest-prompt-test
   (testing "ingest-prompt adds analysis metadata"
-    (expdir/create-experiment-dirs! (get-temp-dir))
-    (let [record (pop/ingest-prompt (expdir/get-pdb-dir (get-temp-dir)) "Hello {{NAME}}")
-          md (:header record)]
-      (is (= "Hello {{NAME}}\n" (:body record)))
-      (is (= "P1" (:id md)))
-      (is (= 15 (:character-count md)))
-      (is (= 2 (:word-count md)))
-      (is (= ["NAME"] (:template-field-names md))))))
+    (let [ctx (get-test-ctx)]
+      (expdir/create-experiment-dirs! ctx)
+      (let [record (pop/ingest-prompt ctx "Hello {{NAME}}")
+            md (:header record)]
+        (is (= "Hello {{NAME}}\n" (:body record)))
+        (is (= "P1" (:id md)))
+        (is (= 15 (:character-count md)))
+        (is (= 2 (:word-count md)))
+        (is (= ["NAME"] (:template-field-names md)))))))
 
 (deftest intern-prompts-test
   (testing "intern-prompts converts a map of strings to a map of records"
-    (expdir/create-experiment-dirs! (get-temp-dir))
-    (let [prompt-map {:seed "The seed!" :refine "Make it better."}
-          interned (pop/intern-prompts (expdir/get-pdb-dir (get-temp-dir)) prompt-map)]
-      (is (some? (:seed interned)))
-      (is (map? (:seed interned)))
-      (is (= "P1" (get-in interned [:seed :header :id])))
-      (is (= "The seed!\n" (:body (:seed interned))))
-      (is (= "P2" (get-in interned [:refine :header :id]))))))
+    (let [ctx (get-test-ctx)]
+      (expdir/create-experiment-dirs! ctx)
+      (let [prompt-map {:seed "The seed!" :refine "Make it better."}
+            interned (pop/intern-prompts ctx prompt-map)]
+        (is (some? (:seed interned)))
+        (is (map? (:seed interned)))
+        (is (= "P1" (get-in interned [:seed :header :id])))
+        (is (= "The seed!\n" (:body (:seed interned))))
+        (is (= "P2" (get-in interned [:refine :header :id])))))))
 
 (deftest read-prompt-map-test
   (testing "Successfully reads a valid, programmatically created prompt manifest"
@@ -54,4 +60,3 @@
             clojure.lang.ExceptionInfo
             #"Prompt file not found for key: :bad-key"
             (pop/read-prompt-map (.getPath manifest-file)))))))
-

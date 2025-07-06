@@ -6,12 +6,8 @@
   "Analyzes a prompt's body string to compute basic metadata."
   analysis/analyze-prompt-body)
 
-(def ingest-prompt
-  "Stores given prompt with some computed metadata."
-  core/ingest-prompt)
-
 (def intern-prompts
-  "Given a map of prompt-names to prompt-texts, ingests them into the pdb."
+  "Given a context and a map of names to texts, ingests them into the pdb."
   core/intern-prompts)
 
 (def read-prompt-map
@@ -19,5 +15,5 @@
   core/read-prompt-map)
 
 (def ingest-from-manifest
-  "Ingests a set of raw prompt files listed in a manifest."
+  "Ingests a set of raw prompt files listed in a manifest, using a context."
   core/ingest-from-manifest)

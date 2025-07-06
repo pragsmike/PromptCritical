@@ -6,17 +6,19 @@
             [clojure.edn :as edn]))
 
 (defn ingest-prompt
-  "Stores given prompt with some computed metadata."
-  [pdbdir prompt]
-  (let [metadata-fn (fn [rec] (analyze-prompt-body (:body rec)))]
-    (pdb/create-prompt pdbdir prompt :metadata-fn metadata-fn)))
+  "Private helper. Stores a single prompt string with computed metadata."
+  [ctx prompt-text]
+  (let [pdb-dir     (expdir/get-pdb-dir ctx)
+        metadata-fn (fn [rec] (analyze-prompt-body (:body rec)))]
+    (pdb/create-prompt pdb-dir prompt-text :metadata-fn metadata-fn)))
 
 (defn intern-prompts
-  "Given a map of prompt-names to prompt-texts, ingests them into the pdb."
-  [db-dir prompt-map]
+  "Given a context and a map of names-to-texts, ingests them into the pdb."
+  [ctx prompt-map]
   (into {}
         (for [[prompt-name prompt-text] prompt-map]
-          (let [new-record  (ingest-prompt db-dir prompt-text)]
+          ;; Correctly call the private helper with the full context
+          (let [new-record (ingest-prompt ctx prompt-text)]
             [prompt-name new-record]))))
 
 (defn read-prompt-map
@@ -37,7 +39,6 @@
 
 (defn ingest-from-manifest
   "Ingests a set of raw prompt files listed in a manifest."
-  [pdbdir prompt-manifest-filename]
+  [ctx prompt-manifest-filename]
   (->> (read-prompt-map prompt-manifest-filename)
-       (intern-prompts pdbdir)))
-
+       (intern-prompts ctx)))

@@ -14,14 +14,13 @@
   - Ingests all prompts specified in the bootstrap.edn manifest.
   - Creates named symbolic links for the core prompts (seed, refine, etc.)."
   [{:keys [exp-dir] :as ctx}]
-  (expdir/create-experiment-dirs! exp-dir)
+  (expdir/create-experiment-dirs! ctx)
 
-  (let [pdb-dir (expdir/get-pdb-dir exp-dir)
-        manifest-file (expdir/bootstrap-spec-file exp-dir)
-        prompt-map (pop/ingest-from-manifest pdb-dir manifest-file)
+  (let [manifest-file (expdir/bootstrap-spec-file ctx)
+        prompt-map (pop/ingest-from-manifest ctx manifest-file)
         {:keys [seed refine vary]} prompt-map]
 
-    (expdir/link-prompt! exp-dir seed "seed")
-    (expdir/link-prompt! exp-dir refine "refine")
-    (expdir/link-prompt! exp-dir vary "vary")
+    (expdir/link-prompt! ctx seed "seed")
+    (expdir/link-prompt! ctx refine "refine")
+    (expdir/link-prompt! ctx vary "vary")
     prompt-map))

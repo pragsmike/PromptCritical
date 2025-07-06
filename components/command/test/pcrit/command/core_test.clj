@@ -38,8 +38,9 @@
       (cmd/bootstrap! ctx)
 
       ;; Verify the results
-      (let [pdb-dir (expdir/get-pdb-dir exp-dir)
-            links-dir (expdir/get-link-dir exp-dir)]
+      (let [pdb-dir (expdir/get-pdb-dir ctx)
+            links-dir (expdir/get-link-dir ctx)]
+        (is (.exists (io/file pdb-dir)))
         (is (.exists (io/file pdb-dir "P1.prompt")))
         (is (.exists (io/file pdb-dir "P2.prompt")))
         (is (.exists (io/file pdb-dir "P3.prompt")))

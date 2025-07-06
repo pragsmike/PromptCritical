@@ -18,26 +18,26 @@
 
 ;; --- Directory Structure Getters ---
 
-(defn get-seeds-dir [exp-dir] (io/file exp-dir "seeds"))
-(defn get-pdb-dir [exp-dir] (io/file exp-dir "pdb"))
-(defn get-link-dir [exp-dir] (io/file exp-dir "links"))
-(defn get-generations-dir [exp-dir] (io/file exp-dir "generations"))
-(defn bootstrap-spec-file [exp-dir] (io/file exp-dir "bootstrap.edn"))
+(defn get-seeds-dir [{:keys [exp-dir]}] (io/file exp-dir "seeds"))
+(defn get-pdb-dir [{:keys [exp-dir]}] (io/file exp-dir "pdb"))
+(defn get-link-dir [{:keys [exp-dir]}] (io/file exp-dir "links"))
+(defn get-generations-dir [{:keys [exp-dir]}] (io/file exp-dir "generations"))
+(defn bootstrap-spec-file [{:keys [exp-dir]}] (io/file exp-dir "bootstrap.edn"))
 
 
 (defn create-experiment-dirs!
   "Creates the standard subdirectories within a given experiment root directory."
-  [exp-dir]
-  (.mkdirs (get-pdb-dir exp-dir))
-  (.mkdirs (get-generations-dir exp-dir))
-  (.mkdirs (get-link-dir exp-dir))
-  (.mkdirs (get-seeds-dir exp-dir)))
+  [ctx]
+  (.mkdirs (get-pdb-dir ctx))
+  (.mkdirs (get-generations-dir ctx))
+  (.mkdirs (get-link-dir ctx))
+  (.mkdirs (get-seeds-dir ctx)))
 
 (defn pdb-file-of-prompt-record
-  "Given an experiment directory and a prompt record, returns a File object
+  "Given a context and a prompt record, returns a File object
   representing the prompt's canonical path within the experiment's pdb."
-  [exp-dir record]
-  (let [pdb-dir (get-pdb-dir exp-dir)
+  [ctx record]
+  (let [pdb-dir (get-pdb-dir ctx)
         prompt-id (get-in record [:header :id])]
     (if-not prompt-id
       (throw (ex-info "Cannot determine prompt path. Record is missing :id in header."
@@ -48,9 +48,9 @@
 
 (defn link-prompt!
   "Creates a symbolic link to a prompt file in the experiment's 'links' directory."
-  [exp-dir prompt-record link-name]
-  (let [target-file (pdb-file-of-prompt-record exp-dir prompt-record)
-        link-file   (io/file (get-link-dir exp-dir) link-name)]
-    (Files/createSymbolicLink (.toPath link-file)
-                              (.toPath target-file)
+  [ctx prompt-record link-name]
+  (let [target-file (pdb-file-of-prompt-record ctx prompt-record)
+        link-file   (io/file (get-link-dir ctx) link-name)]
+    (Files/createSymbolicLink (->path link-file)
+                              (->path target-file)
                               (make-array FileAttribute 0))))
