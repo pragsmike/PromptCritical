@@ -1,4 +1,4 @@
-# PromptCritical: Evolving prompts in a closed category
+# PromptCritical: Reproducible Evolution of Human-Readable Prompts
 
 *A reproducible platform for evolving large–language–model prompts, one small,
 auditable step at a time.*
@@ -12,6 +12,18 @@ bootstrap → contest (Failter) → record → evolve
 ```
 
 so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing.
+
+PromptCritical stands out by pairing a **multi-model judging
+architecture**—where evolved prompts face a panel of independent LLM “critics”
+rather than a single, potentially biased scorer—with an **immutable,
+hash-addressed prompt database** that captures every ancestral mutation and
+evaluation in cryptographically verifiable form. This provenance layer functions
+as a “time machine”: you can rewind any prompt’s lineage, replay an entire
+evolutionary run bit-for-bit, or fork experiments without losing auditability.
+Together, the contest-style fitness and tamper-evident record make
+PromptCritical uniquely reproducible, bias-resistant, and production-friendly in
+a field where ad-hoc scripts and opaque metrics still dominate.
+
 
 Key ingredients:
 
