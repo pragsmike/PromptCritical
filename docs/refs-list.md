@@ -4,6 +4,7 @@
   * [EvoPrompt: Connecting LLMs with Evolutionary Algorithms Yields Powerful Prompt Optimizers](https://arxiv.org/abs/2309.08532)
     * [Review: EvoPrompt](https://openreview.net/forum?id=ZG3RaNIsO8)
 
+
   * https://community.openai.com/t/promptoptimization-genetic-algorithms-for-prompt-optimization/457839
 
   * https://www.brightsec.com/blog/llm-prompt-injection/
@@ -18,6 +19,7 @@
 
   * https://hub.athina.ai/research-papers/b783c9c35b334596a432c755829a3f42/
 
+  * [DisCoCat: Mathematical Foundations for a Compositional Distributional Model of Meaning](https://arxiv.org/abs/1003.4394) [1003.4394]
   * [Self-Refine: Iterative Refinement with Self-Feedback](https://selfrefine.info/)
   * [Automatic Prompt Engineer (APE)](https://www.promptingguide.ai/techniques/ape)
   * [Self-Referential Self-Improvement via Prompt Evolution | OpenReview](https://openreview.net/forum?id=HKkiX32Zw1)

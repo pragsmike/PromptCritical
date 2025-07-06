@@ -8,7 +8,10 @@ advancing this approach.
 ### Key Research Papers
 
 1. **EvoPrompt: Connecting LLMs with Evolutionary Algorithms**
-    - **Approach**: Combines evolutionary algorithms (EAs) with LLMs to optimize discrete, human-readable prompts. LLMs act as evolutionary operators (mutation/crossover), while EAs guide selection based on performance metrics[^3][^4][^5][^6].
+    - **Approach**: Combines evolutionary algorithms (EAs) with LLMs to optimize
+                    discrete, human-readable prompts. LLMs act as evolutionary operators
+                    (mutation/crossover), while EAs guide selection based on performance
+                    metrics[^3][^4][^5][^6].
     - **Results**: Outperformed human-engineered prompts by up to 25% on BIG-Bench Hard tasks and 14% on language understanding/generation benchmarks across 31 datasets[^3][^6].
     - **Advantage**: Maintains prompt coherence while efficiently exploring the optimization space without gradients[^5].
 2. **GAAPO: Genetic Algorithmic Applied to Prompt Optimization**
@@ -30,7 +33,15 @@ advancing this approach.
 
 - **Prompt Injection via Genetic Algorithms** [^8]: Explores adversarial applications, evolving prompts to bypass LLM security measures.
 - **PromptBreeder** (cited in [^9]): A state-of-the-art meta-optimization method that evolves system prompts using diverse mutations.
+- **DSPy** (Stanford, 2024) compiles declarative specs into optimised prompts/weights; includes “BeamSearch + Self-Refine” algorithms [^17]
+    - We could wrap DSPy as an alternative “contest backend” or as a surrogate critic.
 
+- **AutoPrompt** (Shin et al., 2020/21) showed gradient-free prompt token search for factual probes [^18]
+    - Early evidence that token-level search improves with careful fitness design.
+- **Literature digests** Awesome-LLM-Prompt-Optimization & PromptPapers curated lists
+    - Track new operator or scoring ideas and add them to your mutation library.
+    - jxzhangjhu/Awesome-LLM-Prompt-Optimization - GitHub  [^19]
+    - thunlp/PromptPapers: Must-read papers on prompt-based tuning for ... [^20]
 
 ### Comparison of Approaches
 
@@ -87,3 +98,11 @@ effort while improving accuracy and efficiency. For implementation,
 [^15]: https://hub.athina.ai/research-papers/b783c9c35b334596a432c755829a3f42/
 
 [^16]: https://www.themoonlight.io/de/review/gaapo-genetic-algorithmic-applied-to-prompt-optimization
+
+[^17]: https://dspy.ai/
+
+[^18]: https://www.researchgate.net/publication/347236711_AutoPrompt_Eliciting_Knowledge_from_Language_Models_with_Automatically_Generated_Prompts
+
+[^19]: https://github.com/jxzhangjhu/Awesome-LLM-Prompt-Optimization
+
+[^20]: https://github.com/thunlp/PromptPapers
