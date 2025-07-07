@@ -8,7 +8,7 @@ auditable step at a time.*
 PromptCritical is a **data‑driven, experiment‑oriented toolchain** that breeds and evaluates prompts for LLMs. It automates the cycle of:
 
 ```
-bootstrap → contest (Failter) → record → evolve
+bootstrap → vary → evaluate → select
 ```
 
 so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing.
@@ -71,9 +71,9 @@ workspace/
 | Command | Status | Description |
 | :--- | :--- | :--- |
 | `bootstrap` | ✅ | Seed the Prompt DB from a manifest |
-| `contest` | 🔜 | Package prompts, run Failter, collect report |
-| `record` | 🔜 | Record and analyze scores from `report.csv` |
-| `evolve` | 🔜 | Generate next generation via mutation/crossover |
+| `vary`      | 🔜 | Generate next generation via mutation/crossover |
+| `evaluate`  | 🔜 | Package prompts, run Failter, collect report |
+| `select`    | 🔜 | Record and analyze scores from `report.csv` |
 
 ---
 
@@ -95,7 +95,7 @@ The `bootstrap` command is fully implemented according to this improved architec
 PromptCritical does **not** implement scoring or judgement itself. Instead we treat [**Failter**](https://github.com/pragsmike/failter) as a **black box** experiment runner:
 
 *   We build a directory that matches Failter’s required structure (`inputs/`, `templates/`, `model-names.txt`, …).
-*   We shell-out to `failter experiment → evaluate → report`.
+*   We shell-out to `failter experiment; failter evaluate;  failter report`.
 *   We parse the resulting `report.csv` to record fitness data for the evolution loop.
 
 ---

@@ -13,8 +13,8 @@ which takes a set of prompts (the population) and returns a new set of prompts (
 `evolve` : population -> population is thus an endofunction on the powerset of the set of all prompts.
 
 `evolve` is composed from a number of other functions on the population:
-  * `breed` : population -> population
-  * `contest` : population -> scores
+  * `vary` : population -> population
+  * `evaluate` : population -> scores
   * `select` : population x scores -> population
 
 You can think of scores as a function from the population to integers 0-100.
@@ -57,7 +57,7 @@ An experiment specification is a directory containing
    * `pdb` prompt store directory
    * `generations`
       * `gen-NNN`
-        * `evolution` specification and results of evolution operations (winnow, mutate, breed)
+        * `evolution` specification and results of evolution operations (winnow, mutate, crossover)
         * `contests` contest specifications and results
    * `bootstrap.edn` manifest
    * `evolution-parameters.edn`
@@ -155,7 +155,7 @@ key in the metadata.
 #### Evaluation and Selection
 
 In this first increment of development, we are restricting ourselves to very
-simple methods for the `winnow-and-breed` operation on the population.
+simple methods for the `vary` and `select` operations on the population.
 
 1. Failter evaluation:
    - Package all 5 prompts for Failter

@@ -13,7 +13,7 @@ This design has several key advantages:
 
 ---
 
-### The Step-by-Step Workflow: From Bootstrap to Contest
+### The Step-by-Step Workflow: From Bootstrap to Evaluate
 
 Let's trace the lifecycle of an experiment, starting from a bootstrapped state and proceeding through the first contest.
 
@@ -41,7 +41,7 @@ my-experiment/
 └── generations/    ; Exists, but is empty
 ```
 
-#### State 2: After a (Future) `pcrit evolve`
+#### State 2: After a (Future) `pcrit vary`
 
 To have a population to test, we must first run an evolution step. Let's assume a future `pcrit evolve` command is run. Its job is to create the next generation. For the very first run, it would:
 
@@ -74,7 +74,7 @@ my-experiment/
 ```
 Now we have an "active population" for Generation 0 and are ready to run a contest.
 
-#### State 3: User Runs `pcrit contest`
+#### State 3: User Runs `pcrit evaluate`
 
 The user wants to evaluate the population of Generation 0. They provide the necessary data and a name for this specific contest run.
 
@@ -120,7 +120,7 @@ my-experiment/
                     └── model-names.txt
 ```
 
-#### State 4: After `pcrit contest` Completes
+#### State 4: After `pcrit evaluate` Completes
 
 The `contest` command now shells out to `failter`.
 
@@ -152,4 +152,4 @@ The `contest-metadata.edn` file would contain:
  :contest-name "initial-web-cleanup"}
 ```
 
-This completes the `contest` step. The next command, `record`, would then read `results.csv` and update the experiment's history, likely by adding fitness scores to the metadata of the prompt files in `pdb/`.
+This completes the `contest` step. The next command, `select`, would then read `results.csv` and update the experiment's history, likely by adding fitness scores to the metadata of the prompt files in `pdb/`.

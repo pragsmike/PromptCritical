@@ -13,7 +13,7 @@ Here is the revised `docs/DESIGN.md`.
 
 ## 1  Purpose & Scope
 
-PromptCritical is a **data‑driven, evolutionary framework** for discovering high‑performance prompts for Large Language Models (LLMs). This document describes the current architecture, which follows **Polylith** conventions to realize an experiment loop of ***bootstrap → contest (Failter) → record → evolve***.
+PromptCritical is a **data‑driven, evolutionary framework** for discovering high‑performance prompts for Large Language Models (LLMs). This document describes the current architecture, which follows **Polylith** conventions to realize an experiment loop of ***bootstrap → vary → evaluate → select ***.
 
 The design has two guiding principles:
 
@@ -109,16 +109,18 @@ The prompt remains the central data artifact. Upon creation, its header is now e
 ## 5  Experiment Flow (v0.2)
 
 ```
-bootstrap → contest (pack → run Failter) → record (report.csv) → prepare generation N+1
+bootstrap → vary → evaluate (pack → run Failter) → select  → prepare generation N+1
 ```
 
 1.  **Bootstrap** (`pcrit bootstrap <exp-dir>`)
     *   The `cli` base calls the `pcrit.command/bootstrap!` function.
-    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`.
-2.  **Contest** (`pcrit contest …`)
+    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn**.
+2.  **Vary* (`pcrit vary <exp-dir>`)**
+3.  **Evaluate** (`pcrit contest …`)
     *   Packages selected prompts into a Failter-compatible directory and executes `failter`.
-3.  **Record**
     *   Parses `report.csv` and updates the experiment's history.
+4.  **Select** (`pcrit select <exp-dir>`)
+    *   Removes unfit members from the population
 
 ---
 
@@ -132,13 +134,14 @@ bootstrap → contest (pack → run Failter) → record (report.csv) → prep
 
 ## 7  Extensibility Roadmap
 
-*(This section remains unchanged.)*
 
 ---
 
 ## 8  Open Issues & Next Steps
 
-*   **Refactor to use a `Context Map`**: The most critical next step is to refactor all command functions to accept a single `ctx` map instead of multiple arguments (`exp-dir`, `config`, etc.). This will simplify function signatures and make the application state more explicit and easier to reason about.
+*   **Implement vary command**: Add new members to population by mutation and crossover
+*   **Implement evaluate command**: Setup Failter experiment, run it to score population members for fitness
+*   **Implement select command**: Eliminate less-fit members from active population
 *   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `contest` → `record` loop (using a mocked Failter) in the CI matrix.
 *   **Expose lock back‑off parameters**: Move hard-coded locking timeouts into `pcrit.config`.
 
