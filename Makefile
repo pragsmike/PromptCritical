@@ -7,10 +7,11 @@ test:
 
 
 pack:
-	(for i in README.md USAGE.md docs/DESIGN.md docs/API.md \
+	(for i in README.md USAGE.md PolylithNotes.md docs/DESIGN.md docs/API.md \
 					docs/RISKS.md \
 					docs/evo-process.md \
 					docs/evo-population-bootstrapping.md \
+					docs/evo-command-sequence.md \
 					docs/prompt-representation.md \
 					copilot/onboard-*.md \
 					Makefile `find . -name deps.edn` ;\

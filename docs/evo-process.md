@@ -1,184 +1,81 @@
 # Evolution Process
 
-PromptCritical optimizes prompts for a particular task by carrying out
-an evolutionary process to explore a prompt fitness landscape.
+PromptCritical optimizes prompts for a particular task by carrying out an evolutionary process to explore a prompt fitness landscape.
 
 ## Evolution Cycle Theory
 
-Each "generation" has as its population a set of prompts.
-Briefly, each generation undergoes a "breed-vie-winnow" cycle.
-That is, the population is replaced by a new one computed by a composite function `evolve`,
-which takes a set of prompts (the population) and returns a new set of prompts (the new population).
+Each "generation" has as its population a set of prompts. Briefly, each generation can undergo a **`vary` → `evaluate` → `select`** cycle. This is also known as a "breed-vie-winnow" cycle. The population for the next generation is computed by applying this series of functions.
 
-`evolve` : population -> population is thus an endofunction on the powerset of the set of all prompts.
+The core functions operating on a population are:
+*   `vary` (breed): population → population
+*   `evaluate` (vie): population → scores
+*   `select` (winnow): population × scores → population
 
-`evolve` is composed from a number of other functions on the population:
-  * `vary` : population -> population
-  * `evaluate` : population -> scores
-  * `select` : population x scores -> population
-
-You can think of scores as a function from the population to integers 0-100.
-You can think of select as a function from population to population, parameterized by scores.
+A user can compose these steps to create an `evolve` endofunction that takes one population and produces the next.
 
 ## Evolution Experiment
 
-The unit of work is the experiment.  It consists of a number of generations, or
-vary-evaluate-select (also called breed-vie-winnow) cycles.
-Each generation has:
-   * a population - a set of prompts, or members
-   * an evolution - application of the `evolve` function, with specified parameters
-      * vary - (breed) produce new members
-      * evaluate - (vie) an evaluation that assigns fitness to each member
-      * select - (winnow) purges unfit members from the population, using contest results
+The unit of work is the **experiment**. It consists of a number of generations, each representing a snapshot of the evolving population.
 
-The experiment process runs several cycles, each producing a new generation.
-The experiment ends when a specified condition becomes true.  Examples of
-exit conditions:
-    * a certain number of generations is reached
-    * fitness score of a generation's "champion" prompt reaches a threshold
+Each step in the cycle (`vary`, `evaluate`, `select`) produces a new generation directory, which contains:
+*   A **population**: a set of active object-prompts for that generation, represented as symlinks.
+*   **Results**: In the case of `evaluate`, this includes contest results. In the case of `vary` or `select`, this can include metadata about the operation.
 
-The specification of the experiment and its state all reside under a single
-directory, known as the experiment directory.
+The experiment process runs for several cycles, each producing a new generation. The experiment can be stopped when a specific condition is met, such as reaching a target number of generations or achieving a desired fitness score. The entire state of the experiment resides within a single **experiment directory**.
 
-NOTE: The `failter` tool also uses the term "experiment" to refer to a set of trials
-that it runs.  Those are actually sub-experiments of our evolution experiment.
-We'll use the term *contest* to refer to a `failter` experiment.
+> **Note on Terminology:** The `failter` tool also uses the term "experiment" for its evaluation runs. To avoid confusion, in PromptCritical we call a single `failter` run a **contest**.
 
-### Experiment directory structure
+### Experiment Directory Structure
 
-The specification and current state of an experiment reside under a directory.
-We'll call this directory the experiment specification directory, the experiment
-directory, or simply the experiment.
+The specification and current state of an experiment reside under its root directory. It contains:
+*   `seeds/`: The raw text files for the initial seed and meta-prompts.
+*   `links/`: Symlinks to notable prompts in the database (e.g., `seed`, `refine`).
+*   `pdb/`: The immutable prompt database where all prompt artifacts are stored.
+*   `generations/`: Contains a subdirectory for each generation (`gen-000`, `gen-001`, etc.).
+*   `bootstrap.edn`: The manifest file for the `bootstrap` command.
+*   `evolution-parameters.edn`: (Future) Parameters controlling the evolution algorithms.
 
-An experiment specification is a directory containing
-   * `seeds`
-      * the seed prompt
-      * the initial metaprompts
-   * `links` symlinks to notable prompts, both object and meta
-   * `pdb` prompt store directory
-   * `generations`
-      * `gen-NNN`
-        * `evolution` specification and results of evolution operations (winnow, mutate, crossover)
-        * `contests` contest specifications and results
-   * `bootstrap.edn` manifest
-   * `evolution-parameters.edn`
-
-The `prompts` directory holds the initial seed prompt and the initial mutators,
-in raw form, without any metadata.  During bootstrapping, they are ingested into
-the prompt store `pdb`.
-
-The `links` directory holds symlinks to where the seed prompts ended up in the `pdb` store.
-They are given names as specified in the `bootstrap.edn` file.
-
-The evolution parameter file gives the parameter settings that control the evolution algorithm.
-
-
-In detail:
-
-Of course. Here is a clear, hierarchical presentation of the refined PromptCritical experiment directory structure, using the "line art" style for clarity.
-
-This structure integrates the requirements of the Failter tool directly into the contest subdirectory, addressing the concerns we discussed.
-
+The directory structure for a contest is designed for clear auditing and integration with Failter:
 ```
 <experiment-root>/
 ├── seeds/
-│   └── (Raw .txt files for the initial seed and meta-prompts)
+│   └── (Raw .txt files for initial prompts)
 ├── links/
-│   └── (Symbolic links to key prompts like 'seed', 'refine', 'vary' in pdb/)
+│   └── (Symbolic links to key prompts like 'seed', 'refine')
 ├── pdb/
-│   ├── P001.prompt
-│   ├── P002.prompt
-│   └── ... (The central, immutable store for all prompt artifacts)
+│   └── (The central, immutable store for all prompt artifacts)
 ├── generations/
-│   └── gen-001/
-│       ├── evolution/
-│       │   └── (Specifications and results for mutation, crossover, etc.)
+│   └── gen-000/
+│       └── population/
+│           ├── P001.prompt -> ../../../pdb/P001.prompt
+│           └── ...
 │       └── contests/
-│           └── 2025-07-01-web-cleanup/
+│           └── 2025-07-08-web-cleanup/
 │               ├── failter-spec/
 │               │   ├── inputs/
-│               │   │   ├── article_to_clean.md
-│               │   │   └── another_document.txt
 │               │   ├── templates/
-│               │   │   ├── P001.prompt  -> ../../../../pdb/P001.prompt
-│               │   │   └── P002.prompt  -> ../../../../pdb/P002.prompt
-│               │   ├── ground_truth/
-│               │   │   ├── article_to_clean.md
-│               │   │   └── another_document.txt
-│               │   └── model-names.txt
+│               │   └── ...
 │               ├── results.csv
-│               └── contest-metadata.yaml
+│               └── contest-metadata.edn
 ├── bootstrap.edn
 └── evolution-parameters.edn
 ```
 
-### Key ideas
+### Key Directory Concepts
 
-*   **Contest Directory:** The `generations/gen-NNN/contests/<contest-name>/`
-    directory is the self-contained record of a single evaluation run.
-*   **`failter-spec/`:** This is the crucial integration point. It is prepared specifically for the Failter tool.
-    *   The `inputs/` and `ground_truth/` directories will be populated with the necessary test data for the contest.
-    *   The `templates/` directory within it will contain **symbolic links** pointing directly to the canonical `.prompt` files in the main `pdb/`. This avoids data duplication and ensures Failter reads the correct, version-controlled prompt bodies.
-*   **Results:** The output from Failter (`results.csv`) and the PromptCritical-specific metadata (`contest-metadata.yaml`) are stored alongside the `failter-spec`, creating a complete and auditable record of the contest.
+*   **`generations/gen-NNN/population/`**: This directory defines the active set of object-prompts for a given generation via symbolic links into the `pdb/`.
+*   **`generations/gen-NNN/contests/<contest-name>/`**: This is the self-contained record of a single evaluation run (a contest).
+*   **`.../failter-spec/`**: This subdirectory is prepared specifically for the Failter tool, with its `inputs/`, `templates/`, etc., populated with symlinks.
+*   **`.../results.csv`**: The raw output from a Failter run is stored here, providing an immutable record of performance. The `select` command uses this file as its input.
 
+### The Evolutionary Steps in Practice
 
-### Bootstrapping
+An experiment begins with a one-time `bootstrap` command, followed by a cycle of `vary`, `evaluate`, and `select`.
 
-An experiment starts with bootstrapping a population.
-In the bootstrap step, it sets up generation zero from the bootstrap manifest specification.
-Then it carries out one round of evolution by applying the specified mutation meta-prompts
-to a seed prompt.  This produces generation one.
+1.  **`bootstrap`**: This command reads the `bootstrap.edn` manifest and ingests the raw prompts from the `seeds/` directory into the immutable `pdb/`, creating the initial named links (e.g., `seed`, `refine`) for reference. It does *not* create a generation.
 
-The bootstrap sequence uses a set of prompts, specified in the manifest:
-   * the seed prompt, which is the first individual in the population
-   * a set of meta-prompts, which produce one or more new prompts from a given one.
-     These are the initial set of evolution operators.
-     * refine a given prompt to produce another
-     * vary to produce one or more variants of a given prompt
+2.  **`vary`**: This is the "breeding" step. It typically loads the population of the latest generation, applies meta-prompts to create new prompt variations (offspring), and then creates a *new generation* containing both the original survivors and the new offspring.
 
-The seed prompt and the metaprompts originally come from a pool of "raw" prompts
-in the `seeds` directory. Before they are actually used in the
-experiment, they are ingested into the prompt database just like any other
-prompt in the population.
+3.  **`evaluate`**: This is the "vying" or testing step. The `pcrit evaluate` command targets a specific generation's population, packages it into a `failter-spec` directory, and runs a **contest** using the external `failter` tool. The resulting scores are saved to a `results.csv` file within that contest's directory. **Fitness scores are not written into the prompt files themselves.**
 
-The `ingest` operation assigns each prompt an id that is used to track ancestry
-of their descendants, and adds some metadata describing properties of the
-prompt.
-   * `template-field-names`
-   * `character-count`
-   * `word-count`
-
-All the prompts are actually prompt templates (see Prompt Templating).
-We must supply values to fill in their fields before we can submit them to an LLM.
-The names of the fields that must be supplied are found in the `template-field-names`
-key in the metadata.
-
-#### Evaluation and Selection
-
-In this first increment of development, we are restricting ourselves to very
-simple methods for the `vary` and `select` operations on the population.
-
-1. Failter evaluation:
-   - Package all 5 prompts for Failter
-   - Run on blog post corpus
-   - Ingest fitness scores back to prompt files
-
-#### Contest Architecture
-
-```
-generations/gen-NNN/contests/
-├── 2025-07-01-web-cleanup/
-│   ├── participants/           # symlinks to P001, P002, etc.
-│   ├── failter-spec/          # experiment definition
-│   ├── results.csv            # scores and rankings
-│   └── contest-metadata.yaml  # timestamp, generation, etc.
-```
-
-This creates a **complete audit trail** where you can trace any prompt's
-evolutionary performance history through the contests it participated in.
-
-2. Simple selection + mutation:
-   - Eliminate worst performer
-   - Mutate best performer → new prompt
-   - Population: [4 survivors + 1 new mutant]
-
+4.  **`select`**: This is the "winnowing" step. The `pcrit select` command reads a `results.csv` file from a contest, applies a selection strategy (e.g., eliminate the worst N performers, keep the top K), and creates a *new generation* containing only the symlinks to the surviving prompts.
