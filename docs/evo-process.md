@@ -22,13 +22,14 @@ You can think of select as a function from population to population, parameteriz
 
 ## Evolution Experiment
 
-The unit of work is the experiment.  It consists of a number of generations, or breed-vie-winnow cycles.
+The unit of work is the experiment.  It consists of a number of generations, or
+vary-evaluate-select (also called breed-vie-winnow) cycles.
 Each generation has:
    * a population - a set of prompts, or members
    * an evolution - application of the `evolve` function, with specified parameters
-      * a birthing - (breed) produce new members
-      * a contest - (vie) an evaluation that assigns fitness to each member
-      * a selection - (winnow) purges unfit members from the population, using contest results
+      * vary - (breed) produce new members
+      * evaluate - (vie) an evaluation that assigns fitness to each member
+      * select - (winnow) purges unfit members from the population, using contest results
 
 The experiment process runs several cycles, each producing a new generation.
 The experiment ends when a specified condition becomes true.  Examples of

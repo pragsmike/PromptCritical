@@ -1,19 +1,13 @@
-Of course. The recent refactoring work has significantly improved the architecture, and the design document must be updated to reflect this new, clearer structure.
-
-Here is the revised `docs/DESIGN.md`.
-
----
-
 # PromptCritical System Design
 
-**Version 1.3 · 2025‑07‑05**
-**Status:** *Refactoring for v0.3*
+**Version 1.4 · 2025‑07‑06**
+**Status:** *Implementing v0.2 command suite*
 
 ---
 
 ## 1  Purpose & Scope
 
-PromptCritical is a **data‑driven, evolutionary framework** for discovering high‑performance prompts for Large Language Models (LLMs). This document describes the current architecture, which follows **Polylith** conventions to realize an experiment loop of ***bootstrap → vary → evaluate → select ***.
+PromptCritical is a **data‑driven, evolutionary framework** for discovering high‑performance prompts for Large Language Models (LLMs). This document describes the current architecture, which follows **Polylith** conventions to realize an experiment loop of ***bootstrap → vary → evaluate → select***.
 
 The design has two guiding principles:
 
@@ -41,7 +35,7 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 ```
 workspace/
 ├── components/
-│   ├── command/      ; high-level user commands (bootstrap, contest)
+│   ├── command/      ; high-level user commands (bootstrap, vary, evaluate)
 │   ├── expdir/       ; experiment directory layout logic
 │   ├── pdb/          ; prompt DB internals
 │   ├── pop/          ; population + analysis logic
@@ -71,7 +65,7 @@ This component contains the high-level, end-to-end logic for user-facing command
 ### 3.2 Experiment Directory (`pcrit.expdir.*`)
 
 This component is the single source of truth for the physical file system layout of an experiment.
-*   Provides functions to get paths to standard subdirectories (`get-pdb-dir`, `get-links-dir`).
+*   Provides functions to get paths to standard subdirectories (`get-pdb-dir`, `get-generation-dir`).
 *   Handles creation of the directory structure and symbolic links.
 
 ### 3.3 Prompt Database (`pcrit.pdb.*`)
@@ -83,7 +77,7 @@ This component is the single source of truth for the physical file system layout
 ### 3.4 Population & Analysis (`pcrit.pop.*`)
 
 Holds the core domain logic for prompts and populations, but *not* high-level orchestration.
-*   **Ingestion Primitives**: Provides functions to read and ingest raw prompts from manifests.
+*   **Ingestion & Management**: Provides functions to ingest raw prompts, load a population from a generation, and create new generation directories.
 *   **Prompt Analysis**: The `analyze-prompt-body` function inspects prompt text to add critical metadata, including the `:prompt-type`.
 
 ---
@@ -109,18 +103,27 @@ The prompt remains the central data artifact. Upon creation, its header is now e
 ## 5  Experiment Flow (v0.2)
 
 ```
-bootstrap → vary → evaluate (pack → run Failter) → select  → prepare generation N+1
+bootstrap → vary → evaluate → select
 ```
 
 1.  **Bootstrap** (`pcrit bootstrap <exp-dir>`)
     *   The `cli` base calls the `pcrit.command/bootstrap!` function.
-    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn**.
-2.  **Vary* (`pcrit vary <exp-dir>`)**
-3.  **Evaluate** (`pcrit contest …`)
-    *   Packages selected prompts into a Failter-compatible directory and executes `failter`.
-    *   Parses `report.csv` and updates the experiment's history.
+    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`.
+
+2.  **Vary** (`pcrit vary <exp-dir>`)
+    *   Loads the population from the latest generation.
+    *   Applies meta-prompts (mutation/crossover) to generate new offspring prompts.
+    *   Creates a new generation directory containing links to the full new population (survivors + offspring).
+
+3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
+    *   Identifies the active population for a given generation.
+    *   Packages the prompts and user-provided test data into a `failter-spec` directory for a new "contest".
+    *   Executes the external `failter` tool, which runs the contest and produces a `results.csv` report.
+
 4.  **Select** (`pcrit select <exp-dir>`)
-    *   Removes unfit members from the population
+    *   Reads `results.csv` from one or more contests.
+    *   Applies a selection strategy to determine which prompts survive.
+    *   Creates a new generation directory containing links to only the surviving members of the population.
 
 ---
 
@@ -134,17 +137,18 @@ bootstrap → vary → evaluate (pack → run Failter) → select  → prepar
 
 ## 7  Extensibility Roadmap
 
+*(Future work will detail this section.)*
 
 ---
 
 ## 8  Open Issues & Next Steps
 
-*   **Implement vary command**: Add new members to population by mutation and crossover
-*   **Implement evaluate command**: Setup Failter experiment, run it to score population members for fitness
-*   **Implement select command**: Eliminate less-fit members from active population
-*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `contest` → `record` loop (using a mocked Failter) in the CI matrix.
-*   **Expose lock back‑off parameters**: Move hard-coded locking timeouts into `pcrit.config`.
+*   **Implement `vary` command**: Add new members to a population by applying meta-prompts to existing members.
+*   **Implement `evaluate` command**: Set up a Failter contest, run it to score population members for fitness, and store the results.
+*   **Implement `select` command**: Use contest results to eliminate less-fit members and create a new, smaller survivor population.
+*   **Refactor `pcrit.cli.main`**: Update the command-line parser to handle subcommands with their own specific options (e.g., for `evaluate`).
+*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `vary` → `evaluate` → `select` loop (using a mocked Failter) in the CI matrix.
 
 ---
 
-*Last updated 2025‑07‑05*
+*Last updated 2025‑07‑08*

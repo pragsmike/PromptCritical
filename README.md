@@ -32,7 +32,7 @@ Key ingredients:
 | **Polylith workspace** | Re‑usable components, clean boundaries, lightning‑fast incremental tests |
 | **Immutable Prompt DB** | Atomic, hash‑verified store with per‑file lock‑healing |
 | **Failter integration** | Runs large‑scale prompt contests and collects scores |
-| **Evolution engine** (*WIP*) | Selects, mutates & cross‑breeds prompts toward higher fitness |
+| **Evolution engine** (*WIP*) | Varies, evaluates, and selects prompts to improve fitness |
 
 ---
 
@@ -70,10 +70,10 @@ workspace/
 
 | Command | Status | Description |
 | :--- | :--- | :--- |
-| `bootstrap` | ✅ | Seed the Prompt DB from a manifest |
-| `vary`      | 🔜 | Generate next generation via mutation/crossover |
-| `evaluate`  | 🔜 | Package prompts, run Failter, collect report |
-| `select`    | 🔜 | Record and analyze scores from `report.csv` |
+| `bootstrap` | ✅ | Seed the Prompt DB from a manifest. |
+| `vary`      | 🔜 | Generate a new population via mutation/crossover. |
+| `evaluate`  | 🔜 | Run the active population in a contest and collect results. |
+| `select`    | 🔜 | Create a new population of survivors based on evaluation scores. |
 
 ---
 
@@ -84,7 +84,7 @@ The initial v0.1 work is complete, and the project has undergone a significant a
 *   **`pcrit.command`**: Provides reusable, high-level workflow functions (e.g., `bootstrap!`) that can be called by any base.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
-*   **`pcrit.pop`**: Handles core prompt domain logic, including ingestion and analysis (e.g., assigning a `:prompt-type` to every prompt).
+*   **`pcrit.pop`**: Handles core prompt domain logic, including ingestion, analysis, and population management.
 
 The `bootstrap` command is fully implemented according to this improved architecture.
 
@@ -95,14 +95,14 @@ The `bootstrap` command is fully implemented according to this improved architec
 PromptCritical does **not** implement scoring or judgement itself. Instead we treat [**Failter**](https://github.com/pragsmike/failter) as a **black box** experiment runner:
 
 *   We build a directory that matches Failter’s required structure (`inputs/`, `templates/`, `model-names.txt`, …).
-*   We shell-out to `failter experiment; failter evaluate;  failter report`.
-*   We parse the resulting `report.csv` to record fitness data for the evolution loop.
+*   We shell-out to `failter experiment; failter evaluate; failter report`.
+*   We parse the resulting `report.csv` to gather fitness data for the `select` step.
 
 ---
 
-## 🚧 Current Milestone (v0.2): The Vertical Slice
+## 🚧 Current Milestone (v0.2): The Core Evolutionary Loop
 
-The immediate goal is a **“bootstrap → contest → record” vertical slice**. This will prove the system can orchestrate an external evaluator and round-trip the results.
+The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This will prove the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
 
 1.  **Bootstrap an Experiment** (`✅ Implemented`)
     Creates an initial population from a manifest file.
@@ -110,14 +110,23 @@ The immediate goal is a **“bootstrap → contest → record” vertical slice*
     pcrit bootstrap my-experiment/
     ```
 
-2.  **Run a Contest** (`🔜 In Development`)
-    Packages prompts, runs them through Failter, and collects the results.
+2.  **Vary the Population** (`🔜 In Development`)
+    Loads the latest generation, applies meta-prompts to create offspring, and creates a new generation containing both survivors and offspring.
     ```bash
-    pcrit contest my-experiment/ --prompts P1,P2 --inputs ...
+    pcrit vary my-experiment/
     ```
 
-3.  **Record the Scores** (`🔜 In Development`)
-    Parses the `report.csv` from Failter and records the fitness data in the experiment's history, linking scores back to the prompts that earned them.
+3.  **Evaluate the Population** (`🔜 In Development`)
+    Packages prompts from a specific generation, runs them through Failter in a "contest," and collects the results.
+    ```bash
+    pcrit evaluate my-experiment/ --generation 0 --name "web-cleanup-v1" --inputs ...
+    ```
+
+4.  **Select the Survivors** (`🔜 In Development`)
+    Parses the `results.csv` from a contest and applies a selection strategy to create a new generation containing only the fittest prompts.
+    ```bash
+    pcrit select my-experiment/ --from-contest "web-cleanup-v1"
+    ```
 
 ---
 
@@ -125,13 +134,13 @@ The immediate goal is a **“bootstrap → contest → record” vertical slice*
 
 | Milestone | New Capability |
 | :--- | :--- |
-| **v0.2** | Bootstrap → Contest → Record (described above) |
-| **v0.3** | Basic mutation & crossover operators |
-| **v0.4** | Simple (µ+λ) evolutionary loop driven by contest scores |
-| **v0.5** | Surrogate critic to pre-filter variants before Failter |
-| **v0.6** | Experiment recipes (EDN/YAML) and CLI replayability |
-| **v0.7** | Reporting dashboard (`pcrit.web` base) |
-| **v1.0** | Distributed workers, advanced semantic validators |
+| **v0.2** | Implement core `vary`, `evaluate`, `select` commands. |
+| **v0.3** | Automated `evolve` command that composes the v0.2 commands. |
+| **v0.4** | Advanced selection & mutation operators. |
+| **v0.5** | Surrogate critic to pre-filter variants before Failter. |
+| **v0.6** | Experiment recipes (EDN/YAML) and CLI replayability. |
+| **v0.7** | Reporting dashboard (`pcrit.web` base). |
+| **v1.0** | Distributed workers, advanced semantic validators. |
 
 ---
 
@@ -142,8 +151,7 @@ The immediate goal is a **“bootstrap → contest → record” vertical slice*
     git clone https://github.com/pragsmike/promptcritical
     cd promptcritical
     make test
-    ```
-2.  **Read** the design documents in the `docs/` directory.
+    ```2.  **Read** the design documents in the `docs/` directory.
 3.  **Hack** on the next milestone—PRs welcome!
 
 ---

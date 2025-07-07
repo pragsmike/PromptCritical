@@ -7,11 +7,11 @@ This guide explains how to use the `pcrit` command-line tool to set up, run, and
 PromptCritical treats prompt engineering as a scientific, evolutionary process. The goal is to move beyond manually tweaking prompts and instead use a data-driven loop:
 
 1.  **Bootstrap**: Create an initial population of prompts from seed files.
-2.  **Contest**: Run the prompts against a corpus of inputs using the **Failter** tool to generate performance scores.
-3.  **Record**: Ingest the scores from the contest.
-4.  **Evolve**: Use the scores to select the fittest prompts and create a new generation through mutation and crossover.
+2.  **Vary**: Produce new population members by applying meta-prompts (mutation, crossover) to existing ones.
+3.  **Evaluate**: Run the prompts against a corpus of inputs using the **Failter** tool to generate performance scores.
+4.  **Select**: Use the scores to select the fittest prompts to survive to the next generation.
 
-This entire process is managed from the command line within a dedicated **Experiment Directory**.
+Steps 2 through 4 are repeated in a cycle, with each iteration producing a new, more refined generation of prompts. This entire process is managed from the command line within a dedicated **Experiment Directory**.
 
 ## Core Concepts
 
@@ -24,7 +24,7 @@ Everything related to a single experiment lives in one directory. This is the fi
 Every prompt ingested into the database is automatically analyzed and assigned a `:prompt-type` in its metadata. This type defines its role in the system.
 
 *   **:object-prompt**: This is a prompt that performs a task on an external input (e.g., summarizing a document). It is designed to be evaluated in a contest.
-*   **:meta-prompt**: This is a prompt that operates on *another prompt*. It is used during the `evolve` step to create new prompt variations (e.g., "Rephrase this prompt to be more concise: {{OBJECT_PROMPT}}").
+*   **:meta-prompt**: This is a prompt that operates on *another prompt*. It is used during the `vary` step to create new prompt variations (e.g., "Rephrase this prompt to be more concise: {{OBJECT_PROMPT}}").
 *   **:static-prompt**: A prompt with no special template fields. It can be used for analysis but not directly in the evolution or contest loops.
 *   **:invalid-mixed-type**: A prompt that incorrectly contains both special template fields. It cannot be used.
 
@@ -34,8 +34,8 @@ The prompt types are determined by the presence of special template variables. Y
 
 | Variable Name | Required For | Used By | Value Provided By |
 | :--- | :--- | :--- | :--- |
-| `{{INPUT_TEXT}}` | `:object-prompt` | `pcrit contest` | The content of a file from the `--inputs` directory during a Failter run. |
-| `{{OBJECT_PROMPT}}` | `:meta-prompt` | `pcrit evolve` | The body of another prompt being mutated or combined. |
+| `{{INPUT_TEXT}}` | `:object-prompt` | `pcrit evaluate` | The content of a file from the `--inputs` directory during a Failter run. |
+| `{{OBJECT_PROMPT}}` | `:meta-prompt` | `pcrit vary` | The body of another prompt being mutated or combined. |
 
 ## The Standard Workflow
 
@@ -72,41 +72,48 @@ First, create your experiment directory and the necessary seed files.
      :refine "seeds/refine-prompt.txt"}
     ```
 
-4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`, `links/`), ingests the prompts, and assigns them unique IDs (`P1`, `P2`, etc.).
+4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`, `links/`), and ingests the prompts, assigning them unique IDs (`P1`, `P2`, etc.).
 
     ```bash
     pcrit bootstrap my-first-experiment
     ```
+    After this step, your directory will be initialized with your starting prompts.
 
-    After this step, your directory will be fully initialized and ready for a contest. You will find symbolic links like `my-first-experiment/links/seed` pointing to the ingested prompt file in the `pdb/` directory.
+### Step 2: Vary the Population
 
-### Step 2: Run a Contest
+Next, you will create a new generation of prompts by applying your meta-prompts to the existing population.
 
-Now, you can test your object-prompts against a corpus of inputs.
+```bash
+# This is the future goal (v0.2)
+pcrit vary my-first-experiment
+```
+This command will load the latest population, use meta-prompts like `refine` to create new candidates, and save the result as a new generation (e.g., in a `generations/gen-000/` directory).
 
-1.  **Gather your data.** You will need a directory of input files, and optionally, a directory of corresponding "ground truth" (perfectly edited) files.
-2.  **Run the `contest` command.** You must tell it which prompts to include, where to find the input data, and which models to use.
+### Step 3: Evaluate the Population
+
+Now, you can run the prompts from a specific generation in a contest to see how they perform.
+
+1.  **Gather your evaluation data.** You will need a directory of input files and, optionally, a directory of corresponding "ground truth" (perfectly edited) files.
+2.  **Run the `evaluate` command.** You must tell it which generation to test, give the contest a name, and provide the paths to your data.
 
     ```bash
-    pcrit contest my-first-experiment \
-      --prompts P1,P3,P5 \
+    # This is the future goal (v0.2)
+    pcrit evaluate my-first-experiment \
+      --generation 0 \
+      --name "web-cleanup-v1" \
       --inputs path/to/my/inputs/ \
       --ground-truth path/to/my/ground_truth_files/ \
       --models-file path/to/my/models.txt
     ```
-    This command will:
-    *   Create a new contest subdirectory inside `generations/gen-000/contests/`.
-    *   Prepare a `failter-spec` directory correctly formatted for the Failter tool.
-    *   Execute the `failter` command-line pipeline.
-    *   Place the resulting `report.csv` in the contest directory.
+    This command will create a new contest subdirectory (e.g., `.../contests/web-cleanup-v1/`), prepare the files for the **Failter** tool, execute the Failter pipeline, and place the resulting `results.csv` in the contest directory.
 
-### Step 3: Evolve Your Population (Future)
+### Step 4: Select the Survivors
 
-After running one or more contests, you will run the `evolve` command, which uses the scores from the contests to breed a new generation of prompts using your meta-prompts.
+After evaluating a generation, you can use the scores from the contest to "winnow" the population, creating a new generation comprised of only the best performers.
 
 ```bash
-# This is the future goal
-pcrit evolve my-first-experiment
+# This is the future goal (v0.2)
+pcrit select my-first-experiment --from-contest "web-cleanup-v1"
 ```
 
-This will create a `gen-001` directory containing new prompts ready for the next round of contests. By repeating the `contest` and `evolve` steps, you iteratively improve your prompt population.
+This will create a new generation directory (e.g., `gen-001/`) containing links to only the surviving prompts. By repeating the `vary`, `evaluate`, and `select` steps, you iteratively improve your prompt population.
