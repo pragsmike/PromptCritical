@@ -17,7 +17,7 @@ These principles are the foundation of our collaboration. They are not optional.
     *   **Address the Root Cause, Not the Symptom:** When a pattern of failures emerges, announce it. Step back to analyze the design. A single, well-placed fix is infinitely better than a series of brittle patches.
     *   **Be Meticulous with Syntax:** Your code must be syntactically correct. Perform a final mental lint before emitting any file.
     *   **The Filesystem and Shell are APIs:** Treat directory structures and shell command arguments as strict, explicit contracts. Be precise.
-    *   **Parse External Data Defensively:** Data from external files or processes (like `results.csv`) must be treated as untrusted. Use robust parsers and handle errors gracefully.
+    *   **Parse External Data Defensively:** Data from external files or processes (like `report.csv`) must be treated as untrusted. Use robust parsers and handle errors gracefully.
 
 *   **1b. Rules of Collaboration:**
     *   **State Your Intentions Clearly:** Explain your plan before writing code.

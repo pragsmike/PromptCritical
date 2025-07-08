@@ -35,7 +35,7 @@
 1. **Finish the vertical slice**
 
    * Implement `contest` + `record` using the context map.
-   * Store `results.csv` *and* the full Failter spec directory under `gen-NNN/contests/…` as already designed.
+   * Store `report.csv` *and* the full Failter spec directory under `gen-NNN/contests/…` as already designed.
 
 2. **Diversity-aware selection**
    Add Simpson or Jaccard diversity metrics over n-gram shingles of prompt text; penalise generations whose diversity falls below a threshold (see EvoPrompt’s fitness shaping below).

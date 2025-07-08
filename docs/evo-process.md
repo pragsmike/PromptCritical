@@ -7,9 +7,9 @@ PromptCritical optimizes prompts for a particular task by carrying out an evolut
 Each "generation" has as its population a set of prompts. Briefly, each generation can undergo a **`vary` → `evaluate` → `select`** cycle. This is also known as a "breed-vie-winnow" cycle. The population for the next generation is computed by applying this series of functions.
 
 The core functions operating on a population are:
-*   `vary` (breed): population → population
-*   `evaluate` (vie): population → scores
-*   `select` (winnow): population × scores → population
+*   `vary`: population → population
+*   `evaluate`: population → scores
+*   `select`: population × scores → population
 
 A user can compose these steps to create an `evolve` endofunction that takes one population and produces the next.
 
@@ -55,7 +55,7 @@ The directory structure for a contest is designed for clear auditing and integra
 │               │   ├── inputs/
 │               │   ├── templates/
 │               │   └── ...
-│               ├── results.csv
+│               ├── report.csv
 │               └── contest-metadata.edn
 ├── bootstrap.edn
 └── evolution-parameters.edn
@@ -66,7 +66,7 @@ The directory structure for a contest is designed for clear auditing and integra
 *   **`generations/gen-NNN/population/`**: This directory defines the active set of object-prompts for a given generation via symbolic links into the `pdb/`.
 *   **`generations/gen-NNN/contests/<contest-name>/`**: This is the self-contained record of a single evaluation run (a contest).
 *   **`.../failter-spec/`**: This subdirectory is prepared specifically for the Failter tool, with its `inputs/`, `templates/`, etc., populated with symlinks.
-*   **`.../results.csv`**: The raw output from a Failter run is stored here, providing an immutable record of performance. The `select` command uses this file as its input.
+*   **`.../report.csv`**: The raw output from a Failter run is stored here, providing an immutable record of performance. The `select` command uses this file as its input.
 
 ### The Evolutionary Steps in Practice
 
@@ -76,6 +76,6 @@ An experiment begins with a one-time `bootstrap` command, followed by a cycle of
 
 2.  **`vary`**: This is the "breeding" step. It typically loads the population of the latest generation, applies meta-prompts to create new prompt variations (offspring), and then creates a *new generation* containing both the original survivors and the new offspring.
 
-3.  **`evaluate`**: This is the "vying" or testing step. The `pcrit evaluate` command targets a specific generation's population, packages it into a `failter-spec` directory, and runs a **contest** using the external `failter` tool. The resulting scores are saved to a `results.csv` file within that contest's directory. **Fitness scores are not written into the prompt files themselves.**
+3.  **`evaluate`**: This is the "vying" or testing step. The `pcrit evaluate` command targets a specific generation's population, packages it into a `failter-spec` directory, and runs a **contest** using the external `failter` tool. The resulting scores are saved to a `report.csv` file within that contest's directory. **Fitness scores are not written into the prompt files themselves.**
 
-4.  **`select`**: This is the "winnowing" step. The `pcrit select` command reads a `results.csv` file from a contest, applies a selection strategy (e.g., eliminate the worst N performers, keep the top K), and creates a *new generation* containing only the symlinks to the surviving prompts.
+4.  **`select`**: This is the "winnowing" step. The `pcrit select` command reads a `report.csv` file from a contest, applies a selection strategy (e.g., eliminate the worst N performers, keep the top K), and creates a *new generation* containing only the symlinks to the surviving prompts.

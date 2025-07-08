@@ -31,8 +31,24 @@ Key ingredients:
 | :--- | :--- |
 | **Polylith workspace** | Re‑usable components, clean boundaries, lightning‑fast incremental tests |
 | **Immutable Prompt DB** | Atomic, hash‑verified store with per‑file lock‑healing |
+| **Git as temporal database** | Second layer of tamper-detection, allows experiment branching and backtracking |
 | **Failter integration** | Runs large‑scale prompt contests and collects scores |
 | **Evolution engine** (*WIP*) | Varies, evaluates, and selects prompts to improve fitness |
+
+### Git as Temporal Database
+
+Using git for population snapshots is attractive because:
+- Every generation is a commit with full diff history
+- You can branch for experimental evolution strategies
+- Merge conflicts become meaningful (competing evolutionary pressures)
+- You get distributed replication of your entire evolutionary history for free
+
+## Documentation
+
+For more information, see:
+   * [OVERVIEW](docs/OVERVIEW.md)
+   * [DESIGN](docs/DESIGN.md)
+   * [RISKS](RISKS.md)
 
 ---
 
@@ -74,6 +90,26 @@ workspace/
 | `vary`      | 🔜 | Generate a new population via mutation/crossover. |
 | `evaluate`  | 🔜 | Run the active population in a contest and collect results. |
 | `select`    | 🔜 | Create a new population of survivors based on evaluation scores. |
+
+
+---
+
+### 📖 Terminology & File-Naming Glossary
+
+| Term                                 | Meaning                                                                                                                                                        | Notes                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **bootstrap**                        | One-time step that seeds the first *population* directory (e.g., `pop/0000/`) with hand-curated **seed** prompts.                                              | Run once per experiment.                                               |
+| **vary**                             | Generates new candidate prompts by mutating or recombining existing ones, writing them into the next population directory (`pop/0001/`, `pop/0002/`, …).       | Formerly called **breed**.                                             | fs
+| **evaluate**                         | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `results.csv`.                         | Runs scoring but does **not** decide winners.                          |
+| **contest**                          | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                        | *Contest* = noun; *evaluate* = verb/command.                           |
+| **select**                           | Picks the top-performing prompts according to `results.csv` and copies them forward as the “parents” for the next **vary** step.                               | Selection strategy is pluggable.                                       |
+| **population (`pop/`)**              | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                   | See *Directory Layout* section.                                        |
+| **experiment directory (`expdir/`)** | Root folder that bundles `pop/`, `results.csv`, Failter specs, and metadata for a single evolutionary run.                                                     | Portable & reproducible.                                               |
+| **`report.csv`**                    | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                      | Failter produces this. jk fsjjkk|
+| **template placeholders**            | Literal strings substituted when a prompt is rendered:  <br>`{{INPUT_TEXT}}` – the evaluation text corpus<br>`{{OBJECT_PROMPT}}` – the user’s question or task | *Only these two names are recognized by the templater.*                |
+| **seed prompt**                      | Hand-crafted prompt placed in `seeds/` that kicks off **bootstrap**.                                                                                           | Seeds are version-controlled.                                          |
+
+> Use this table as the **single source of truth** when writing docs, code comments, or CLI help.
 
 ---
 
@@ -123,7 +159,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
     ```
 
 4.  **Select the Survivors** (`🔜 In Development`)
-    Parses the `results.csv` from a contest and applies a selection strategy to create a new generation containing only the fittest prompts.
+    Parses the `report.csv` from a contest and applies a selection strategy to create a new generation containing only the fittest prompts.
     ```bash
     pcrit select my-experiment/ --from-contest "web-cleanup-v1"
     ```
@@ -151,7 +187,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
     git clone https://github.com/pragsmike/promptcritical
     cd promptcritical
     make test
-    ```2.  **Read** the design documents in the `docs/` directory.
+2.  **Read** the design documents in the `docs/` directory.
 3.  **Hack** on the next milestone—PRs welcome!
 
 ---

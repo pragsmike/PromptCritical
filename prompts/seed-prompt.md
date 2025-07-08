@@ -22,4 +22,4 @@ Example Output:
 {{EXAMPLE-OUTPUT}}
 
 Instructions: Process the following web page content and return only the cleaned version.
-{{INPUT}}
+{{INPUT_TEXT}}

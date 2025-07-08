@@ -21,7 +21,7 @@ The prompt store (`pdb/`) is the "source-of-truth" layer for all prompt artifact
 
 While the `pdb/` ensures the integrity of individual prompts, the Git repository provides a higher-level, cryptographic snapshot of the entire experiment's state over time. By committing the state of the experiment directory after key events (e.g., after each `select` command), Git provides:
 
-*   **Tamper-Evident History:** Git's commit hashes create a cryptographically secure chain. Any retroactive, illicit change to a file in a past generation (e.g., altering a `results.csv` file to favor a different prompt) would be immediately detectable.
+*   **Tamper-Evident History:** Git's commit hashes create a cryptographically secure chain. Any retroactive, illicit change to a file in a past generation (e.g., altering a `report.csv` file to favor a different prompt) would be immediately detectable.
 *   **Full State Snapshots:** Each commit captures the exact state of every file, including prompt headers, contest results, and population symlinks. This allows you to check out any past generation and see exactly what the state of the experiment was at that point in time.
 *   **Branching for Experiments:** You can use `git branch` to explore alternative evolutionary paths (e.g., trying a different selection strategy) in parallel, with the ability to merge successful strategies back into the main line.
 

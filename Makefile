@@ -7,7 +7,10 @@ test:
 
 
 pack:
-	(for i in README.md USAGE.md PolylithNotes.md docs/DESIGN.md docs/API.md \
+	(for i in README.md USAGE.md PolylithNotes.md \
+					docs/OVERVIEW.md \
+					docs/DESIGN.md \
+					docs/API.md \
 					docs/RISKS.md \
 					docs/intro-overview.md \
 					docs/evo-process.md \

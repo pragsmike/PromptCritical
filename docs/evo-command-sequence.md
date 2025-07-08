@@ -106,7 +106,7 @@ my-experiment/
             └── initial-web-cleanup/
                 ├── failter-spec/
                 │   └── ... (as prepared above)
-                ├── results.csv          ; <-- Raw output from Failter
+                ├── report.csv          ; <-- Raw output from Failter
                 └── contest-metadata.edn   ; <-- Auditable record of the pcrit run
 ```
 The `contest-metadata.edn` file would contain:
@@ -128,7 +128,7 @@ pcrit select my-experiment/ --from-contest "initial-web-cleanup"
 ```
 
 **Computation / Actions:**
-1.  The `select` command reads `results.csv` from the specified contest.
+1.  The `select` command reads `report.csv` from the specified contest.
 2.  It applies a selection strategy (e.g., "eliminate the worst 2 performers").
 3.  It calls `pcrit.pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
 

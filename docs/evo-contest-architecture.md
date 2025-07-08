@@ -5,7 +5,7 @@ generations/gen-NNN/contests/
 ├── 2025-07-01-web-cleanup/
 │   ├── participants/           # symlinks to P001, P002, etc.
 │   ├── failter-spec/          # experiment definition
-│   ├── results.csv            # scores and rankings
+│   ├── report.csv            # scores and rankings
 │   └── contest-metadata.yaml  # timestamp, generation, etc.
 ```
 

@@ -105,7 +105,7 @@ Now, you can run the prompts from a specific generation in a contest to see how 
       --ground-truth path/to/my/ground_truth_files/ \
       --models-file path/to/my/models.txt
     ```
-    This command will create a new contest subdirectory (e.g., `.../contests/web-cleanup-v1/`), prepare the files for the **Failter** tool, execute the Failter pipeline, and place the resulting `results.csv` in the contest directory.
+    This command will create a new contest subdirectory (e.g., `.../contests/web-cleanup-v1/`), prepare the files for the **Failter** tool, execute the Failter pipeline, and place the resulting `report.csv` in the contest directory.
 
 ### Step 4: Select the Survivors
 

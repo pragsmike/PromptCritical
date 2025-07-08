@@ -118,10 +118,10 @@ bootstrap → vary → evaluate → select
 3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
     *   Identifies the active population for a given generation.
     *   Packages the prompts and user-provided test data into a `failter-spec` directory for a new "contest".
-    *   Executes the external `failter` tool, which runs the contest and produces a `results.csv` report.
+    *   Executes the external `failter` tool, which runs the contest and produces a `report.csv` report.
 
 4.  **Select** (`pcrit select <exp-dir>`)
-    *   Reads `results.csv` from one or more contests.
+    *   Reads `report.csv` from one or more contests.
     *   Applies a selection strategy to determine which prompts survive.
     *   Creates a new generation directory containing links to only the surviving members of the population.
 
