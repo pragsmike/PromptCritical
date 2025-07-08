@@ -1,7 +1,7 @@
 # PromptCritical System Design
 
-**Version 1.4 · 2025‑07‑06**
-**Status:** *Implementing v0.2 command suite*
+**Version 1.5 · 2025‑07‑08**
+**Status:** *Implementing `evaluate` and `select` commands*
 
 ---
 
@@ -22,7 +22,8 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 
 | Layer | Name (ns prefix) | Role |
 | :--- | :--- | :--- |
-| **Component** | `pcrit.command` | **Reusable, high-level workflows** (e.g., `bootstrap!`) |
+| **Component** | `pcrit.command` | **Reusable, high-level workflows** (e.g., `bootstrap!`, `vary!`) |
+| **Component** | `pcrit.experiment` | **Defines the logical Experiment context** passed between components |
 | **Component** | `pcrit.expdir` | **Manages the physical layout** of an experiment directory |
 | **Component** | `pcrit.pdb` | **Immutable prompt database** (file I/O, locking, ID generation) |
 | **Component** | `pcrit.pop` | **Population domain model** and prompt analysis (`:prompt-type`) |
@@ -36,6 +37,7 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 workspace/
 ├── components/
 │   ├── command/      ; high-level user commands (bootstrap, vary, evaluate)
+│   ├── experiment/   ; logical experiment context
 │   ├── expdir/       ; experiment directory layout logic
 │   ├── pdb/          ; prompt DB internals
 │   ├── pop/          ; population + analysis logic
@@ -60,7 +62,8 @@ workspace/
 ### 3.1 Orchestration (`pcrit.command.*`)
 
 This component contains the high-level, end-to-end logic for user-facing commands. It orchestrates calls to other, lower-level components to execute a workflow.
-*   **`bootstrap!`**: The implementation of the bootstrap process, reusable by any base.
+*   **`bootstrap!`**: The implementation of the bootstrap process.
+*   **`vary!`**: The implementation of the population breeding process.
 
 ### 3.2 Experiment Directory (`pcrit.expdir.*`)
 
@@ -112,8 +115,8 @@ bootstrap → vary → evaluate → select
 
 2.  **Vary** (`pcrit vary <exp-dir>`)
     *   Loads the population from the latest generation.
-    *   Applies meta-prompts (mutation/crossover) to generate new offspring prompts.
-    *   Creates a new generation directory containing links to the full new population (survivors + offspring).
+    *   Applies meta-prompts (e.g., `refine`) to the existing population members to generate new offspring prompts.
+    *   Creates a new generation directory containing links to the full new population (original survivors + new offspring).
 
 3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
     *   Identifies the active population for a given generation.
@@ -143,10 +146,9 @@ bootstrap → vary → evaluate → select
 
 ## 8  Open Issues & Next Steps
 
-*   **Implement `vary` command**: Add new members to a population by applying meta-prompts to existing members.
+*   **Refactor `pcrit.cli.main`**: Update the command-line parser (`clojure.tools.cli`) to handle subcommands with their own specific options (e.g., for `evaluate` and `select`). This is the immediate next step.
 *   **Implement `evaluate` command**: Set up a Failter contest, run it to score population members for fitness, and store the results.
 *   **Implement `select` command**: Use contest results to eliminate less-fit members and create a new, smaller survivor population.
-*   **Refactor `pcrit.cli.main`**: Update the command-line parser to handle subcommands with their own specific options (e.g., for `evaluate`).
 *   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `vary` → `evaluate` → `select` loop (using a mocked Failter) in the CI matrix.
 
 ---

@@ -71,6 +71,7 @@ The project follows Polylith conventions, organizing the codebase into re-usable
 workspace/
 ├── components/
 │   ├── command/      ; Reusable, high-level user commands
+│   ├── experiment/   ; Defines the logical experiment context
 │   ├── expdir/       ; Manages experiment directory layout
 │   ├── pdb/          ; The immutable prompt database
 │   ├── pop/          ; Population domain model & analysis
@@ -87,7 +88,7 @@ workspace/
 | Command | Status | Description |
 | :--- | :--- | :--- |
 | `bootstrap` | ✅ | Seed the Prompt DB from a manifest. |
-| `vary`      | 🔜 | Generate a new population via mutation/crossover. |
+| `vary`      | ✅ | Generate a new population via mutation/crossover. |
 | `evaluate`  | 🔜 | Run the active population in a contest and collect results. |
 | `select`    | 🔜 | Create a new population of survivors based on evaluation scores. |
 
@@ -98,15 +99,15 @@ workspace/
 
 | Term                                 | Meaning                                                                                                                                                        | Notes                                                                  |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **bootstrap**                        | One-time step that seeds the first *population* directory (e.g., `pop/0000/`) with hand-curated **seed** prompts.                                              | Run once per experiment.                                               |
-| **vary**                             | Generates new candidate prompts by mutating or recombining existing ones, writing them into the next population directory (`pop/0001/`, `pop/0002/`, …).       | Formerly called **breed**.                                             | fs
+| **bootstrap**                        | One-time step that seeds the prompt database and creates named links to hand-curated **seed** prompts.                                                         | Does not create a generation.                                          |
+| **vary**                             | Generates new candidate prompts by mutating or recombining existing ones, writing them into the next population directory (`pop/0001/`, `pop/0002/`, …).       | Creates a new generation.                                              |
 | **evaluate**                         | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `results.csv`.                         | Runs scoring but does **not** decide winners.                          |
 | **contest**                          | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                        | *Contest* = noun; *evaluate* = verb/command.                           |
 | **select**                           | Picks the top-performing prompts according to `results.csv` and copies them forward as the “parents” for the next **vary** step.                               | Selection strategy is pluggable.                                       |
-| **population (`pop/`)**              | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                   | See *Directory Layout* section.                                        |
-| **experiment directory (`expdir/`)** | Root folder that bundles `pop/`, `results.csv`, Failter specs, and metadata for a single evolutionary run.                                                     | Portable & reproducible.                                               |
-| **`report.csv`**                    | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                      | Failter produces this. jk fsjjkk|
-| **template placeholders**            | Literal strings substituted when a prompt is rendered:  <br>`{{INPUT_TEXT}}` – the evaluation text corpus<br>`{{OBJECT_PROMPT}}` – the user’s question or task | *Only these two names are recognized by the templater.*                |
+| **population (`generations/gen-NNN/population/`)** | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                     | See *Directory Layout* section.                                        |
+| **experiment directory (`expdir/`)** | Root folder that bundles prompt generations, results, Failter specs, and metadata for a single evolutionary run.                                               | Portable & reproducible.                                               |
+| **`report.csv`**                    | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                      | Failter produces this.                                                 |
+| **template placeholders**            | Literal strings substituted when a prompt is rendered:  <br>`{{INPUT_TEXT}}` – the evaluation text corpus<br>`{{OBJECT_PROMPT}}` – a prompt being operated on.    | *Only these two names are recognized by the templater.*                |
 | **seed prompt**                      | Hand-crafted prompt placed in `seeds/` that kicks off **bootstrap**.                                                                                           | Seeds are version-controlled.                                          |
 
 > Use this table as the **single source of truth** when writing docs, code comments, or CLI help.
@@ -115,14 +116,13 @@ workspace/
 
 ## 📦 Current State (Post-Refactoring)
 
-The initial v0.1 work is complete, and the project has undergone a significant architectural refactoring. The codebase is now organized into a clean Polylith structure with clear, single-responsibility components.
+The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `bootstrap` and `vary` commands are fully implemented according to this improved architecture.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (e.g., `bootstrap!`) that can be called by any base.
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`bootstrap!`, `vary!`).
+*   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
-*   **`pcrit.pop`**: Handles core prompt domain logic, including ingestion, analysis, and population management.
-
-The `bootstrap` command is fully implemented according to this improved architecture.
+*   **`pcrit.pop`**: Handles core prompt domain logic, including population management.
 
 ---
 
@@ -141,12 +141,12 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This will prove the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
 
 1.  **Bootstrap an Experiment** (`✅ Implemented`)
-    Creates an initial population from a manifest file.
+    Ingests seed prompts and creates named links.
     ```bash
     pcrit bootstrap my-experiment/
     ```
 
-2.  **Vary the Population** (`🔜 In Development`)
+2.  **Vary the Population** (`✅ Implemented`)
     Loads the latest generation, applies meta-prompts to create offspring, and creates a new generation containing both survivors and offspring.
     ```bash
     pcrit vary my-experiment/

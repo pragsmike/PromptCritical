@@ -6,8 +6,8 @@ This guide explains how to use the `pcrit` command-line tool to set up, run, and
 
 PromptCritical treats prompt engineering as a scientific, evolutionary process. The goal is to move beyond manually tweaking prompts and instead use a data-driven loop:
 
-1.  **Bootstrap**: Create an initial population of prompts from seed files.
-2.  **Vary**: Produce new population members by applying meta-prompts (mutation, crossover) to existing ones.
+1.  **Bootstrap**: Ingest the initial, hand-written prompts into the database.
+2.  **Vary**: Produce a new generation of prompts by applying meta-prompts (mutation, crossover) to the previous generation.
 3.  **Evaluate**: Run the prompts against a corpus of inputs using the **Failter** tool to generate performance scores.
 4.  **Select**: Use the scores to select the fittest prompts to survive to the next generation.
 
@@ -23,8 +23,8 @@ Everything related to a single experiment lives in one directory. This is the fi
 
 Every prompt ingested into the database is automatically analyzed and assigned a `:prompt-type` in its metadata. This type defines its role in the system.
 
-*   **:object-prompt**: This is a prompt that performs a task on an external input (e.g., summarizing a document). It is designed to be evaluated in a contest.
-*   **:meta-prompt**: This is a prompt that operates on *another prompt*. It is used during the `vary` step to create new prompt variations (e.g., "Rephrase this prompt to be more concise: {{OBJECT_PROMPT}}").
+*   **:object-prompt**: A prompt that performs a task on an external input (e.g., summarizing a document). These are the main members of a population.
+*   **:meta-prompt**: A prompt that operates on *another prompt*. It is used during the `vary` step to create new prompt variations (e.g., "Rephrase this prompt to be more concise: {{OBJECT_PROMPT}}").
 *   **:static-prompt**: A prompt with no special template fields. It can be used for analysis but not directly in the evolution or contest loops.
 *   **:invalid-mixed-type**: A prompt that incorrectly contains both special template fields. It cannot be used.
 
@@ -32,10 +32,10 @@ Every prompt ingested into the database is automatically analyzed and assigned a
 
 The prompt types are determined by the presence of special template variables. Your prompt files **must** use these specific names for the system to work correctly.
 
-| Variable Name | Required For | Used By | Value Provided By |
-| :--- | :--- | :--- | :--- |
-| `{{INPUT_TEXT}}` | `:object-prompt` | `pcrit evaluate` | The content of a file from the `--inputs` directory during a Failter run. |
-| `{{OBJECT_PROMPT}}` | `:meta-prompt` | `pcrit vary` | The body of another prompt being mutated or combined. |
+| Variable Name     | Required For     | Used By          | Value Provided By                                                  |
+| :---------------- | :--------------- | :--------------- | :----------------------------------------------------------------- |
+| `{{INPUT_TEXT}}`  | `:object-prompt` | `pcrit evaluate` | The content of a file from the `--inputs` directory during a Failter run. |
+| `{{OBJECT_PROMPT}}` | `:meta-prompt`   | `pcrit vary`     | The body of another prompt being mutated or combined.              |
 
 ## The Standard Workflow
 
@@ -72,22 +72,21 @@ First, create your experiment directory and the necessary seed files.
      :refine "seeds/refine-prompt.txt"}
     ```
 
-4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`, `links/`), and ingests the prompts, assigning them unique IDs (`P1`, `P2`, etc.).
+4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`), and ingests the prompts, creating named links (e.g., `links/seed`).
 
     ```bash
     pcrit bootstrap my-first-experiment
     ```
-    After this step, your directory will be initialized with your starting prompts.
+    After this step, your directory is initialized with the raw materials for evolution. **No generations have been created yet.**
 
-### Step 2: Vary the Population
+### Step 2: Vary the Population to Create Generation 0
 
-Next, you will create a new generation of prompts by applying your meta-prompts to the existing population.
+Next, you will create the very first population of prompts by applying your meta-prompts to the initial seed prompts.
 
 ```bash
-# This is the future goal (v0.2)
 pcrit vary my-first-experiment
 ```
-This command will load the latest population, use meta-prompts like `refine` to create new candidates, and save the result as a new generation (e.g., in a `generations/gen-000/` directory).
+This command loads the latest generation. If no generations exist, it uses the linked `seed` prompts as the starting point. It then applies meta-prompts (like the one linked to `refine`) to create new candidates and saves the result as a new generation (e.g., in a `generations/gen-000/` directory).
 
 ### Step 3: Evaluate the Population
 
