@@ -4,7 +4,9 @@
             [pcrit.expdir.interface :as expdir]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import [java.io File]
+           [java.nio.file Files Path Paths]))
 
 ;;; --- Ingestion from Manifest ---
 
@@ -48,6 +50,16 @@
 
 ;;; --- Population Management ---
 
+(defn read-linked-prompt
+  "Resolves a named link in the 'links' directory to its full prompt record."
+  [ctx link-name]
+  (let [link-file (io/file (expdir/get-link-dir ctx) link-name)
+        pdb-dir   (expdir/get-pdb-dir ctx)]
+    (when (.exists link-file)
+      (let [target-path (str (Files/readSymbolicLink (.toPath link-file)))
+            prompt-id   (-> (io/file target-path) .getName (str/replace #"\.prompt$" ""))]
+        (pdb/read-prompt pdb-dir prompt-id)))))
+
 (defn load-population
   "Loads all prompt records from a given generation's 'population' directory.
   Returns a sequence of prompt record maps, or an empty sequence if the
@@ -63,8 +75,6 @@
              (map #(str/replace % #"\.prompt$" "")) ; "P123.prompt" -> "P123"
              (map #(pdb/read-prompt pdb-dir %))
              (remove nil?))))))
-
-;; Private helpers ->path and create-population-link! have been removed.
 
 (defn create-new-generation!
   "Creates the directory structure for a new generation and populates it with

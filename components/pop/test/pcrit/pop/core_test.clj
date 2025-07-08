@@ -67,6 +67,18 @@
 
 ;; --- Tests for Population Management ---
 
+(deftest read-linked-prompt-test
+  (testing "read-linked-prompt successfully reads a prompt via its link"
+    (let [ctx (get-test-ctx)]
+      (expdir/create-experiment-dirs! ctx)
+      (let [p1 (pdb/create-prompt (expdir/get-pdb-dir ctx) "Linked Prompt")]
+        (expdir/link-prompt! ctx p1 "my-link")
+
+        (let [read-p (pop/read-linked-prompt ctx "my-link")]
+          (is (some? read-p))
+          (is (= "P1" (get-in read-p [:header :id])))
+          (is (= "Linked Prompt\n" (:body read-p))))))))
+
 (deftest population-management-test
   (let [ctx (get-test-ctx)
         pdb-dir (expdir/get-pdb-dir ctx)]

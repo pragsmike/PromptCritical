@@ -45,8 +45,8 @@
   (let [seeds-dir (io/file exp-root-dir "seeds")]
     ;; Create raw prompt files in the 'seeds' directory
     (spit (io/file seeds-dir "seed-prompt.txt") "This is the initial object prompt. {{INPUT_TEXT}}")
-    (spit (io/file seeds-dir "refine-prompt.txt") "Refine this prompt: {{OBJECT-PROMPT}}")
-    (spit (io/file seeds-dir "vary-prompt.txt") "Vary this prompt: {{OBJECT-PROMPT}}")
+    (spit (io/file seeds-dir "refine-prompt.txt") "Refine this prompt: {{OBJECT_PROMPT}}")
+    (spit (io/file seeds-dir "vary-prompt.txt") "Vary this prompt: {{OBJECT_PROMPT}}")
 
     ;; Create the bootstrap.edn manifest in the experiment root
     (spit (io/file exp-root-dir "bootstrap.edn")
