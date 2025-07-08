@@ -1,18 +1,18 @@
 (ns pcrit.pop.core-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer (use-fixtures testing deftest is)]
             [clojure.java.io :as io]
             [pcrit.pop.core :as pop]
-            [pcrit.context.interface :as context]
+            [pcrit.experiment.interface :as exp]
             [pcrit.expdir.interface :as expdir]
             [pcrit.pdb.interface :as pdb]
             [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir with-quiet-logging]])
-  (:import [java.nio.file Files Path]))
+  (:import [java.nio.file Files]))
 
 (use-fixtures :once with-quiet-logging)
 (use-fixtures :each with-temp-dir)
 
 (defn- get-test-ctx []
-  (context/new-context (get-temp-dir)))
+  (exp/new-experiment-context (get-temp-dir)))
 
 ;; --- Existing Tests ---
 
@@ -91,7 +91,6 @@
               (let [link-target (Files/readSymbolicLink (.toPath link1))]
                 (is (not (.isAbsolute link-target)) "Link should be relative.")
 
-                ;; --- FIX IS HERE ---
                 (let [pop-dir-path (.toPath pop-dir)
                       resolved-target-path (.resolve pop-dir-path link-target)
                       resolved-target-file (.toFile resolved-target-path)]

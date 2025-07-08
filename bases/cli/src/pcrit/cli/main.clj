@@ -2,7 +2,7 @@
   (:require [clojure.tools.cli :as cli]
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
-            [pcrit.context.interface :as context]
+            [pcrit.experiment.interface :as exp]
             [pcrit.log.interface :as log]))
 
 (def cli-options
@@ -29,7 +29,7 @@
   (if (empty? args)
     (log/error "The 'bootstrap' command requires an <experiment-dir> argument.")
     (let [exp-dir (first args)
-          ctx (context/new-context exp-dir)]
+          ctx (exp/new-experiment-context exp-dir)]
       (log/info "Bootstrapping experiment in:" exp-dir)
       (cmd/bootstrap! ctx)
       (log/info "Bootstrap complete."))))

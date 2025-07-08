@@ -13,7 +13,7 @@
   - Creates the required directory structure.
   - Ingests all prompts specified in the bootstrap.edn manifest.
   - Creates named symbolic links for the core prompts (seed, refine, etc.)."
-  [{:keys [exp-dir] :as ctx}]
+  [ctx]
   (expdir/create-experiment-dirs! ctx)
 
   (let [manifest-file (expdir/bootstrap-spec-file ctx)

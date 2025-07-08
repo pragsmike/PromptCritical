@@ -1,16 +1,16 @@
 (ns pcrit.expdir.core-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer (use-fixtures deftest is testing)]
             [clojure.java.io :as io]
-            [pcrit.context.interface :as context]
+            [pcrit.experiment.interface :as exp]
             [pcrit.expdir.core :as expdir]
             [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]
             )
-  (:import [java.nio.file Files Path]))
+  (:import [java.nio.file Files]))
 
 (use-fixtures :each with-temp-dir)
 
 (defn- get-test-ctx []
-  (context/new-context (get-temp-dir)))
+  (exp/new-experiment-context (get-temp-dir)))
 
 (deftest path-getter-functions-test
   (testing "Getter functions return correct File objects for subdirectories"

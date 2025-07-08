@@ -1,11 +1,11 @@
 (ns pcrit.command.core-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer (deftest testing is use-fixtures)]
             [clojure.java.io :as io]
             [pcrit.command.core :as cmd]
-            [pcrit.context.interface :as context]
+            [pcrit.experiment.interface :as exp]
             [pcrit.expdir.interface :as expdir]
             [pcrit.test-helper.interface :refer [with-quiet-logging with-temp-dir get-temp-dir]])
-  (:import [java.nio.file Files Path]))
+  (:import [java.nio.file Files]))
 
 (use-fixtures :each with-quiet-logging with-temp-dir)
 
@@ -31,7 +31,7 @@
   (testing "bootstrap process creates directories, ingests prompts, and creates links"
     ;; Setup: This helper only creates the seed files, not the experiment dirs.
     (let [exp-dir (get-temp-dir)
-          ctx (context/new-context exp-dir)]
+          ctx (exp/new-experiment-context exp-dir)]
       (make-test-bootstrap-files! exp-dir)
 
       ;; Execute the bootstrap function, which is responsible for creating dirs.
@@ -52,7 +52,7 @@
 (deftest bootstrap-link-relativity-test
   (testing "bootstrap! command creates relative symbolic links"
     (let [exp-dir (get-temp-dir)
-          ctx (context/new-context exp-dir)]
+          ctx (exp/new-experiment-context exp-dir)]
       (make-test-bootstrap-files! exp-dir)
 
       ;; Execute the command
