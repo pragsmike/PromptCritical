@@ -4,9 +4,7 @@
             [pcrit.expdir.interface :as expdir]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [clojure.string :as str])
-  (:import [java.io File]
-           [java.nio.file Files Path Paths]))
+            [clojure.string :as str]))
 
 ;;; --- Ingestion from Manifest ---
 
@@ -66,25 +64,7 @@
              (map #(pdb/read-prompt pdb-dir %))
              (remove nil?))))))
 
-(defn- ->path
-  "Robustly coerces its argument into a java.nio.file.Path object."
-  ^Path [p]
-  (cond
-    (instance? Path p) p
-    (instance? File p) (.toPath ^File p)
-    (string? p)        (Paths/get p (into-array String []))
-    :else (throw (IllegalArgumentException.
-                   (str "Cannot convert value of type " (class p) " to a Path.")))))
-
-(defn- create-population-link!
-  "Private helper to create a single relative symlink in a population directory."
-  [ctx pop-dir-path prompt-record]
-  (let [target-file (expdir/pdb-file-of-prompt-record ctx prompt-record)
-        link-name   (str (get-in prompt-record [:header :id]) ".prompt")
-        link-file   (io/file pop-dir-path link-name)
-        target-path (->path target-file)
-        relative-target-path (.relativize (->path pop-dir-path) target-path)]
-    (Files/createSymbolicLink (->path link-file) relative-target-path (make-array java.nio.file.attribute.FileAttribute 0))))
+;; Private helpers ->path and create-population-link! have been removed.
 
 (defn create-new-generation!
   "Creates the directory structure for a new generation and populates it with
@@ -96,6 +76,9 @@
         pop-dir (expdir/get-population-dir ctx new-gen-number)]
     (.mkdirs pop-dir)
     (doseq [prompt-record population]
-      (create-population-link! ctx pop-dir prompt-record))
+      (let [target-file (expdir/pdb-file-of-prompt-record ctx prompt-record)
+            link-name   (str (get-in prompt-record [:header :id]) ".prompt")
+            link-file   (io/file pop-dir link-name)]
+        (expdir/create-relative-symlink! link-file target-file)))
     {:generation-number new-gen-number
      :population-size (count population)}))

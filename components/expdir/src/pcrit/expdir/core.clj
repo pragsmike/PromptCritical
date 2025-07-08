@@ -17,6 +17,19 @@
     :else (throw (IllegalArgumentException.
                    (str "Cannot convert value of type " (class p) " to a Path.")))))
 
+;; --- NEW Centralized Function ---
+(defn create-relative-symlink!
+  "Creates a relative symbolic link from `link-file` to `target-file`."
+  [link-file target-file]
+  (let [link-dir             (.getParentFile link-file)
+        link-dir-path        (->path link-dir)
+        target-path          (->path target-file)
+        relative-target-path (.relativize link-dir-path target-path)]
+    (Files/createSymbolicLink (->path link-file)
+                              relative-target-path
+                              (make-array FileAttribute 0))))
+
+
 ;; --- Top-Level Directory Getters ---
 
 (defn get-seeds-dir [{:keys [exp-dir]}] (io/file exp-dir "seeds"))
@@ -45,18 +58,13 @@
                       {:record record}))
       (io/file pdb-dir (str prompt-id ".prompt")))))
 
+;; --- REFACTORED to use the new function ---
 (defn link-prompt!
   "Creates a relative symbolic link to a prompt file in the experiment's 'links' directory."
   [ctx prompt-record link-name]
   (let [target-file (pdb-file-of-prompt-record ctx prompt-record)
-        link-file   (io/file (get-link-dir ctx) link-name)
-        link-dir    (.getParentFile link-file)
-        link-dir-path (->path link-dir)
-        target-path   (->path target-file)
-        relative-target-path (.relativize link-dir-path target-path)]
-    (Files/createSymbolicLink (->path link-file)
-                              relative-target-path
-                              (make-array FileAttribute 0))))
+        link-file   (io/file (get-link-dir ctx) link-name)]
+    (create-relative-symlink! link-file target-file)))
 
 
 ;; --- Generation and Contest Path Getters ---

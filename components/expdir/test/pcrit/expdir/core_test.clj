@@ -64,6 +64,34 @@
             #"Cannot determine prompt path"
             (expdir/pdb-file-of-prompt-record ctx bad-record))))))
 
+(deftest create-relative-symlink-test
+  (testing "Generic symlink function creates a correct relative link"
+    (let [root-dir (io/file (get-temp-dir))
+          target-dir (io/file root-dir "targets")
+          link-dir (io/file root-dir "links")
+          target-file (io/file target-dir "target.txt")
+          link-file (io/file link-dir "link.txt")]
+
+      (.mkdirs target-dir)
+      (.mkdirs link-dir)
+      (spit target-file "hello world")
+
+      (expdir/create-relative-symlink! link-file target-file)
+
+      (is (.exists link-file) "Link should be created.")
+      (is (Files/isSymbolicLink (.toPath link-file)) "Created file should be a symbolic link.")
+
+      (let [link-target-path (Files/readSymbolicLink (.toPath link-file))
+            link-dir-path (.toPath (.getParentFile link-file))
+            resolved-target-path (.toAbsolutePath (.resolve link-dir-path link-target-path))
+            canonical-target-path (.toPath (.getCanonicalFile target-file))]
+
+        (is (not (.isAbsolute link-target-path))
+            "The symbolic link target path should be relative.")
+
+        (is (= (.normalize canonical-target-path) (.normalize resolved-target-path))
+            "The relative link should resolve to the correct target file.")))))
+
 (deftest link-prompt-test
   (testing "Correctly creates a relative symbolic link to a prompt file"
     (let [ctx (get-test-ctx)]
@@ -95,7 +123,7 @@
           (is (= (.normalize canonical-target-path) (.normalize resolved-target-path))
               "The relative link should resolve to the correct target file."))))))
 
-;; --- NEW TESTS ---
+;; --- Generation Tests ---
 
 (deftest generation-path-getters-test
   (testing "Generation-specific path getters return correct File objects"

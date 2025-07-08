@@ -38,6 +38,11 @@
   directory under the given name."
   core/link-prompt!)
 
+;; --- NEW Generic Symlink Function ---
+(def create-relative-symlink!
+  "Creates a relative symbolic link from `link-file` to `target-file`."
+  core/create-relative-symlink!)
+
 ;; --- Generation & Contest Specific ---
 
 (def get-generation-dir

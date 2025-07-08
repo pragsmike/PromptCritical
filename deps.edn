@@ -32,6 +32,5 @@
                                 "components/pop/test"
                                 "components/expdir/test"
                                 "components/command/test"
-                                "components/context/test"
                                 "components/test-helper/src"
                                 "bases/cli/test"]}}}
