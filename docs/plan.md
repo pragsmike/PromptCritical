@@ -1,7 +1,7 @@
 ### 1   Big-picture purpose (one sentence)
 
 **PromptCritical** aims to be a reproducible **prompt-evolution platform**:
-*store every prompt immutably → run controlled experiments → read the scores back → breed the next generation*.
+*store prompts immutably → vary to diversify population → run controlled experiments → select fittest for next generation*.
 
 The prompt store is the “source-of-truth” layer; everything else is plumbing
 that moves prompts *into* black-box evaluators (like **Failter**) and moves
@@ -9,16 +9,17 @@ fitness scores *back* into the metadata.
 
 ---
 
-### 2   Immediate next increment — *“bootstrap → contest → record”* vertical slice
+### 2   Immediate next increment — *“bootstrap → vary → evaluate → select ”* vertical slice
 
 | Stage                        | What it does                                                                                                                                                                          | Why it’s the next, smallest useful step                                     |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | **2.1  Seed creator**        | Pull a handful of prompt templates (or let the user type them), write them to the DB with `generator:"seed-cli"`.                                                                     | Gives us real prompt files to play with and exercise the write path.        |
-| **2.2  Experiment packager** | Materialise a **Failter experiment directory** from a set of prompt IDs, an `inputs/` bundle, and a list of LLM model names.  (Exactly the structure shown in the Failter guide.)     | Proves we can translate our internal store into Failter’s on-disk contract. |
-| **2.3  Failter runner**      | Shell-out: `clj -M:run experiment …`, `evaluate …`, `report …`.  Wait for completion.                                                                                                 | Lets us treat Failter purely as a black box.  No new scoring code needed.   |
-| **2.4  Result ingester**     | Parse `report.csv` (and optionally the per-trial `.eval` YAMLs) and write the numeric score back into each prompt’s YAML (`contest-score`, `contest-model`, `contest-id`).            | Closes the loop: DB → Failter → DB.  Now every prompt has a fitness value.  |
+| **2.2  Vary**                | Improve and refine prompts, combine some to give new ones| Diversifies the population with variations of the original prompts     |
+| **2.3  Experiment packager** | Materialise a **Failter experiment directory** from a set of prompt IDs, an `inputs/` bundle, and a list of LLM model names.  (Exactly the structure shown in the Failter guide.)     | Proves we can translate our internal store into Failter’s on-disk contract. |
+| **2.4  Failter runner**      | Shell-out: `clj -M:run experiment …`, `evaluate …`, `report …`.  Wait for completion.                                                                                                 | Lets us treat Failter purely as a black box.  No new scoring code needed.   |
+| **2.5  Result ingester**     | Parse `report.csv` (and optionally the per-trial `.eval` YAMLs) and write the numeric score back into each prompt’s YAML (`contest-score`, `contest-model`, `contest-id`).            | Closes the loop: DB → Failter → DB.  Now every prompt has a fitness value.  |
 
-*Success criterion:* running one CLI command (`pcrit run-failter --inputs dir/ --prompts P1 P2 P3`) produces (a) a populated Failter folder and (b) updated prompt files with `failter-score` fields.
+*Success criterion:* running CLI commands (`pcrit bootstrap --exp-dir /my/experiment; `) produces (a) a populated Failter folder and (b) updated prompt files with `failter-score` fields.
 
 ---
 

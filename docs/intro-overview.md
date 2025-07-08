@@ -1,70 +1,41 @@
 # Overview
 
-**PromptCritical** aims to be a reproducible **prompt-evolution platform**:
-*store every prompt immutably → run controlled experiments → read the scores
-back → breed the next generation*.
+**PromptCritical** is a reproducible **prompt-evolution platform**. It formalizes the ad-hoc process of prompt engineering into a clear, data-driven, and auditable cycle: *`bootstrap` → `vary` → `evaluate` → `select`*.
 
-Our goal is to produce new prompts, trending upward in efficacy at causing an LLM
-to perform a particular task.
+Our goal is to produce new prompts that demonstrate increasing efficacy at causing a Large Language Model (LLM) to perform a particular task.
 
-Initially, we use a single task as our target: to clean up blog posts scraped from real web sites.
-These texts are typically polluted by ads, subscription offers, teasers to related articles, and the like.
-Those items are just noise that contribute nothing to the narrative of the post.
-By removing them, we make the text more valuable as grist for semantic analysis.
+Initially, we use a single task as our target: cleaning up blog posts scraped from the web. These texts are often polluted by ads, subscription offers, and related-article teasers. By removing this noise, we make the text more valuable as grist for downstream semantic analysis. We chose this task because it is bounded, its performance is easily evaluated, and it is inherently useful.
 
-We choose this task because it is bounded, it is easy to evaluate performance, and it is inherently useful
-to other investigations.
+## Two-Layer Integrity and Provenance
 
-## Prompt store
+The project's design for data integrity and historical provenance operates at two complementary levels: the immutable prompt store and the Git repository that contains it.
 
-  The prompt store is the “source-of-truth” layer; everything else is plumbing
-  that moves prompts *into* black-box evaluators (like **Failter**) and moves
-  fitness scores *back* into the metadata.
+### 1. The Immutable Prompt Store
 
+The prompt store (`pdb/`) is the "source-of-truth" layer for all prompt artifacts. It is designed for fine-grained, programmatic integrity.
 
-  **The Immutable Prompt Store Design** treats prompts as content-addressable
-  objects with SHA-1 integrity and full lineage tracking. This solves the
-  reproducibility crisis in prompt engineering where people can't even remember
-  what they tried last week. The `.prompt` file format with UTF-8 + NFC
-  canonicalization shows serious attention to the subtle details that make or
-  break data integrity.
+*   **Content-Addressed Hashing:** The `pdb/` treats prompts as content-addressable objects. The SHA-1 hash of a prompt's body is stored in its header, ensuring the prompt text itself cannot be corrupted or altered without detection. This is the primary defense against processing errors.
+*   **Immutable History:** The results of each evaluation **contest** are stored in their own files within the `generations/` directory, creating a separate, auditable record of performance in a specific context. This prevents prompt metadata from changing based on external evaluations.
 
+### 2. Git as a Temporal Database
 
-## Git as Temporal Database
+While the `pdb/` ensures the integrity of individual prompts, the Git repository provides a higher-level, cryptographic snapshot of the entire experiment's state over time. By committing the state of the experiment directory after key events (e.g., after each `select` command), Git provides:
 
-Using git for population snapshots is attractive because:
-- Every generation is a commit with full diff history
-- You can branch for experimental evolution strategies
-- Merge conflicts become meaningful (competing evolutionary pressures)
-- You get distributed replication of your entire evolutionary history for free
+*   **Tamper-Evident History:** Git's commit hashes create a cryptographically secure chain. Any retroactive, illicit change to a file in a past generation (e.g., altering a `results.csv` file to favor a different prompt) would be immediately detectable.
+*   **Full State Snapshots:** Each commit captures the exact state of every file, including prompt headers, contest results, and population symlinks. This allows you to check out any past generation and see exactly what the state of the experiment was at that point in time.
+*   **Branching for Experiments:** You can use `git branch` to explore alternative evolutionary paths (e.g., trying a different selection strategy) in parallel, with the ability to merge successful strategies back into the main line.
+
+Together, the `pdb`'s internal hashing and Git's external snapshotting provide a robust, two-layer system for ensuring the reproducibility and integrity of an entire evolutionary run.
 
 ## Terms
 
-- **Object Prompt**: The actual working prompt that performs the text transformation task
-- **Meta Prompt**: The instruction that tells an LLM how to improve/mutate an object prompt
-- **Seed Prompt**: The initial handwritten object prompt (generation 0)
-- **Fitness Evaluation**: The Failter experiment that scores how well object prompts clean web pages
+-   **Object Prompt**: The actual working prompt that performs a task (e.g., "clean this text").
+-   **Meta Prompt**: An instruction that tells an LLM how to change an object prompt (e.g., "improve this prompt"). These are the operators for the `vary` command.
+-   **Seed Prompt**: The initial, hand-written object prompt that serves as the starting point for evolution.
+-   **Evaluation & Contest**: The `evaluate` command is the user-facing action that runs a **contest**. A contest is the specific event of scoring a population against a dataset using the Failter tool.
 
-## Surrogate fitness metrics for cheaper evolution
+## Surrogate Fitness Metrics for Cheaper Evolution
 
-PromptCritical, as an evolutionary system, computes two types of fitness metrics:
-   * about each prompt individually (eg complexity)
-   * about the population of prompts as a whole (eg diversity)
+The true test of a prompt is its performance in an expensive `evaluate` step. To reduce costs, PromptCritical is designed to eventually leverage cheaper "surrogate" fitness metrics.
 
-The real test of a prompt is how well it causes an LLM to perform the task.
-However, submitting the prompt to an LLM is extremely expensive.
-Even a small evolutionary experiment could require hundreds of evaluations.
-
-We hope to reduce this number by eliminating prompts from the population
-that are unlikely to be succesful.  To do this, we analyze the prompts
-for complexity, semantic consistency, and other measures, and record
-these metrics in the prompt's metadata.
-
-We begin by evaluating many prompts in expensive LLM trials.
-This produces a dataset of intrinsic prompt metrics along
-with their performance metrics.  We use this to develop
-a predictor of prompt performance.  We may use an ML model
-trained on the intrinsic measures to predict performance.
-
-We can then use the surrogate metric to eliminate likely bad performers
-from the trials without spending money on LLM evaluations.
+The system analyzes prompts for intrinsic properties (e.g., complexity, word count) and records these in their metadata. The long-term vision is to build a dataset correlating these cheap-to-compute intrinsic metrics with expensive-to-compute performance scores. This will allow us to train a predictive model (a "surrogate critic") that can pre-filter a population, eliminating likely bad performers *before* spending money on full LLM evaluations. This will make the evolutionary process dramatically more efficient.
