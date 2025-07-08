@@ -12,7 +12,6 @@ pack:
 					docs/DESIGN.md \
 					docs/API.md \
 					docs/RISKS.md \
-					docs/intro-overview.md \
 					docs/evo-process.md \
 					docs/evo-population-bootstrapping.md \
 					docs/evo-command-sequence.md \

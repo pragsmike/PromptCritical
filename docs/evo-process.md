@@ -4,7 +4,7 @@ PromptCritical optimizes prompts for a particular task by carrying out an evolut
 
 ## Evolution Cycle Theory
 
-Each "generation" has as its population a set of prompts. Briefly, each generation can undergo a **`vary` → `evaluate` → `select`** cycle. This is also known as a "breed-vie-winnow" cycle. The population for the next generation is computed by applying this series of functions.
+Each "generation" has as its population a set of prompts. Briefly, each generation can undergo a **`vary` → `evaluate` → `select`** cycle. The population for the next generation is computed by applying this series of functions.
 
 The core functions operating on a population are:
 *   `vary`: population → population
