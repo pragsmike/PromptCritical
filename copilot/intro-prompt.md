@@ -10,6 +10,8 @@ The text of the first files are preceded by their filename.
 Read these documents and pay close attention to the onboarding document written
 by your predecessor, as it is your instruction.  Only the most
 recent one is current, the others are for historical context.
+We use TDD heavily, relying on tests to document and verify behavior.
+All functionality, primary flow and especially edge cases, MUST have unit tests.
 
 Do not generate code or other artifacts unless I ask for them.
 When I correct faulty code that you have emitted, just update your internal representation.
