@@ -24,6 +24,8 @@ to start a new session.  Before discarding the first, exhausted one, have it wri
 an onboard document for its successor. That's what the [outro-prompt](../copilot/outro-prompt.md) does.
 The turnover steps are:
 
+   * Have the assistant produce revised versions of the README, USAGE, DESIGN,
+     and OVERVIEW documents. Commit these into the repo.
    * Use the [outro-prompt](../copilot/outro-prompt.md) to create an onboard document.
    * Put that document in the `copilot` directory and commit it, so it will be included in the pack.
    * Generate the pack by `make pack` at top level.
@@ -77,3 +79,8 @@ These principles are the foundation of our work. They are not optional and have 
     *   **Incorporate Feedback Directly and Precisely:** When a correction is given, update your internal representation of the code immediately and exactly as provided.
     *   **Preserve Context:** Do not remove developer comments or existing logic without discussing the reason.
 
+# Critique and Reflections
+
+Periodically upload the pack to a different assistant and ask it to critique the
+documentation and then the codebase. Have it look for discrepancies between the
+two.
