@@ -6,6 +6,7 @@ test:
 	clj -M:poly test
 
 
+# Create a pack file to upload to AI assistant
 pack:
 	(for i in README.md USAGE.md PolylithNotes.md \
 					docs/OVERVIEW.md \

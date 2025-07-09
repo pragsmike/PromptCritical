@@ -23,11 +23,17 @@
             refine-prompt (pop/read-linked-prompt ctx "refine")]
         (log/info "Varying generation" latest-gen-num "which has" (count current-pop) "members.")
 
+        ;; UPDATED: Now captures and passes ancestry metadata when creating offspring.
         (let [offspring (->> current-pop
-                             (map (fn [p] (apply-meta-prompt ctx refine-prompt p call-template-fn)))
-                             (remove :error)
-                             (map :content)
-                             (map #(pop/ingest-prompt ctx %))
+                             (map (fn [parent-prompt]
+                                    (let [response (apply-meta-prompt ctx refine-prompt parent-prompt call-template-fn)]
+                                      (when-not (:error response)
+                                        (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
+                                                                 :generator {:model "mistral"
+                                                                             :meta-prompt (get-in refine-prompt [:header :id])}}
+                                              new-content (:content response)]
+                                          (pop/ingest-prompt ctx new-content :metadata ancestry-metadata))))))
+                             (remove nil?)
                              (doall))]
 
           (log/info "Created" (count offspring) "new offspring prompts.")

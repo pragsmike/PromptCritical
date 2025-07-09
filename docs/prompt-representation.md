@@ -95,19 +95,23 @@ A CLI utility will also be provided that will rewrite such a file with correct
 metadata.
 
 The initial metadata MAY also include these keys:
-   * id's of ancestor prompts if any, as a YAML list
-   * the algorithm that generated it (freeform)
-   * the model name and id of the meta-prompt that generated it, if any
+   * ``parents`` – IDs of the direct parent prompts, as a YAML list
+   * ``generator`` – structured description of the operation that produced the prompt; at minimum:
+      ```YAML
+      generator: {model: "mistral-7b-a1", meta-prompt: "P3"}  # algo/temperature/… optional
+      ```
 
+Other ancestry information MAY be added by further research. The precise names
+of these keys are not yet determined. The depth of the ancestry chain is not
+bounded by this document.
+
+Here's an example:
 ```YAML
-ancestors: ["P12", "P7"]
+parents: ["P12", "P7"]
+generator: {model: "mistral-7b-a1", meta-prompt: "P3", algo: "single-point-crossover"}
 ```
 
-The depth of the ancestors list is not bounded by this document.
-
-The precise names of these keys are not yet determined.
-
-As of now, these fields are free-form except
+As of now, otherwise the metadata fields are free-form except
   * Timestamps are ISO-8601 Zulu zone (Z suffix), eg "2022-08-17T14:37:22Z"
   * the hash is a 40-character hexadecimal string (see below)
 

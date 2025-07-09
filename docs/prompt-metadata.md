@@ -7,7 +7,7 @@ things about the prompt candidates and how they came to be.
 
 This is why each candidate prompt carries with it a set of annotations (metadata)
 including the metrics produced by analyzers, its pedigree pointing to its
-ancestors and a summary digest of its own metrics.
+parent(s) (immediate ancestors) and a summary digest of its own metrics.
 
 As described above, this is encoded as YAML text, appearing as front matter in
 the prompt’s file.

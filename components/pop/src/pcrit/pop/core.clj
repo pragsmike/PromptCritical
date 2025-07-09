@@ -10,12 +10,16 @@
 
 ;;; --- Ingestion from Manifest ---
 
+;; UPDATED: Now accepts an optional :metadata map for ancestry, etc.
 (defn ingest-prompt
-  "Private helper. Stores a single prompt string with computed metadata."
-  [ctx prompt-text]
+  "Stores a single prompt string with computed analysis metadata and any
+  provided static metadata (e.g., for ancestry)."
+  [ctx prompt-text & {:keys [metadata] :or {metadata {}}}]
   (let [pdb-dir     (expdir/get-pdb-dir ctx)
-        metadata-fn (fn [rec] (analyze-prompt-body (:body rec)))]
-    (pdb/create-prompt pdb-dir prompt-text :metadata-fn metadata-fn)))
+        ;; The function that pdb/create-prompt will call to generate dynamic analysis metadata
+        analysis-fn (fn [rec] (analyze-prompt-body (:body rec)))]
+    ;; Pass both the static metadata and the analysis function to the pdb layer
+    (pdb/create-prompt pdb-dir prompt-text :metadata metadata :metadata-fn analysis-fn)))
 
 (defn intern-prompts
   "Given a context and a map of names-to-texts, ingests them into the pdb."

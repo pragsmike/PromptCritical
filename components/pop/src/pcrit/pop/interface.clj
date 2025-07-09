@@ -10,7 +10,11 @@
   "Given a context and a map of names to texts, ingests them into the pdb."
   core/intern-prompts)
 
-(def ingest-prompt core/ingest-prompt)
+;; UPDATED: Docstring reflects new optional :metadata map.
+(def ingest-prompt
+  "Ingests a new prompt. Accepts a context, the prompt text, and an
+  optional map of static metadata, e.g., `{:metadata {:parents [...]}}`."
+  core/ingest-prompt)
 
 (def read-prompt-map
   "Reads a prompt manifest, returning a map of prompt keys to prompt strings."

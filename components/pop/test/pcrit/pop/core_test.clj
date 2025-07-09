@@ -14,19 +14,34 @@
 (defn- get-test-ctx []
   (exp/new-experiment-context (get-temp-dir)))
 
-;; --- Existing Tests ---
+;; --- Tests ---
 
 (deftest ingest-prompt-test
-  (testing "ingest-prompt adds analysis metadata"
+  (testing "ingest-prompt adds analysis metadata when no static metadata is given"
     (let [ctx (get-test-ctx)]
       (expdir/create-experiment-dirs! ctx)
       (let [record (pop/ingest-prompt ctx "Hello {{NAME}}")
             md (:header record)]
         (is (= "Hello {{NAME}}\n" (:body record)))
         (is (= "P1" (:id md)))
-        (is (= 15 (:character-count md)))
+        (is (= 15 (:character-count md))) ; "Hello {{NAME}}\n" -> 15 chars
         (is (= 2 (:word-count md)))
-        (is (= ["NAME"] (:template-field-names md)))))))
+        (is (= ["NAME"] (:template-field-names md))))))
+
+  (testing "ingest-prompt merges provided static metadata with analysis metadata"
+    (let [ctx (get-test-ctx)]
+      (expdir/create-experiment-dirs! ctx)
+      (let [ancestry-meta {:parents ["P1"] :generator {:model "test-model"}}
+            record (pop/ingest-prompt ctx "Offspring prompt" :metadata ancestry-meta)
+            md (:header record)]
+        ;; Check for provided static metadata
+        (is (= ["P1"] (:parents md)))
+        (is (= {:model "test-model"} (:generator md)))
+
+        ;; Check that analysis metadata is still present
+        (is (= :static-prompt (:prompt-type md)))
+        (is (= 17 (:character-count md))))))) ; "Offspring prompt\n" -> 17 chars
+
 
 (deftest intern-prompts-test
   (testing "intern-prompts converts a map of strings to a map of records"
