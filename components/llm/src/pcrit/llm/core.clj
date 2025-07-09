@@ -15,28 +15,33 @@
       (log/error "Please set it before running the application.")
       false)))
 
-;; UPDATED: Now looks for cost in multiple locations within the response body.
-(defn parse-llm-response [response-body model-name]
-  (log/debug (str "Response from " model-name "\n" response-body))
+;; REFACTORED: Now accepts the entire response map to centralize parsing.
+(defn parse-llm-response
+  "Parses a clj-http response map to extract content, usage, and cost.
+  Returns a map with {:content, :usage, :cost}, pulling cost from
+  several potential locations in the body and headers."
+  [response model-name]
+  (log/debug (str "Response from " model-name "\n" (:body response)))
   (try
-    (let [parsed (json/read-str response-body :key-fn keyword)
-          usage (:usage parsed)
-          content (-> parsed :choices first :message :content)
-          cost (or (:cost parsed)         ; Top-level (current attempt)
-                   (:cost usage)         ; LiteLLM v1.x style
-                   (:total_cost usage))] ; LiteLLM v2.x style
+    (let [parsed-body (json/read-str (:body response) :key-fn keyword)
+          usage       (:usage parsed-body)
+          content     (-> parsed-body :choices first :message :content)
+          header-cost (some-> response :headers (get "x-litellm-cost") Double/parseDouble)
+          body-cost   (or (:cost parsed-body) ; Top-level
+                          (:cost usage)         ; LiteLLM v1.x
+                          (:total_cost usage))] ; LiteLLM v2.x
       (if content
         {:content content
          :usage   usage
-         :cost    cost}
+         :cost    (or body-cost header-cost 0.0)} ; Centralized cost logic
         (do
-          (log/error (str "Could not extract content from LLM response for " model-name ". Body: " response-body))
-          {:error (str "No content in LLM response: " (pr-str parsed))})))
+          (log/error (str "Could not extract content from LLM response for " model-name ". Body: " (:body response)))
+          {:error (str "No content in LLM response: " (pr-str parsed-body))})))
     (catch Exception e
-      (log/error (str "Failed to parse LLM JSON response for " model-name ". Error: " (.getMessage e) ". Body: " response-body))
+      (log/error (str "Failed to parse LLM JSON response for " model-name ". Error: " (.getMessage e) ". Body: " (:body response)))
       {:error (str "Malformed JSON from LLM: " (.getMessage e))})))
 
-;; UPDATED: Now checks for and prefers header-based cost as a fallback.
+;; REFACTORED: Now delegates all parsing to `parse-llm-response`.
 (defn call-model
   [model-name prompt-string & {:keys [timeout post-fn]
                                :or {timeout (get-in config/config [:llm :default-timeout-ms])
@@ -57,10 +62,7 @@
                                :socket-timeout timeout
                                :connection-timeout timeout})]
         (if (= 200 (:status response))
-          (let [parsed (parse-llm-response (:body response) model-name)
-                header-cost (some-> response :headers (get "x-litellm-cost") Double/parseDouble)]
-            ;; Prefer cost from body, fall back to header cost, then to 0.0
-            (assoc parsed :cost (or (:cost parsed) header-cost 0.0)))
+          (parse-llm-response response model-name) ; Simplified call
           (do
             (log/error (str "LLM call to " model-name " failed with status " (:status response) ". Body: " (:body response)))
             {:error (str "LLM API Error: " (:status response) " " (:body response))})))
