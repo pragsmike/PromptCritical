@@ -37,7 +37,8 @@
 (deftest cli-invalid-option-test
   (let [{:keys [exit-code output]} (run-cli ["--invalid"])]
     (is (= 1 exit-code))
-    (is (str/includes? output "Unknown option: '--invalid'"))
+    ;; CORRECTED: Expect the pr-str formatted output with double quotes.
+    (is (str/includes? output "Unknown option: \"--invalid\""))
     (is (str/includes? output "errors occurred"))))
 
 (deftest cli-bootstrap-dispatch-test

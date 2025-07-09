@@ -59,11 +59,11 @@
       (empty? arguments)
       (exit-fn 1 (out-fn (usage summary)))
 
-      ;; CORRECTED: Use an :else clause to prevent fall-through on terminal conditions.
       :else
       (let [[command & params] arguments]
         (if (str/starts-with? command "-")
-          (exit-fn 1 (out-fn (error-msg [(str "Unknown option: '" command "'")])))
+          ;; CORRECTED: Use pr-str to format the error message consistently.
+          (exit-fn 1 (out-fn (error-msg [(str "Unknown option: " (pr-str command))])))
           (case command
             "help"      (exit-fn 0 (out-fn (usage summary)))
             "bootstrap" (do-bootstrap params)
