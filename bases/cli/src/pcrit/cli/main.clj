@@ -3,9 +3,10 @@
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
             [pcrit.experiment.interface :as exp]
-            [pcrit.log.interface :as log]))
+            [pcrit.log.interface :as log])
+  (:gen-class))
 
-(def cli-options
+(def global-cli-options
   [["-h" "--help" "Print this help message"]])
 
 (defn- usage [options-summary]
@@ -16,8 +17,9 @@
         "Commands:"
         "  help                         Show this help message."
         "  bootstrap <experiment-dir>   Initializes a new experiment directory."
+        "  vary <experiment-dir>        Creates a new generation of prompts."
         ""
-        "Options:"
+        "Global Options:"
         options-summary]
        (str/join \newline)))
 
@@ -34,27 +36,46 @@
       (cmd/bootstrap! ctx)
       (log/info "Bootstrap complete."))))
 
+(defn- do-vary [args]
+  (if (empty? args)
+    (log/error "The 'vary' command requires an <experiment-dir> argument.")
+    (let [exp-dir (first args)
+          ctx (exp/new-experiment-context exp-dir)]
+      (log/info "Varying population in experiment:" exp-dir)
+      (cmd/vary! ctx)
+      (log/info "Vary complete."))))
+
+(defn process-cli-args
+  "Parses command-line arguments and dispatches to the correct command."
+  [args {:keys [exit-fn out-fn]}]
+  (let [{:keys [options arguments errors summary]} (cli/parse-opts args global-cli-options)]
+    (cond
+      (:help options)
+      (exit-fn 0 (out-fn (usage summary)))
+
+      errors
+      (exit-fn 1 (out-fn (error-msg errors)))
+
+      (empty? arguments)
+      (exit-fn 1 (out-fn (usage summary)))
+
+      ;; CORRECTED: Use an :else clause to prevent fall-through on terminal conditions.
+      :else
+      (let [[command & params] arguments]
+        (if (str/starts-with? command "-")
+          (exit-fn 1 (out-fn (error-msg [(str "Unknown option: '" command "'")])))
+          (case command
+            "help"      (exit-fn 0 (out-fn (usage summary)))
+            "bootstrap" (do-bootstrap params)
+            "vary"      (do-vary params)
+            (exit-fn 1 (out-fn (str "Unknown command: " command "\n" (usage summary))))))))))
+
 (defn -main [& args]
   (try
     (cmd/init!)
-
-    (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
-      (cond
-        (:help options)
-        (do (log/info (usage summary)) (System/exit 0))
-
-        errors
-        (do (log/error (error-msg errors)) (System/exit 1))
-
-        (< (count arguments) 1)
-        (do (log/info (usage summary)) (System/exit 1)))
-
-      (let [[command & params] arguments]
-        (case command
-          "help"      (log/info (usage summary))
-          "bootstrap" (do-bootstrap params)
-          ;; The old "create" command is removed for clarity as it's not part of the main workflow
-          (log/error "Unknown command:" command "\n" (usage summary)))))
-
+    (process-cli-args
+     args
+     {:exit-fn (fn [code _] (System/exit code))
+      :out-fn  println})
     (finally
       (shutdown-agents))))
