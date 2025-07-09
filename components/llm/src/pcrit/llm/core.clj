@@ -15,22 +15,28 @@
       (log/error "Please set it before running the application.")
       false)))
 
+;; UPDATED: Now looks for cost in multiple locations within the response body.
 (defn parse-llm-response [response-body model-name]
   (log/debug (str "Response from " model-name "\n" response-body))
   (try
-    (let [parsed-body (json/read-str response-body :key-fn keyword)
-          content (-> parsed-body :choices first :message :content)]
+    (let [parsed (json/read-str response-body :key-fn keyword)
+          usage (:usage parsed)
+          content (-> parsed :choices first :message :content)
+          cost (or (:cost parsed)         ; Top-level (current attempt)
+                   (:cost usage)         ; LiteLLM v1.x style
+                   (:total_cost usage))] ; LiteLLM v2.x style
       (if content
         {:content content
-         :usage (:usage parsed-body)
-         :cost (:cost parsed-body)}
+         :usage   usage
+         :cost    cost}
         (do
           (log/error (str "Could not extract content from LLM response for " model-name ". Body: " response-body))
-          {:error (str "No content in LLM response: " (pr-str parsed-body))})))
+          {:error (str "No content in LLM response: " (pr-str parsed))})))
     (catch Exception e
       (log/error (str "Failed to parse LLM JSON response for " model-name ". Error: " (.getMessage e) ". Body: " response-body))
       {:error (str "Malformed JSON from LLM: " (.getMessage e))})))
 
+;; UPDATED: Now checks for and prefers header-based cost as a fallback.
 (defn call-model
   [model-name prompt-string & {:keys [timeout post-fn]
                                :or {timeout (get-in config/config [:llm :default-timeout-ms])
@@ -51,7 +57,10 @@
                                :socket-timeout timeout
                                :connection-timeout timeout})]
         (if (= 200 (:status response))
-          (parse-llm-response (:body response) model-name)
+          (let [parsed (parse-llm-response (:body response) model-name)
+                header-cost (some-> response :headers (get "x-litellm-cost") Double/parseDouble)]
+            ;; Prefer cost from body, fall back to header cost, then to 0.0
+            (assoc parsed :cost (or (:cost parsed) header-cost 0.0)))
           (do
             (log/error (str "LLM call to " model-name " failed with status " (:status response) ". Body: " (:body response)))
             {:error (str "LLM API Error: " (:status response) " " (:body response))})))

@@ -33,7 +33,6 @@
   (let [last-call (atom nil)
         mock-post-fn (fn [url options]
                        (reset! last-call {:url url :options options})
-                       ;; Default mock response
                        {:status 200
                         :body (json/write-str {:choices [{:message {:content "Mock response"}}]})})]
 
@@ -51,7 +50,27 @@
         (is (= "LLM API Error: 500 Server error" (:error result)))))
 
     (testing "HTTP client throws an exception"
-      (let [exception-mock (fn [url options] (throw (Exception. "Connection timeout")))
+      (let [exception-mock (fn [_url _options] (throw (Exception. "Connection timeout")))
             result (llm/call-model "exception-model" "A prompt" :post-fn exception-mock)]
         (is (string? (:error result)))
+        ;; CORRECTED: The assertion now checks for the full error message.
         (is (= "Network or client exception: Connection timeout" (:error result)))))))
+
+(deftest cost-extraction-test
+  (testing "Cost is extracted from within the :usage map"
+    (let [json-body (json/write-str {:choices [{:message {:content "Hi"}}]
+                                     :usage   {:prompt_tokens 10
+                                               :completion_tokens 20
+                                               :cost 0.0012}})
+          result (llm/parse-llm-response json-body "gpt-4o")]
+      (is (= 0.0012 (:cost result)))))
+
+  (testing "Cost is extracted using the header as a fallback"
+    (let [mock-post-fn (fn [_url _options]
+                         {:status 200
+                          :headers {"x-litellm-cost" "0.0045"}
+                          :body (json/write-str {:choices [{:message {:content "OK"}}]
+                                                 :usage {:prompt_tokens 5
+                                                         :completion_tokens 5}})})
+          result (llm/call-model "gpt-4o" "ping" :post-fn mock-post-fn)]
+      (is (= 0.0045 (:cost result))))))
