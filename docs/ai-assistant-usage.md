@@ -81,6 +81,16 @@ These principles are the foundation of our work. They are not optional and have 
 
 # Critique and Reflections
 
-Periodically upload the pack to a different assistant and ask it to critique the
-documentation and then the codebase. Have it look for discrepancies between the
-two.
+Periodically upload the pack to a different assistant (the Critic) and ask it to
+critique the documentation and then the codebase produced by the first assistant
+(the Worker). Have it look for discrepancies between the docs and code.
+Ask the Critic to find inconsistencies, ambiguities, gaps, out-of-date references
+in the docs, and the like.  Have the Critic write instructions for the Worker to
+correct the shortcomings.
+
+Here's an example [critic prompt](../copilot/critic-prompt.md).
+
+You can also have the Worker examine the critique and come up with its own mitigation plan.
+It can be instructive to see how the two assistants differ in their take on how to correct course.
+
+

@@ -24,7 +24,7 @@
             _ (log/info (str "Using model '" model-name "' for variation."))
             current-pop (pop/load-population ctx latest-gen-num)
             refine-prompt (pop/read-linked-prompt ctx "refine")]
-        (log/info "Varying generation" latest-gen-num "which has" (count current-pop) "members.")
+        (log/info "Varying generation" latest-gen-num " which has" (count current-pop) "members.")
 
         (let [offspring (->> current-pop
                              (map (fn [parent-prompt]
@@ -38,7 +38,7 @@
                              (remove nil?)
                              (doall))]
 
-          (log/info "Created" (count offspring) "new offspring prompts.")
+          (log/info "Created" (count offspring) " new offspring prompts.")
           (let [new-full-population (concat current-pop offspring)]
             (pop/create-new-generation! ctx new-full-population)
             {:new-generation-number (inc latest-gen-num)

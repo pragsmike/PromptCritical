@@ -53,11 +53,9 @@
   (let [exp-dir (get-temp-dir)
         ctx (exp/new-experiment-context exp-dir)
         vary-called (atom false)]
-    ;; SETUP: Call underlying commands directly to create a valid state for `vary`.
+    ;; SETUP: bootstrap! is now sufficient to create a valid state for `vary`.
     (make-temp-exp-dir! exp-dir)
-    (cmd/bootstrap! ctx)
-    (let [seed-prompt (pop/read-linked-prompt ctx "seed")]
-      (pop/create-new-generation! ctx [seed-prompt])) ; Create gen-0
+    (cmd/bootstrap! ctx) ; This creates gen-0.
 
     ;; TEST: Now test the CLI dispatch with a mocked `vary!` command.
     (with-redefs [cmd/vary! (fn [_ctx] (reset! vary-called true))]

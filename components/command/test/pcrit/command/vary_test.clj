@@ -20,9 +20,7 @@
     (let [exp-dir (get-temp-dir)
           ctx (exp/new-experiment-context exp-dir)
           _ (make-temp-exp-dir! exp-dir)
-          _ (cmd/bootstrap! ctx)
-          seed-prompt (pop/read-linked-prompt ctx "seed")
-          _ (pop/create-new-generation! ctx [seed-prompt])
+          _ (cmd/bootstrap! ctx) ; bootstrap! now creates gen-0
           captured-model (atom nil)]
 
       (let [mock-sender-fn (fn [model-name _] (reset! captured-model model-name) {:content "New content"})
@@ -30,8 +28,10 @@
         (vary/vary! ctx {:call-template-fn mock-template-caller}))
 
       (is (= "mistral" @captured-model) "Should use 'mistral' as the default model.")
-      (let [offspring (first (filter #(get % :parents) (map :header (pop/load-population ctx 1))))]
-        (is (some? offspring))
+      ;; The new population (survivors + offspring) is in gen-1
+      (let [new-pop (pop/load-population ctx 1)
+            offspring (first (filter #(get % :parents) (map :header new-pop)))]
+        (is (some? offspring) "An offspring should exist in the new population.")
         (is (= "mistral" (get-in offspring [:generator :model])) "Generator metadata should record the default model.")))))
 
 (deftest vary-uses-configured-model-test
@@ -39,9 +39,7 @@
     (let [exp-dir (get-temp-dir)
           ctx (exp/new-experiment-context exp-dir)
           _ (make-temp-exp-dir! exp-dir)
-          _ (cmd/bootstrap! ctx)
-          seed-prompt (pop/read-linked-prompt ctx "seed")
-          _ (pop/create-new-generation! ctx [seed-prompt])
+          _ (cmd/bootstrap! ctx) ; bootstrap! now creates gen-0
           captured-model (atom nil)]
 
       (create-evo-params-file! exp-dir "configured-model")
@@ -51,6 +49,7 @@
         (vary/vary! ctx {:call-template-fn mock-template-caller}))
 
       (is (= "configured-model" @captured-model) "Should use the model from the config file.")
+      ;; The new population (survivors + offspring) is in gen-1
       (let [new-pop (pop/load-population ctx 1)
             offspring-header (->> new-pop (map :header) (filter :parents) first)]
         (is (some? offspring-header) "An offspring should exist in the new population.")
