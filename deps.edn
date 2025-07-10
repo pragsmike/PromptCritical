@@ -12,6 +12,7 @@
                                 pcrit/config      {:local/root "components/config"}
                                 pcrit/llm         {:local/root "components/llm"}
                                 pcrit/experiment  {:local/root "components/experiment"}
+                                pcrit/failter     {:local/root "components/failter"}
                                 pcrit/log         {:local/root "components/log"}
                                 pcrit/pop         {:local/root "components/pop"}
                                 pcrit/pdb         {:local/root "components/pdb"}
@@ -31,6 +32,7 @@
                                 "components/pdb/test"
                                 "components/pop/test"
                                 "components/expdir/test"
+                                "components/failter/test"
                                 "components/command/test"
                                 "components/test-helper/src"
                                 "bases/cli/test"]}}}

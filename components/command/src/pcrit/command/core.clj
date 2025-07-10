@@ -20,11 +20,9 @@
   (let [manifest-file (expdir/bootstrap-spec-file ctx)
         prompt-map (pop/ingest-from-manifest ctx manifest-file)]
 
-    ;; Create named links for all ingested prompts for easy reference.
     (doseq [[link-name record] prompt-map]
       (expdir/link-prompt! ctx record (name link-name)))
 
-    ;; Create gen-0 with all seed object-prompts.
     (let [object-prompts (->> (vals prompt-map)
                               (filter #(= :object-prompt (get-in % [:header :prompt-type]))))]
       (if (seq object-prompts)
