@@ -12,13 +12,13 @@ This design has several key advantages:
 
 ---
 
-### The `bootstrap` → `vary` → `evaluate` → `select` Workflow
+### The `bootstrap` → `evaluate` → `select` → `vary` Workflow
 
-Let's trace the lifecycle of a single evolutionary cycle.
+Let's trace the lifecycle of an evolutionary cycle, starting from a fresh experiment.
 
 #### State 1: After `pcrit bootstrap`
 
-The user has run `pcrit bootstrap my-experiment`. This command, as implemented, ingests the seed prompts and creates the top-level links. **Critically, no generations have been created yet.** The `generations/` directory is empty.
+The user runs `pcrit bootstrap my-experiment`. This command ingests the seed prompts, creates top-level links, and **critically, creates `gen-0`**, populating it with any object-prompts found in the manifest. The experiment now has an initial population ready for evaluation.
 
 **Directory Structure:**
 ```
@@ -37,42 +37,15 @@ my-experiment/
 │   ├── seed.txt
 │   └── vary.txt
 ├── bootstrap.edn
-└── generations/    ; Exists, but is empty
-```
-
-#### State 2: After `pcrit vary` Creates the First Generation
-
-To create the first population to be tested, the user runs the `pcrit vary` command. For its very first run, it:
-1.  Loads the initial seed prompts (e.g., `P1` from `links/seed`).
-2.  Applies the available meta-prompts (e.g., `refine` and `vary`) to the seed, generating new object-prompts, say `P4` and `P5`.
-3.  Creates the `gen-000` directory.
-4.  Populates the `gen-000/population/` directory with symlinks to all object-prompts in this first-generation population (the original seed and its new offspring).
-
-**Directory Structure:**
-```
-my-experiment/
-├── links/
-│   └── ... (unchanged)
-├── pdb/
-│   ├── P1.prompt, P2.prompt, P3.prompt
-│   ├── P4.prompt   ; Offspring of P1 + P2
-│   └── P5.prompt   ; Offspring of P1 + P3
-│   └── pdb.counter ; Contains "5"
-├── seeds/
-│   └── ... (unchanged)
-├── bootstrap.edn
 └── generations/
     └── gen-000/
         └── population/
-            ├── P1.prompt -> ../../../pdb/P1.prompt
-            ├── P4.prompt -> ../../../pdb/P4.prompt
-            └── P5.prompt -> ../../../pdb/P5.prompt
+            └── P1.prompt -> ../../../pdb/P1.prompt
 ```
-Now we have an active population for Generation 0, ready for evaluation.
 
-#### State 3: User Runs `pcrit evaluate`
+#### State 2: User Runs `pcrit evaluate`
 
-The user wants to evaluate the population of Generation 0. They provide the necessary data and a name for this specific contest run.
+The user wants to evaluate the initial population from Generation 0. They provide the necessary data and a name for this specific contest run.
 
 **User Command:**
 ```bash
@@ -91,7 +64,7 @@ pcrit evaluate my-experiment/ \
     *   Creating symlinks in `failter-spec/templates/` that point to the canonical prompts in the main `pdb/`.
 4.  It shells out to `failter` to execute the contest.
 
-#### State 4: After `pcrit evaluate` Completes
+#### State 3: After `pcrit evaluate` Completes
 
 The `evaluate` command orchestrates the Failter run and captures its output.
 
@@ -113,12 +86,12 @@ The `contest-metadata.edn` file would contain:
 ```clojure
 {:timestamp "2025-07-08T10:30:00Z"
  :generation 0
- :participants ["P1" "P4" "P5"]
+ :participants ["P1"]
  :inputs-path "/abs/path/to/web-articles/"
  :contest-name "initial-web-cleanup"}
 ```
 
-#### State 5: After `pcrit select`
+#### State 4: After `pcrit select`
 
 The user now runs the `select` command to winnow the population based on the contest results.
 
@@ -129,11 +102,11 @@ pcrit select my-experiment/ --from-contest "initial-web-cleanup"
 
 **Computation / Actions:**
 1.  The `select` command reads `report.csv` from the specified contest.
-2.  It applies a selection strategy (e.g., "eliminate the worst 2 performers").
+2.  It applies a selection strategy (e.g., "keep the top 50%").
 3.  It calls `pcrit.pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
 
 **Directory Structure After Selection:**
-Assuming `P4` was the top performer and the strategy was "keep only the champion":
+Assuming `P1` was the only prompt and it survived the selection:
 ```
 my-experiment/
 └── generations/
@@ -141,6 +114,34 @@ my-experiment/
     │   └── ... (unchanged, historical record)
     └── gen-001/
         └── population/
-            └── P4.prompt -> ../../../pdb/P4.prompt
+            └── P1.prompt -> ../../../pdb/P1.prompt
 ```
-This completes one full cycle. The experiment is now ready for the next `vary` command to be run on the `gen-001` population, continuing the evolutionary process. The contest results are preserved as a permanent, auditable record in their specific directory, not merged into the prompt files themselves.
+The experiment now has a new generation, `gen-001`, containing the fittest members of the previous generation.
+
+#### State 5: After `pcrit vary`
+
+Now, the user runs `vary` to "breed" the surviving population, creating new candidates for the next round.
+
+**User Command:**
+```bash
+pcrit vary my-experiment/
+```
+**Computation / Actions:**
+1.  The `vary` command identifies the latest generation, `gen-001`.
+2.  It applies meta-prompts (e.g., `refine` and `vary`) to the population members of `gen-001` (in this case, just `P1`), generating new object-prompts, say `P4` and `P5`.
+3.  It creates the `gen-002` directory.
+4.  It populates `gen-002/population/` with symlinks to all object-prompts in this new population: the survivors from the last step (`P1`) and their new offspring (`P4`, `P5`).
+
+**Directory Structure:**
+```
+my-experiment/
+└── generations/
+    ├── gen-000/ ...
+    ├── gen-001/ ... (historical record)
+    └── gen-002/
+        └── population/
+            ├── P1.prompt -> ../../../pdb/P1.prompt
+            ├── P4.prompt -> ../../../pdb/P4.prompt
+            └── P5.prompt -> ../../../pdb/P5.prompt
+```
+This completes one full cycle. The experiment is now ready for the next `evaluate` command to be run on the `gen-002` population, continuing the evolutionary process.

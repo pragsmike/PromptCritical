@@ -87,8 +87,8 @@ workspace/
 
 | Command | Status | Description |
 | :--- | :--- | :--- |
-| `bootstrap` | ✅ | Seed the Prompt DB from a manifest. |
-| `vary`      | ✅ | Generate a new population via mutation/crossover. |
+| `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
+| `vary`      | ✅ | Evolves the latest generation into a new one via mutation/crossover. |
 | `evaluate`  | 🔜 | Run the active population in a contest and collect results. |
 | `select`    | 🔜 | Create a new population of survivors based on evaluation scores. |
 
@@ -99,7 +99,7 @@ workspace/
 
 | Term                                               | Notes                                                   | Meaning                                                                                                                                                                       |
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **bootstrap**                                      | Does not create a generation.                           | One-time step that seeds the prompt database and creates named links to hand-curated **seed** prompts.                                                                        |
+| **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that seeds the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                                            |
 | **vary**                                           | Creates a new generation.                               | Generates new candidate prompts by mutating or recombining existing ones, writing them into the next population directory (`generations/gen-001/population`, …). |
 | **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
 | **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
@@ -141,7 +141,7 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This will prove the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
 
 1.  **Bootstrap an Experiment** (`✅ Implemented`)
-    Ingests seed prompts and creates named links.
+    Ingests seed prompts, creates named links, and populates `gen-0` with the initial object-prompts, making them ready for immediate evaluation.
     ```bash
     pcrit bootstrap my-experiment/
     ```
@@ -169,7 +169,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
 ## 🗺 Roadmap Snapshot
 
 | Milestone | New Capability |
-| :--- | :--- |
+| :--- | :--- | :--- |
 | **v0.2** | Implement core `vary`, `evaluate`, `select` commands. |
 | **v0.3** | Automated `evolve` command that composes the v0.2 commands. |
 | **v0.4** | Advanced selection & mutation operators. |

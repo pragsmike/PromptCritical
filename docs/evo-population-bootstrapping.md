@@ -1,55 +1,44 @@
 # Population Bootstrapping in Detail
 
-The goal of the initial phase of an experiment is to generate the first population of candidate prompts. We call this process "bootstrapping the population." This is accomplished not with a single command, but with two distinct steps: `pcrit bootstrap` followed by the first run of `pcrit vary`.
+The goal of the initial phase of an experiment is to generate the first population of candidate prompts. We call this process "bootstrapping the population." This is accomplished with a single command: `pcrit bootstrap`.
 
-This document details that initial sequence.
+This document details that initial step.
 
 ## Terminology
 
 First, a quick review of the core concepts:
-- **Object Prompt**: The actual working prompt that performs a task (e.g., cleaning web page content). These are the individuals in our population.
-- **Meta Prompt**: An instruction that tells an LLM how to change an object prompt (e.g., "improve this prompt" or "generate three variants"). These are our evolutionary operators.
-- **Seed Prompt**: The initial, hand-written object prompt that serves as the starting point for evolution.
+- **Object Prompt**: The actual working prompt that performs a task (e.g., cleaning web page content). These contain the `{{INPUT_TEXT}}` template variable and are the individuals in our population.
+- **Meta Prompt**: An instruction that tells an LLM how to change an object prompt (e.g., "improve this prompt"). These contain the `{{OBJECT_PROMPT}}` template variable and are our evolutionary operators.
+- **Seed Prompt**: The initial, hand-written prompts (both object and meta) that serve as the starting point for evolution.
 
-## The Initial Sequence
+## The Initial Sequence: `pcrit bootstrap`
 
-### Step 1: `pcrit bootstrap` — Ingesting the Raw Materials
+The entire experiment begins with the `pcrit bootstrap` command. Its purpose is to ingest your hand-written seed files, create named links for them, and establish the initial, testable population: `gen-0`.
 
-The process begins with the `bootstrap` command. The sole purpose of this command is to ingest your hand-written seed files into the immutable prompt database (`pdb`) and create named links for them.
+1.  **Create Seed Files**: You write your initial object prompts and meta-prompts as plain text files in the `seeds/` directory.
 
-1.  **Create Seed Files**: You write your initial object prompt and a few meta-prompts as plain text files in the `seeds/` directory.
 2.  **Create a Manifest**: You create a `bootstrap.edn` file that gives logical names to your seed files.
+
 3.  **Run Bootstrap**:
     ```bash
     pcrit bootstrap my-experiment/
     ```
-**Result**: The `bootstrap` command populates the `pdb/` with your prompts (as `P1`, `P2`, etc.) and creates symlinks like `links/seed` and `links/refine`. **It does not create any generations.** At this point, you simply have the raw materials for evolution stored in the database.
 
-### Step 2: `pcrit vary` — Creating Generation 0
+**Result**: The `bootstrap` command performs several actions in one go:
+*   It populates the immutable prompt database (`pdb/`) with your prompts (as `P1`, `P2`, etc.).
+*   It creates symbolic links in the `links/` directory (e.g., `links/seed`, `links/refine`) for easy access to key prompts.
+*   It identifies all prompts you ingested that are of type `:object-prompt`.
+*   It creates the `generations/gen-000/` directory and populates its `population/` subdirectory with links to those initial object-prompts.
 
-With the seeds in place, you run the `vary` command for the first time. This is the "breeding" step that creates the very first population, `gen-000`.
+At this point, you have `gen-0`, the first testable population. You are now ready to begin the main evolutionary loop.
 
-1.  **Run Vary**:
-    ```bash
-    # This is a future goal (v0.2)
-    pcrit vary my-experiment/
-    ```
-2.  **The Process**:
-    *   The `vary` command will load the initial `seed` object prompt (`P1`).
-    *   It will then apply the meta-prompts (e.g., `refine` and `vary`) to the seed prompt. For example:
-        *   Applying an "improve this prompt" meta-prompt might generate a new prompt, `P4`.
-        *   Applying a "generate 3 variants" meta-prompt might generate `P5`, `P6`, and `P7`.
-    *   It creates a new generation directory, `generations/gen-000/`.
-    *   It calls `pop/create-new-generation!`, providing the full list of prompts for this generation: the original seed plus all its new offspring (`P1`, `P4`, `P5`, `P6`, `P7`). This populates the `.../gen-000/population/` directory with links to these prompts.
+### Next Steps: The `evaluate` → `select` → `vary` Loop
 
-**Result**: You now have `gen-000`, the first testable population. There have been no evaluations yet, but you have a diverse set of candidates ready for a contest.
-
-### Next Steps: `evaluate` and `select`
-
-Once `gen-000` exists, you can begin the main evolutionary loop:
-1.  Run `pcrit evaluate --generation 0 ...` to run the population in a contest and get fitness scores.
-2.  Run `pcrit select ...` to use those scores to choose the survivors, creating `gen-001`.
-3.  Run `pcrit vary ...` again on the `gen-001` population to continue the cycle.
+Once `gen-0` exists, you can begin the main cycle:
+1.  Run `pcrit evaluate --generation 0 ...` to run the initial population in a contest and get fitness scores.
+2.  Run `pcrit select ...` to use those scores to choose the survivors, which creates `gen-001`.
+3.  Run `pcrit vary ...` on the `gen-001` population to breed new candidates, which creates `gen-002`.
+4.  Repeat the cycle.
 
 ## Example Prompts for Bootstrapping
 
@@ -57,13 +46,15 @@ These are examples of the kinds of prompts you would place in your `seeds/` dire
 
 ### Meta-Prompt Design
 
-You'll need at least two types of meta-prompts to start:
+You'll need at least one type of meta-prompt to start:
 -   **Incremental Improver**: `"Analyze the weaknesses of the following prompt and generate an improved, more robust version. {{OBJECT_PROMPT}}"`
+
+You might also include others for more diversity:
 -   **Variant Generator**: `"Generate 3 distinct alternative prompts that achieve the same core objective as the following prompt, but use different strategies or phrasing. {{OBJECT_PROMPT}}"`
 
 ### Potential Seed Object Prompt Structure
 
-Here's a starting template for a seed prompt focused on cleaning web pages.
+Here's a starting template for a seed prompt focused on cleaning web pages. Because it contains `{{INPUT_TEXT}}`, it will be identified as an `:object-prompt` and will be included in `gen-0`.
 ```
 Task: Clean junk content from scraped web pages while preserving the main article text.
 
