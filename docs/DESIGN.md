@@ -1,7 +1,7 @@
 # PromptCritical System Design
 
-**Version 1.6 · 2025‑07‑10**
-**Status:** *Implementing `evaluate` and `select` commands*
+**Version 1.7 · 2025‑07‑10**
+**Status:** *Implementing `select` command*
 
 ---
 
@@ -25,6 +25,7 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 | **Component** | `pcrit.command` | **Reusable, high-level workflows** (e.g., `bootstrap!`, `vary!`) |
 | **Component** | `pcrit.experiment` | **Defines the logical Experiment context** passed between components |
 | **Component** | `pcrit.expdir` | **Manages the physical layout** of an experiment directory |
+| **Component** | `pcrit.failter` | **Adapter for the external Failter toolchain** |
 | **Component** | `pcrit.pdb` | **Immutable prompt database** (file I/O, locking, ID generation) |
 | **Component** | `pcrit.pop` | **Population domain model** and prompt analysis (`:prompt-type`) |
 | **Component** | `pcrit.config` | Central configuration map & helpers |
@@ -36,9 +37,10 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 ```
 workspace/
 ├── components/
-│   ├── command/      ; high-level user commands (bootstrap, vary, evaluate)
+│   ├── command/      ; high-level user commands
 │   ├── experiment/   ; logical experiment context
 │   ├── expdir/       ; experiment directory layout logic
+│   ├── failter/      ; adapter for the external failter tool
 │   ├── pdb/          ; prompt DB internals
 │   ├── pop/          ; population + analysis logic
 │   ├── config/       ; runtime config
@@ -64,11 +66,12 @@ workspace/
 This component contains the high-level, end-to-end logic for user-facing commands. It orchestrates calls to other, lower-level components to execute a workflow.
 *   **`bootstrap!`**: The implementation of the bootstrap process.
 *   **`vary!`**: The implementation of the population breeding process.
+*   **`evaluate!`**: The implementation of the population evaluation process.
 
 ### 3.2 Experiment Directory (`pcrit.expdir.*`)
 
 This component is the single source of truth for the physical file system layout of an experiment.
-*   Provides functions to get paths to standard subdirectories (`get-pdb-dir`, `get-generation-dir`).
+*   Provides functions to get paths to standard subdirectories (`get-pdb-dir`, `get-generation-dir`, `get-contest-dir`).
 *   Handles creation of the directory structure and symbolic links.
 
 ### 3.3 Prompt Database (`pcrit.pdb.*`)
@@ -82,6 +85,13 @@ This component is the single source of truth for the physical file system layout
 Holds the core domain logic for prompts and populations, but *not* high-level orchestration.
 *   **Ingestion & Management**: Provides functions to ingest raw prompts, load a population from a generation, and create new generation directories.
 *   **Prompt Analysis**: The `analyze-prompt-body` function inspects prompt text to add critical metadata, including the `:prompt-type`.
+
+### 3.5 Failter Adapter (`pcrit.failter.*`)
+
+This component is a thin adapter that encapsulates all interaction with the external `failter` toolchain.
+*   Prepares the `failter-spec` directory with the required symlinks.
+*   Executes `failter` sub-commands via `clojure.java.shell`.
+*   Captures and stores the resulting `report.csv`.
 
 ---
 
@@ -109,28 +119,28 @@ The prompt remains the central data artifact. Upon creation, its header is now e
 ## 5  Experiment Flow (v0.2)
 
 ```
-bootstrap → vary → evaluate → select
+bootstrap → evaluate → select → vary
 ```
 
 1.  **Bootstrap** (`pcrit bootstrap <exp-dir>`)
     *   The `cli` base calls the `pcrit.command/bootstrap!` function.
-    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`.
+    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`, creating `gen-0`.
 
-2.  **Vary** (`pcrit vary <exp-dir>`)
-    *   **Loads `evolution-parameters.edn`** using the `pcrit.config` component to determine the model and other parameters for the operation.
+2.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
+    *   The `cli` base calls the `pcrit.command/evaluate!` function.
+    *   The command validates user options (generation, contest name, inputs).
+    *   It then orchestrates the `pcrit.failter` component to prepare a `failter-spec` directory, execute the external `failter` toolchain, and capture the resulting `report.csv`.
+
+3.  **Vary** (`pcrit vary <exp-dir>`)
+    *   Loads `evolution-parameters.edn` using the `pcrit.config` component.
     *   Loads the population from the latest generation.
-    *   Applies meta-prompts to the existing population members to generate new offspring prompts. Each new prompt has its `:parents` and `:generator` metadata recorded.
-    *   Creates a new generation directory containing links to the full new population (original survivors + new offspring).
-
-3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
-    *   Identifies the active population for a given generation.
-    *   Packages the prompts and user-provided test data into a `failter-spec` directory for a new "contest".
-    *   Executes the external `failter` tool, which runs the contest and produces a `report.csv` report.
+    *   Applies meta-prompts to generate new offspring prompts.
+    *   Creates a new generation directory containing links to the full new population (survivors + offspring).
 
 4.  **Select** (`pcrit select <exp-dir>`)
     *   Reads `report.csv` from one or more contests.
     *   Applies a selection strategy to determine which prompts survive.
-    *   Creates a new generation directory containing links to only the surviving members of the population.
+    *   Creates a new generation directory containing links to only the surviving members.
 
 ---
 
@@ -150,10 +160,8 @@ bootstrap → vary → evaluate → select
 
 ## 8  Open Issues & Next Steps
 
-*   **Implement Sub-command CLI options**: Refactor `pcrit.cli.main` to handle command-specific options (e.g., for `evaluate` and `select`).
-*   **Implement `evaluate` command**: Set up a Failter contest, run it to score population members for fitness, and store the results.
-*   **Implement `select` command**: Use contest results to eliminate less-fit members and create a new, smaller survivor population.
-*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `vary` → `evaluate` → `select` loop (using a mocked Failter) in the CI matrix.
+*   **Implement `select` command**: Use contest results from the `evaluate` step to eliminate less-fit members and create a new, smaller survivor population.
+*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `evaluate` → `select` → `vary` loop (using a mocked Failter) in the CI matrix.
 
 ---
 

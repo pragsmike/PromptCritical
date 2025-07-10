@@ -80,7 +80,6 @@ With `gen-0` created, you can immediately evaluate its performance.
 2.  **Run the `evaluate` command.**
 
     ```bash
-    # This is the future goal (v0.2)
     pcrit evaluate my-first-experiment \
       --generation 0 \
       --name "initial-cleanup-contest" \
@@ -96,6 +95,7 @@ After evaluating a generation, you can use the scores to create a new generation
 # This is the future goal (v0.2)
 pcrit select my-first-experiment --from-contest "initial-cleanup-contest"
 ```
+
 This will create a new generation directory (e.g., `gen-001/`) containing only the surviving prompts.
 
 ### Step 5: Vary the Population to Create the Next Generation

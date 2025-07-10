@@ -48,7 +48,7 @@ Using git for population snapshots is attractive because:
 For more information, see:
    * [OVERVIEW](docs/OVERVIEW.md)
    * [DESIGN](docs/DESIGN.md)
-   * [RISKS](RISKS.md)
+   * [RISKS](RISks.md)
 
 ---
 
@@ -89,7 +89,7 @@ workspace/
 | :--- | :--- | :--- |
 | `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
 | `vary`      | ✅ | Evolves the latest generation into a new one via mutation/crossover. |
-| `evaluate`  | 🔜 | Run the active population in a contest and collect results. |
+| `evaluate`  | ✅ | Run the active population in a contest and collect results. |
 | `select`    | 🔜 | Create a new population of survivors based on evaluation scores. |
 
 
@@ -116,13 +116,14 @@ workspace/
 
 ## 📦 Current State (Post-Refactoring)
 
-The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `bootstrap` and `vary` commands are fully implemented according to this improved architecture.
+The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `bootstrap`, `vary`, and `evaluate` commands are fully implemented according to this improved architecture.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`bootstrap!`, `vary!`).
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`bootstrap!`, `vary!`, `evaluate!`).
 *   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
 *   **`pcrit.pop`**: Handles core prompt domain logic, including population management.
+*   **`pcrit.failter`**: A dedicated adapter for running the external Failter toolchain.
 
 ---
 
@@ -141,7 +142,7 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This will prove the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
 
 1.  **Bootstrap an Experiment** (`✅ Implemented`)
-    Ingests seed prompts, creates named links, and populates `gen-0` with the initial object-prompts, making them ready for immediate evaluation.
+    Ingests seed prompts, creates named links, and populates `gen-0` with the initial object-prompts.
     ```bash
     pcrit bootstrap my-experiment/
     ```
@@ -152,7 +153,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
     pcrit vary my-experiment/
     ```
 
-3.  **Evaluate the Population** (`🔜 In Development`)
+3.  **Evaluate the Population** (`✅ Implemented`)
     Packages prompts from a specific generation, runs them through Failter in a "contest," and collects the results.
     ```bash
     pcrit evaluate my-experiment/ --generation 0 --name "web-cleanup-v1" --inputs ...
