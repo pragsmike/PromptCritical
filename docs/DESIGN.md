@@ -1,13 +1,13 @@
 # PromptCritical System Design
 
-**Version 1.5 · 2025‑07‑08**
+**Version 1.6 · 2025‑07‑10**
 **Status:** *Implementing `evaluate` and `select` commands*
 
 ---
 
 ## 1  Purpose & Scope
 
-PromptCritical is a **data‑driven, evolutionary framework** for discovering high‑performance prompts for Large Language Models (LLMs). This document describes the current architecture, which follows **Polylith** conventions to realize an experiment loop of ***bootstrap → vary → evaluate → select***.
+PromptCritical is a data-driven, evolutionary framework for discovering high-performance prompts for Large Language Models (LLMs). This document describes the current architecture, which follows **Polylith** conventions to realize an experiment loop of ***bootstrap → vary → evaluate → select***.
 
 The design has two guiding principles:
 
@@ -94,12 +94,15 @@ The prompt remains the central data artifact. Upon creation, its header is now e
           :created-at "…",
           :sha1-hash "…",
           :spec-version "1",
-          :prompt-type :object-prompt,  ; <--- New, critical metadata
+          :prompt-type :object-prompt,
+          :parents ["P1"],
+          :generator {:model "mistral", :meta-prompt "P2"}
           ...}
  :body   "Canonical prompt text…\n"}
 ```
 
 *   **Prompt Types**: Inferred from special template variables (`{{INPUT_TEXT}}` for `:object-prompt`, `{{OBJECT_PROMPT}}` for `:meta-prompt`). This allows the system to validate prompts at creation time.
+*   **Ancestry**: When the `vary` command creates a new prompt, it populates the `:parents` and `:generator` fields to preserve its lineage.
 
 ---
 
@@ -114,8 +117,9 @@ bootstrap → vary → evaluate → select
     *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`.
 
 2.  **Vary** (`pcrit vary <exp-dir>`)
+    *   **Loads `evolution-parameters.edn`** using the `pcrit.config` component to determine the model and other parameters for the operation.
     *   Loads the population from the latest generation.
-    *   Applies meta-prompts (e.g., `refine`) to the existing population members to generate new offspring prompts.
+    *   Applies meta-prompts to the existing population members to generate new offspring prompts. Each new prompt has its `:parents` and `:generator` metadata recorded.
     *   Creates a new generation directory containing links to the full new population (original survivors + new offspring).
 
 3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
@@ -146,11 +150,11 @@ bootstrap → vary → evaluate → select
 
 ## 8  Open Issues & Next Steps
 
-*   **Refactor `pcrit.cli.main`**: Update the command-line parser (`clojure.tools.cli`) to handle subcommands with their own specific options (e.g., for `evaluate` and `select`). This is the immediate next step.
+*   **Implement Sub-command CLI options**: Refactor `pcrit.cli.main` to handle command-specific options (e.g., for `evaluate` and `select`).
 *   **Implement `evaluate` command**: Set up a Failter contest, run it to score population members for fitness, and store the results.
 *   **Implement `select` command**: Use contest results to eliminate less-fit members and create a new, smaller survivor population.
 *   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `vary` → `evaluate` → `select` loop (using a mocked Failter) in the CI matrix.
 
 ---
 
-*Last updated 2025‑07‑08*
+*Last updated 2025‑07‑10*

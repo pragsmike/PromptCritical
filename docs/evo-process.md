@@ -33,7 +33,7 @@ The specification and current state of an experiment reside under its root direc
 *   `pdb/`: The immutable prompt database where all prompt artifacts are stored.
 *   `generations/`: Contains a subdirectory for each generation (`gen-000`, `gen-001`, etc.).
 *   `bootstrap.edn`: The manifest file for the `bootstrap` command.
-*   `evolution-parameters.edn`: (Future) Parameters controlling the evolution algorithms.
+*   `evolution-parameters.edn`: **(Implemented)** Optional file for controlling the evolution algorithms.
 
 The directory structure for a contest is designed for clear auditing and integration with Failter:
 ```
@@ -74,7 +74,7 @@ An experiment begins with a one-time `bootstrap` command, followed by a cycle of
 
 1.  **`bootstrap`**: This command reads the `bootstrap.edn` manifest and ingests the raw prompts from the `seeds/` directory into the immutable `pdb/`, creating the initial named links (e.g., `seed`, `refine`) for reference. It does *not* create a generation.
 
-2.  **`vary`**: This is the "breeding" step. It typically loads the population of the latest generation, applies meta-prompts to create new prompt variations (offspring), and then creates a *new generation* containing both the original survivors and the new offspring.
+2.  **`vary`**: This is the "breeding" step. It typically loads the population of the latest generation, applies meta-prompts to create new prompt variations (offspring), and then creates a *new generation* containing both the original survivors and the new offspring. This step can be configured via `evolution-parameters.edn`.
 
 3.  **`evaluate`**: This is the "vying" or testing step. The `pcrit evaluate` command targets a specific generation's population, packages it into a `failter-spec` directory, and runs a **contest** using the external `failter` tool. The resulting scores are saved to a `report.csv` file within that contest's directory. **Fitness scores are not written into the prompt files themselves.**
 

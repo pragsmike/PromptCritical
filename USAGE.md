@@ -51,68 +51,59 @@ First, create your experiment directory and the necessary seed files.
     mkdir my-first-experiment/seeds
     ```
 
-2.  **Create your raw prompt files** inside the `seeds/` directory. For example:
-    *`seeds/seed-prompt.txt`*
-    ```
-    Please clean the following web page content, removing all ads, navigation, and comments. Preserve only the main article text.
+2.  **Create your raw prompt files** inside the `seeds/` directory.
 
-    {{INPUT_TEXT}}
-    ```
-    *`seeds/refine-prompt.txt`*
-    ```
-    Rewrite the following prompt to be clearer and more direct:
-    {{OBJECT_PROMPT}}
-    ```
+3.  **Create the bootstrap manifest file** (`bootstrap.edn`).
 
-3.  **Create the bootstrap manifest file** in the root of your experiment directory. This file tells `pcrit` which files to ingest and what logical names to give them.
-
-    *`my-first-experiment/bootstrap.edn`*
-    ```clojure
-    {:seed   "seeds/seed-prompt.txt"
-     :refine "seeds/refine-prompt.txt"}
-    ```
-
-4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`), and ingests the prompts, creating named links (e.g., `links/seed`).
+4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`), and ingests the prompts.
 
     ```bash
     pcrit bootstrap my-first-experiment
     ```
-    After this step, your directory is initialized with the raw materials for evolution. **No generations have been created yet.**
+    After this step, your directory is initialized. **No generations have been created yet.**
 
-### Step 2: Vary the Population to Create Generation 0
+### Step 2: Configure The Experiment (Optional)
+
+You can control the evolutionary process by creating an `evolution-parameters.edn` file in your experiment's root directory.
+
+For example, to change the model used by the `vary` command, create the file `my-first-experiment/evolution-parameters.edn` with the following content:
+```clojure
+{:vary {:model "gpt-4-turbo"}}
+```
+If this file is not present, the system will use sensible defaults (e.g., the "mistral" model).
+
+### Step 3: Vary the Population to Create Generation 0
 
 Next, you will create the very first population of prompts by applying your meta-prompts to the initial seed prompts.
 
 ```bash
 pcrit vary my-first-experiment
 ```
-This command loads the latest generation. If no generations exist, it uses the linked `seed` prompts as the starting point. It then applies meta-prompts (like the one linked to `refine`) to create new candidates and saves the result as a new generation (e.g., in a `generations/gen-000/` directory).
+This command loads the latest generation (or the seed prompts if no generations exist). It then applies meta-prompts to create new candidates and saves the result as a new generation (e.g., in a `generations/gen-000/` directory). Each new prompt created will have its ancestry recorded in its metadata.
 
-### Step 3: Evaluate the Population
+### Step 4: Evaluate the Population
 
 Now, you can run the prompts from a specific generation in a contest to see how they perform.
 
-1.  **Gather your evaluation data.** You will need a directory of input files and, optionally, a directory of corresponding "ground truth" (perfectly edited) files.
-2.  **Run the `evaluate` command.** You must tell it which generation to test, give the contest a name, and provide the paths to your data.
+1.  **Gather your evaluation data.** You will need a directory of input files.
+2.  **Run the `evaluate` command.**
 
     ```bash
     # This is the future goal (v0.2)
     pcrit evaluate my-first-experiment \
       --generation 0 \
       --name "web-cleanup-v1" \
-      --inputs path/to/my/inputs/ \
-      --ground-truth path/to/my/ground_truth_files/ \
-      --models-file path/to/my/models.txt
+      --inputs path/to/my/inputs/
     ```
-    This command will create a new contest subdirectory (e.g., `.../contests/web-cleanup-v1/`), prepare the files for the **Failter** tool, execute the Failter pipeline, and place the resulting `report.csv` in the contest directory.
+    This command will execute the **Failter** pipeline and place the resulting `report.csv` in a contest subdirectory.
 
-### Step 4: Select the Survivors
+### Step 5: Select the Survivors
 
-After evaluating a generation, you can use the scores from the contest to "winnow" the population, creating a new generation comprised of only the best performers.
+After evaluating a generation, you can use the scores to create a new generation comprised of only the best performers.
 
 ```bash
 # This is the future goal (v0.2)
 pcrit select my-first-experiment --from-contest "web-cleanup-v1"
 ```
 
-This will create a new generation directory (e.g., `gen-001/`) containing links to only the surviving prompts. By repeating the `vary`, `evaluate`, and `select` steps, you iteratively improve your prompt population.
+This will create a new generation directory (e.g., `gen-001/`) containing only the surviving prompts. By repeating the `vary`, `evaluate`, and `select` steps, you iteratively improve your prompt population.
