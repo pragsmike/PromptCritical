@@ -9,66 +9,99 @@
 (def global-cli-options
   [["-h" "--help" "Print this help message"]])
 
-(defn- usage [options-summary]
-  (->> ["PromptCritical: A Prompt Evolution Experimentation Framework"
-        ""
-        "Usage: pcrit <command> [options] <args...>"
-        ""
-        "Commands:"
-        "  help                         Show this help message."
-        "  bootstrap <experiment-dir>   Initializes a new experiment directory."
-        "  vary <experiment-dir>        Creates a new generation of prompts."
-        ""
-        "Global Options:"
-        options-summary]
-       (str/join \newline)))
+;; NEW: Define options common to all commands.
+(def shared-command-options
+  [["-h" "--help" "Show help for this command."]])
 
-(defn- error-msg [errors]
-  (str "The following errors occurred while parsing your command:\n\n"
-       (str/join \newline errors)))
-
-(defn- do-bootstrap [args]
-  (if (empty? args)
+;; --- Command Handlers ---
+(defn- do-bootstrap [{:keys [arguments]}]
+  (if (empty? arguments)
     (log/error "The 'bootstrap' command requires an <experiment-dir> argument.")
-    (let [exp-dir (first args)
+    (let [exp-dir (first arguments)
           ctx (exp/new-experiment-context exp-dir)]
       (log/info "Bootstrapping experiment in:" exp-dir)
       (cmd/bootstrap! ctx)
       (log/info "Bootstrap complete."))))
 
-(defn- do-vary [args]
-  (if (empty? args)
+(defn- do-vary [{:keys [arguments]}]
+  (if (empty? arguments)
     (log/error "The 'vary' command requires an <experiment-dir> argument.")
-    (let [exp-dir (first args)
+    (let [exp-dir (first arguments)
           ctx (exp/new-experiment-context exp-dir)]
       (log/info "Varying population in experiment:" exp-dir)
       (cmd/vary! ctx)
       (log/info "Vary complete."))))
 
+;; --- Command Specification Map ---
+(def command-specs
+  {"bootstrap" {:doc "Initializes an experiment, ingests seeds, and creates gen-0."
+                :handler do-bootstrap
+                :options []}
+   "vary"      {:doc "Evolves the latest generation into a new one via mutation."
+                :handler do-vary
+                :options []}})
+
+;; --- Usage and Parsing Logic ---
+(defn- command-usage [command-name spec options-summary]
+  (->> [(str "Usage: pcrit " command-name " [options] <args...>\n")
+        "Description:"
+        (str "  " (:doc spec))
+        ""
+        "Options:"
+        options-summary]
+       (str/join \newline)))
+
+(defn- usage [global-summary]
+  (str/join \newline
+    (concat
+      ["PromptCritical: A Prompt Evolution Experimentation Framework"
+       ""
+       "Usage: pcrit <command> [options] <args...>"
+       ""
+       "Commands:"]
+      (for [[cmd spec] (sort-by key command-specs)]
+        (format "  %-12s %s" cmd (:doc spec)))
+      [""
+       "Global Options:"
+       global-summary
+       ""
+       "Run 'pcrit <command> --help' for more information on a specific command."])))
+
+(defn- error-msg [errors]
+  (str "The following errors occurred while parsing your command:\n\n"
+       (str/join \newline errors)))
+
 (defn process-cli-args
   "Parses command-line arguments and dispatches to the correct command."
   [args {:keys [exit-fn out-fn]}]
-  (let [{:keys [options arguments errors summary]} (cli/parse-opts args global-cli-options)]
+  (let [{:keys [options arguments errors summary]} (cli/parse-opts args global-cli-options :in-order true)]
     (cond
       (:help options)
       (exit-fn 0 (out-fn (usage summary)))
 
-      errors
+      (seq errors)
       (exit-fn 1 (out-fn (error-msg errors)))
 
       (empty? arguments)
       (exit-fn 1 (out-fn (usage summary)))
 
       :else
-      (let [[command & params] arguments]
-        (if (str/starts-with? command "-")
-          ;; CORRECTED: Use pr-str to format the error message consistently.
-          (exit-fn 1 (out-fn (error-msg [(str "Unknown option: " (pr-str command))])))
-          (case command
-            "help"      (exit-fn 0 (out-fn (usage summary)))
-            "bootstrap" (do-bootstrap params)
-            "vary"      (do-vary params)
-            (exit-fn 1 (out-fn (str "Unknown command: " command "\n" (usage summary))))))))))
+      (let [command (first arguments)
+            params (rest arguments)]
+        (if-let [spec (get command-specs command)]
+          ;; CORRECTED: Merge shared options with command-specific ones before parsing.
+          (let [all-cmd-options (into (:options spec) shared-command-options)
+                {:keys [options arguments errors sub-summary]} (cli/parse-opts params all-cmd-options)]
+            (cond
+              (:help options)
+              (exit-fn 0 (out-fn (command-usage command spec sub-summary)))
+
+              (seq errors)
+              (exit-fn 1 (out-fn (error-msg errors)))
+
+              :else
+              ((:handler spec) {:options options :arguments arguments})))
+          (exit-fn 1 (out-fn (str "Unknown command: " command "\n" (usage summary)))))))))
 
 (defn -main [& args]
   (try
