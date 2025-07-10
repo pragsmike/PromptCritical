@@ -170,14 +170,14 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
 ## 🗺 Roadmap Snapshot
 
 | Milestone | New Capability |
-| :--- | :--- | :--- |
-| **v0.2** | Implement core `vary`, `evaluate`, `select` commands. |
-| **v0.3** | Automated `evolve` command that composes the v0.2 commands. |
-| **v0.4** | Advanced selection & mutation operators. |
-| **v0.5** | Surrogate critic to pre-filter variants before Failter. |
-| **v0.6** | Experiment recipes (EDN/YAML) and CLI replayability. |
-| **v0.7** | Reporting dashboard (`pcrit.web` base). |
-| **v1.0** | Distributed workers, advanced semantic validators. |
+|-----------|----------------|
+| **v0.2**  | Implement core `vary`, `evaluate`, `select` commands. |
+| **v0.3**  | Automated `evolve` command that composes the v0.2 commands. |
+| **v0.4**  | Advanced selection & mutation operators. |
+| **v0.5**  | Surrogate critic to pre-filter variants before Failter. |
+| **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability. |
+| **v0.7**  | Reporting dashboard (`pcrit.web` base). |
+| **v1.0**  | Distributed workers, advanced semantic validators. |
 
 ---
 
