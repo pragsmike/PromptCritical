@@ -4,7 +4,8 @@
             [pcrit.expdir.interface :as expdir]
             [pcrit.failter.interface :as failter]
             [pcrit.log.interface :as log]
-            [pcrit.pop.interface :as pop]))
+            [pcrit.pop.interface :as pop]
+            [pcrit.reports.interface :as reports]))
 
 (defn- validate-options [ctx {:keys [generation-number contest-name inputs-dir models]}]
   (let [gen-dir (expdir/get-generation-dir ctx generation-number)
@@ -29,17 +30,19 @@
       :else
       {:valid? true :population population})))
 
+(defn- log-contest-cost! [report-path]
+  (when report-path
+    (let [report-data (reports/parse-report report-path)
+          total-cost (reduce + 0.0 (map :cost report-data))]
+      (log/info (format "Contest completed. Total cost: $%.4f" total-cost)))))
+
 (defn evaluate!
   "Orchestrates the evaluation of a prompt population for a given generation."
   [ctx {:keys [generation name inputs judge-model]}]
   (let [evo-params        (config/load-evolution-params ctx)
         eval-config       (:evaluate evo-params)
-
-        ;; The list of models to run the contest against.
         models-to-test    (:models eval-config)
-        ;; The judge model can be overridden by the CLI option.
         final-judge-model (or judge-model (:judge-model eval-config))
-
         gen-num           (or generation (expdir/find-latest-generation-number ctx))
         contest-name      (or name "contest")]
 
@@ -54,9 +57,12 @@
           (log/error "Evaluation validation failed:" reason)
           (do
             (log/info "Starting evaluation for generation" gen-num "with contest name '" contest-name "'")
-            (failter/run-contest! ctx {:generation-number gen-num
-                                       :contest-name      contest-name
-                                       :inputs-dir        inputs
-                                       :population        population
-                                       :models            models-to-test
-                                       :judge-model       final-judge-model})))))))
+            (let [contest-params {:generation-number gen-num
+                                  :contest-name      contest-name
+                                  :inputs-dir        inputs
+                                  :population        population
+                                  :models            models-to-test
+                                  :judge-model       final-judge-model}
+                  {:keys [success report-path]} (failter/run-contest! ctx contest-params)]
+              (when success
+                (log-contest-cost! report-path)))))))))

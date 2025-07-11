@@ -6,11 +6,10 @@
             [pcrit.expdir.interface :as expdir]
             [pcrit.failter.interface :as failter]
             [pcrit.pop.interface :as pop]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]))
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir with-quiet-logging]]))
 
-(use-fixtures :each with-temp-dir)
+(use-fixtures :each with-temp-dir with-quiet-logging)
 
-;; CORRECTED: Simplified setup function. It now only creates a valid, default environment.
 (defn- setup-test-env []
   (let [exp-dir (get-temp-dir)
         ctx (exp/new-experiment-context exp-dir)

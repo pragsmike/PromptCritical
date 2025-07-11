@@ -6,9 +6,9 @@
             [pcrit.failter.core :as failter]
             [pcrit.experiment.interface :as exp]
             [pcrit.expdir.interface :as expdir]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]))
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir with-quiet-logging]]))
 
-(use-fixtures :each with-temp-dir)
+(use-fixtures :each with-temp-dir with-quiet-logging)
 
 (deftest run-contest-test
   (testing "run-contest! orchestrates expdir and shell commands correctly"

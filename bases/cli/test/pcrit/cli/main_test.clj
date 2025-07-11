@@ -5,9 +5,9 @@
             [pcrit.cli.main :as main]
             [pcrit.command.interface :as cmd]
             [pcrit.experiment.interface :as exp]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir make-temp-exp-dir!]]))
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir make-temp-exp-dir! with-quiet-logging]]))
 
-(use-fixtures :each with-temp-dir)
+(use-fixtures :each with-temp-dir with-quiet-logging)
 
 (defn- run-cli [args]
   (let [exit-code (atom nil)

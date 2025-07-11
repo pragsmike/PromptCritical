@@ -7,9 +7,9 @@
             [pcrit.experiment.interface :as exp]
             [pcrit.llm.interface :as llm]
             [pcrit.pop.interface :as pop]
-            [pcrit.test-helper.interface :refer [get-temp-dir make-temp-exp-dir! with-temp-dir]]))
+            [pcrit.test-helper.interface :refer [get-temp-dir make-temp-exp-dir! with-temp-dir with-quiet-logging]]))
 
-(use-fixtures :each with-temp-dir)
+(use-fixtures :each with-temp-dir with-quiet-logging)
 
 (defn- create-evo-params-file! [exp-dir model-name]
   (spit (io/file exp-dir "evolution-parameters.edn")

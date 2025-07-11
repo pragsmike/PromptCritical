@@ -55,6 +55,13 @@
             ctx (exp/new-experiment-context exp-dir)]
         (cmd/select! ctx options)))))
 
+(defn- do-stats [{:keys [options arguments]}]
+  (if (empty? arguments)
+    (log/error "The 'stats' command requires an <experiment-dir> argument.")
+    (let [exp-dir (first arguments)
+          ctx (exp/new-experiment-context exp-dir)]
+      (cmd/stats! ctx options))))
+
 ;; --- Command Specification Map ---
 (def command-specs
   {"init"      {:doc "Creates a new, minimal experiment skeleton directory."
@@ -81,7 +88,13 @@
                           ["-g" "--generation GEN" "Generation number where the contest resides (defaults to latest)"
                            :parse-fn #(Integer/parseInt %)]
                           ["-p" "--policy POLICY" "Selection policy (e.g., 'top-N=5')"
-                           :default (:selection-policy config/defaults)]]}})
+                           :default (:selection-policy config/defaults)]]}
+   "stats"     {:doc "Displays cost and score statistics for a contest or generation."
+                :handler do-stats
+                :options [
+                          ["-c" "--from-contest NAME" "Name of a specific contest to analyze"]
+                          ["-g" "--generation GEN" "Generation to analyze (defaults to latest)"
+                           :parse-fn #(Integer/parseInt %)]]}})
 
 ;; --- Usage and Parsing Logic ---
 (defn- command-usage [command-name spec options-summary]

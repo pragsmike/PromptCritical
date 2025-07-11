@@ -1,6 +1,7 @@
 (ns pcrit.command.interface
   (:require [pcrit.command.core :as core]
             [pcrit.command.init :as init]
+            [pcrit.command.stats :as stats]
             [pcrit.command.vary :as vary]
             [pcrit.command.evaluate :as evaluate]
             [pcrit.command.select :as select]))
@@ -12,6 +13,10 @@
 (def init!
   "Creates a new, minimal experiment skeleton directory."
   init/init!)
+
+(def stats!
+  "Calculates and displays statistics for a given contest or generation."
+  stats/stats!)
 
 (def bootstrap!
   "Executes the full bootstrap process for an experiment.

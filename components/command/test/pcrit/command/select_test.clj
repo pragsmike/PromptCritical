@@ -7,9 +7,9 @@
             [pcrit.expdir.interface :as expdir]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]))
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir with-quiet-logging]]))
 
-(use-fixtures :each with-temp-dir)
+(use-fixtures :each with-temp-dir with-quiet-logging)
 
 (defn- setup-select-test-env!
   "Creates a test experiment with 10 prompts in gen-0 and a contest report.
