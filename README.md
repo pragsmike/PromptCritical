@@ -24,8 +24,21 @@ Together, the contest-style fitness and tamper-evident record make
 PromptCritical uniquely reproducible, bias-resistant, and production-friendly in
 a field where ad-hoc scripts and opaque metrics still dominate.
 
+## 🚀 Quick Start
 
-Key ingredients:
+Get your first experiment running in two commands:
+
+```bash
+# 1. Create a new experiment skeleton in a directory named "my-exp"
+pcrit init my-exp
+
+# 2. Ingest the seed prompts and create generation 0
+pcrit bootstrap my-exp
+```
+You now have a complete, runnable experiment in the `my-exp` directory. See the [Usage Guide](USAGE.md) for the next steps (`vary`, `evaluate`, `select`).
+
+
+## Key Ingredients
 
 | Ingredient | Purpose |
 | :--- | :--- |
@@ -81,13 +94,13 @@ workspace/
 │   ├── llm/          ; Thin HTTP client for LLMs
 │   └── test-helper/  ; Shared utilities for testing
 └── bases/
-    └── cli/          ; `pcrit` command‑line entry point
-```
+    └── cli/          ; `pcrit` command‑line entry point```
 
 ### CLI Overview
 
 | Command | Status | Description |
 | :--- | :--- | :--- |
+| `init`      | ✅ | Creates a new, minimal experiment skeleton directory. |
 | `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
 | `vary`      | ✅ | Adds new prompt variations to the *current* generation's population. |
 | `evaluate`  | ✅ | Runs the active population in a contest and collects results. |
@@ -100,7 +113,8 @@ workspace/
 
 | Term                                               | Notes                                                   | Meaning                                                                                                                                                                       |
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that seeds the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                                            |
+| **init**                                           | Creates the initial experiment files.                   | One-time step that scaffolds a runnable experiment directory, including the `seeds/` folder, `bootstrap.edn`, and default configurations.                                     |
+| **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that ingests prompts from `seeds/` into the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                |
 | **vary**                                           | Mutates the current generation.                         | Generates new candidate prompts by mutating or recombining existing ones, adding them to the *current* population directory (`generations/gen-000/population`, …). |
 | **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
 | **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
@@ -117,9 +131,9 @@ workspace/
 
 ## 📦 Current State (Post-Refactoring)
 
-The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `bootstrap`, `vary`, `evaluate`, and `select` commands are now fully implemented.
+The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `init`, `bootstrap`, `vary`, `evaluate`, and `select` commands are now fully implemented.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`bootstrap!`, `vary!`, `evaluate!`, `select!`).
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`).
 *   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
@@ -141,27 +155,33 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 
 ## 🚧 Current Milestone (v0.2): The Core Evolutionary Loop
 
-The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This proves the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
+The immediate goal is to implement the full **`init` → `bootstrap` → `vary` → `evaluate` → `select`** vertical slice. This proves the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
 
-1.  **Bootstrap an Experiment** (`✅ Implemented`)
-    Ingests seed prompts, creates named links, and populates `gen-0` with the initial object-prompts.
+1.  **Initialize an Experiment** (`✅ Implemented`)
+    Creates a runnable experiment skeleton with default prompts and configs.
+    ```bash
+    pcrit init my-experiment/
+    ```
+
+2.  **Bootstrap an Experiment** (`✅ Implemented`)
+    Ingests seed prompts, creates named links, and populates `gen-0`.
     ```bash
     pcrit bootstrap my-experiment/
     ```
 
-2.  **Vary the Population** (`✅ Implemented`)
+3.  **Vary the Population** (`✅ Implemented`)
     Loads the latest generation, applies meta-prompts to create offspring, and adds the new prompts to the *current* generation's population.
     ```bash
     pcrit vary my-experiment/
     ```
 
-3.  **Evaluate the Population** (`✅ Implemented`)
+4.  **Evaluate the Population** (`✅ Implemented`)
     Packages prompts from a specific generation, runs them through Failter in a "contest," and collects the results.
     ```bash
     pcrit evaluate my-experiment/ --generation 0 --name "web-cleanup-v1" --inputs ...
     ```
 
-4.  **Select the Survivors** (`✅ Implemented`)
+5.  **Select the Survivors** (`✅ Implemented`)
     Parses `report.csv` from a contest and applies a selection strategy to create a **new generation** containing only the fittest prompts.
     ```bash
     pcrit select my-experiment/ --from-contest "web-cleanup-v1"
@@ -173,7 +193,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
 
 | Milestone | New Capability |
 |-----------|----------------|
-| **v0.2**  | Implement core `vary`, `evaluate`, `select` commands. |
+| **v0.2**  | Implement core `init`, `vary`, `evaluate`, `select` commands. |
 | **v0.3**  | Automated `evolve` command that composes the v0.2 commands. |
 | **v0.4**  | Advanced selection & mutation operators. |
 | **v.5**  | Surrogate critic to pre-filter variants before Failter. |

@@ -4,14 +4,15 @@ This guide explains how to use the `pcrit` command-line tool to set up, run, and
 
 ## Core Philosophy
 
-PromptCritical treats prompt engineering as a scientific, evolutionary process. The goal is to move beyond manually tweaking prompts and instead use a data-driven loop. A generation folder represents a population at a specific state. The core workflow mutates and evaluates this population *in-place* and then *selects* the winners to create the next generation.
+PromptCritical treats prompt engineering as a scientific, evolutionary process. The goal is to move beyond manually tweaking prompts and instead use a data-driven loop. The core workflow is now:
 
-1.  **Bootstrap**: Ingest initial, hand-written prompts and create the first population folder (`gen-0`).
-2.  **Vary**: Produce new candidate prompts by applying meta-prompts (mutation, crossover) to the *current* population. This adds new prompts to the current generation's folder.
-3.  **Evaluate**: Run all prompts in the current population against a corpus of inputs using the **Failter** tool to generate performance scores. This creates a `report.csv` inside the current generation's `contests/` directory.
-4.  **Select**: Use the scores from a contest report to select the fittest prompts and create a **new generation folder** containing only the survivors.
+1.  **Init**: Create a new, ready-to-use experiment skeleton directory with default prompts and configuration.
+2.  **Bootstrap**: Ingest the initial prompts from the skeleton and create the first population folder (`gen-0`).
+3.  **Vary**: Produce new candidate prompts by applying meta-prompts (mutation, crossover) to the *current* population. This adds new prompts to the current generation's folder.
+4.  **Evaluate**: Run all prompts in the current population against a corpus of inputs using the **Failter** tool to generate performance scores. This creates a `report.csv` inside the current generation's `contests/` directory.
+5.  **Select**: Use the scores from a contest report to select the fittest prompts and create a **new generation folder** containing only the survivors.
 
-Steps 2 through 4 are repeated in a cycle, with each `select` command producing a new, more refined generation. This entire process is managed from the command line within a dedicated **Experiment Directory**.
+Steps 3 through 5 are repeated in a cycle, with each `select` command producing a new, more refined generation. This entire process is managed from the command line within a dedicated **Experiment Directory**.
 
 ## Core Concepts
 
@@ -43,84 +44,84 @@ NOTE: Allowed placeholders (INPUT_TEXT, OBJECT_PROMPT, …) are being formalised
 
 Here is a step-by-step guide to running your first experiment.
 
-### Step 1: Set Up and Bootstrap the Experiment
+### Step 1: Initialize the Experiment Directory
 
-First, create your experiment directory and the necessary seed files.
+The easiest way to start is with the `init` command. It creates a new directory containing a runnable set of seed prompts and configuration files.
 
-1.  **Create a directory for your experiment:**
-    ```bash
-    mkdir my-first-experiment
-    mkdir my-first-experiment/seeds
-    ```
+```bash
+pcrit init my-first-experiment
+```
 
-2.  **Create your raw prompt files** inside the `seeds/` directory.
+This single command creates the `my-first-experiment` directory and populates it with:
+*   `seeds/`: A directory with example object and meta prompts.
+*   `bootstrap.edn`: A manifest file that tells `pcrit bootstrap` which prompts to ingest.
+*   `evolution-parameters.edn`: A configuration file for the `evaluate` and `vary` commands.
+*   `.gitignore`: A file to ignore transient runtime files.
 
-3.  **Create the bootstrap manifest file** (`bootstrap.edn`).
+### Step 2: Bootstrap the Initial Population
 
-4.  **Run the `bootstrap` command:** This reads your manifest, ingests the prompts, and automatically creates the first population (`gen-0`).
+Now, move into your new directory and run the `bootstrap` command. This reads the manifest, ingests the prompts created by `init`, and creates the first population (`gen-0`).
 
-    ```bash
-    pcrit bootstrap my-first-experiment
-    ```
-    After this step, your experiment is initialized and you have a testable population in `generations/gen-000/`.
+```bash
+cd my-first-experiment
+pcrit bootstrap .
+```
+After this step, your experiment is initialized and you have a testable population in `generations/gen-000/`.
 
-### Step 2: Configure The Experiment
+### Step 3: Configure The Experiment
 
-Next, you **must** create an `evolution-parameters.edn` file in your experiment's root directory to control the `evaluate` and `vary` commands.
-NOTE: Models default to `mistral` if not specified.
+The `init` command creates a default `evolution-parameters.edn` file. You should review this file and customize it for your needs. At a minimum, you must specify which LLM models to test against.
 
-1.  **Create the configuration file:** `my-first-experiment/evolution-parameters.edn`
-2.  **Add parameters.** At a minimum, you must specify which models to test against in the `evaluate` command.
+```clojure
+// File: my-first-experiment/evolution-parameters.edn
+{
+ ;; This section is REQUIRED for the 'evaluate' command.
+ :evaluate {:models ["openai/gpt-4o-mini" "ollama/qwen3:8b"]
+            ;; This key is optional.
+            :judge-model "openai/gpt-4o"}
 
-    ```clojure
-    {
-     ;; This section is REQUIRED for the 'evaluate' command.
-     :evaluate {:models ["openai/gpt-4o-mini" "ollama/qwen3:8b"]
-                ;; This key is optional.
-                :judge-model "openai/gpt-4o"}
+ ;; This section is optional for the 'vary' command.
+ ;; If omitted, it will use a sensible default.
+ :vary {:model "gpt-4-turbo"}
+}
+```
 
-     ;; This section is optional for the 'vary' command.
-     ;; If omitted, it will use a sensible default.
-     :vary {:model "gpt-4-turbo"}
-    }
-    ```
-### Step 3: Vary the Population to Create New Candidates
+### Step 4: Vary the Population to Create New Candidates
 
 Now, you can apply your meta-prompts to the population to breed new candidates for evaluation. The `vary` command adds new prompts to the current generation.
 
 ```bash
-pcrit vary my-first-experiment
-```
+pcrit vary .```
 This command loads the population from `gen-000`, applies meta-prompts to create new candidates, and adds them to the `generations/gen-000/population/` directory. You can run this command multiple times to generate more variations before evaluating.
 
-### Step 4: Evaluate the Current Population
+### Step 5: Evaluate the Current Population
 
-With the experiment configured and the population expanded, you can evaluate the performance of all prompts in `gen-0`.
+With the population expanded, you can evaluate the performance of all prompts in `gen-0`.
 
 1.  **Gather your evaluation data.** You will need a directory of input files.
 2.  **Run the `evaluate` command.**
 
     ```bash
-    pcrit evaluate my-first-experiment \
+    pcrit evaluate . \
       --generation 0 \
       --name "initial-cleanup-contest" \
       --inputs path/to/my/inputs/
     ```
     This command will run the Failter contest and place the resulting `report.csv` in `generations/gen-000/contests/initial-cleanup-contest/`.
 
-### Step 5: Select the Survivors to Create the Next Generation
+### Step 6: Select the Survivors to Create the Next Generation
 
 After evaluating, use the scores from the contest report to create a new generation comprised of only the best performers. This is the only command that creates a new generation folder. By default, it selects the top 5 prompts based on score.
 
 ```bash
-pcrit select my-first-experiment --from-contest "initial-cleanup-contest"
+pcrit select . --from-contest "initial-cleanup-contest"
 ```
 
-This will read the report, pick the winners based on the selection policy (e.g., top 5), and create a new generation directory (`gen-001/`) containing only symlinks to the surviving prompts. The process then repeats from Step 3 (`vary`), but now operating on the new, more refined generation.
+This will read the report, pick the winners, and create a new generation directory (`gen-001/`) containing only symlinks to the surviving prompts. The process then repeats from Step 4 (`vary`), but now operating on the new, more refined generation.
 
 To change the selection policy, you can use the `--policy` flag. For example, to keep the top 10 prompts:
 ```bash
-pcrit select my-first-experiment \
+pcrit select . \
   --from-contest "initial-cleanup-contest" \
   --policy "top-N=10"
 ```

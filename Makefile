@@ -8,7 +8,7 @@ test:
 
 # Create a pack file to upload to AI assistant
 pack:
-	(for i in README.md USAGE.md PolylithNotes.md \
+	(for i in README.md USAGE.md PolylithNotes.md bin/pcrit \
 					docs/OVERVIEW.md \
 					docs/DESIGN.md \
 					docs/API.md \
@@ -20,10 +20,9 @@ pack:
 					copilot/onboard-*.md \
 					Makefile `find . -name deps.edn` ;\
 	   do echo $$i; cat $$i; echo ---- ; done ;\
-  echo PROMPTS; echo -----; \
-  cat prompts/* ; \
+  echo Resource files; echo -----; \
+  (for i in `find . -path '*/resources/*' -type f`; do echo $$i; cat $$i; echo ----; done) ;\
 	echo Source files; echo -----; \
   (find components -name '*.clj' | xargs cat) ;\
   (find bases -name '*.clj' | xargs cat) \
   ) >~/pcrit-pack.txt
-

@@ -12,30 +12,31 @@ This design has several key advantages:
 
 ---
 
-### The `bootstrap` → `vary` → `evaluate` → `select` Workflow
+### The `init` → `bootstrap` → `vary` → `evaluate` → `select` Workflow
 
 Here is a trace of the lifecycle of an evolutionary cycle, starting from a fresh experiment.
 
+#### State 0: After `pcrit init`
+
+The user first runs `pcrit init my-experiment`. This command creates the `my-experiment` directory and populates it with a standard skeleton, including a `seeds/` directory with example prompts and a `bootstrap.edn` manifest file ready for the next step.
+
 #### State 1: After `pcrit bootstrap`
 
-The user runs `pcrit bootstrap my-experiment`. This command ingests the seed prompts, creates top-level links, and creates `gen-0`, populating it with any object-prompts found in the manifest. The experiment now has an initial population ready for evolution.
+The user runs `pcrit bootstrap my-experiment`. This command ingests the seed prompts created by `init`, creates top-level links, and creates `gen-0`, populating it with any object-prompts found in the manifest. The experiment now has an initial population ready for evolution.
 
 **Directory Structure:**
 ```
 my-experiment/
 ├── links/
-│   ├── refine -> ../pdb/P2.prompt
-│   ├── seed -> ../pdb/P1.prompt
-│   └── vary -> ../pdb/P3.prompt
+│   ├── improve -> ../pdb/P2.prompt
+│   └── seed -> ../pdb/P1.prompt
 ├── pdb/
 │   ├── P1.prompt   ; The seed :object-prompt
 │   ├── P2.prompt   ; A :meta-prompt
-│   └── P3.prompt   ; Another :meta-prompt
-│   └── pdb.counter ; Contains "3"
+│   └── pdb.counter ; Contains "2"
 ├── seeds/
-│   ├── refine.txt
-│   ├── seed.txt
-│   └── vary.txt
+│   ├── improve-meta-prompt.txt
+│   └── seed-object-prompt.txt
 ├── bootstrap.edn
 └── generations/
     └── gen-000/
@@ -53,8 +54,8 @@ pcrit vary my-experiment/
 ```
 **Actions:**
 1.  The `vary` command identifies the latest generation, `gen-000`.
-2.  It applies meta-prompts to the population members of `gen-000`, generating new object-prompts, say `P4` and `P5`.
-3.  It adds symlinks for the new offspring (`P4`, `P5`) into the **existing `gen-000/population/` directory**.
+2.  It applies meta-prompts to the population members of `gen-000`, generating new object-prompts, say `P3` and `P4`.
+3.  It adds symlinks for the new offspring (`P3`, `P4`) into the **existing `gen-000/population/` directory**.
 
 **Directory Structure:**
 ```
@@ -63,8 +64,8 @@ my-experiment/
     └── gen-000/
         └── population/
             ├── P1.prompt -> ../../../pdb/P1.prompt
-            ├── P4.prompt -> ../../../pdb/P4.prompt
-            └── P5.prompt -> ../../../pdb/P5.prompt
+            ├── P3.prompt -> ../../../pdb/P3.prompt
+            └── P4.prompt -> ../../../pdb/P4.prompt
 ```
 
 #### State 3: After `pcrit evaluate`
@@ -76,13 +77,12 @@ The user evaluates the now-expanded population of Generation 0.
 pcrit evaluate my-experiment/ \
   --generation 0 \
   --name "initial-web-cleanup" \
-  --inputs path/to/web-articles/
-```
+  --inputs path/to/web-articles/```
 
 **Actions:**
 1.  The `evaluate` command resolves the path to `my-experiment/generations/gen-000/`.
 2.  It creates a contest directory: `.../gen-000/contests/initial-web-cleanup/`.
-3.  It creates the `failter-spec/` subdirectory and populates it with links to the three prompts currently in `gen-000/population/`.
+3.  It creates the `failter-spec/` subdirectory and populates it with links to the prompts currently in `gen-000/population/`.
 4.  It shells out to `failter` to execute the contest and captures the `report.csv`.
 
 **Final Directory Structure of the Contest:**
@@ -114,8 +114,7 @@ pcrit select my-experiment/ --from-contest "initial-web-cleanup"
 2.  It applies a selection strategy (e.g., "keep `P1` and `P4`").
 3.  It calls `pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
 
-**Directory Structure After Selection:**
-```my-experiment/
+**Directory Structure After Selection:**```my-experiment/
 └── generations/
     ├── gen-000/
     │   └── ... (unchanged, now a historical record)
