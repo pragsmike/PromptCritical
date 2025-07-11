@@ -134,7 +134,7 @@
 
 (defn -main [& args]
   (try
-    (cmd/init!)
+    (cmd/setup!)
     (process-cli-args
      args
      {:exit-fn (fn [code _] (System/exit code))

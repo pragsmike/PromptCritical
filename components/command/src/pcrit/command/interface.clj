@@ -5,6 +5,10 @@
             [pcrit.command.evaluate :as evaluate]
             [pcrit.command.select :as select]))
 
+(def setup!
+  "Performs application-wide setup, like logging and pre-flight checks."
+  core/setup!)
+
 (def init!
   "Creates a new, minimal experiment skeleton directory."
   init/init!)

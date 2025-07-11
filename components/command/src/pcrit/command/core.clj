@@ -4,7 +4,7 @@
             [pcrit.llm.interface :as llm]
             [pcrit.log.interface :as log]))
 
-(defn init! []
+(defn setup! []
   (log/setup-logging!)
   (llm/pre-flight-checks))
 
