@@ -1,10 +1,13 @@
 (ns pcrit.command.interface
   (:require [pcrit.command.core :as core]
+            [pcrit.command.init :as init]
             [pcrit.command.vary :as vary]
             [pcrit.command.evaluate :as evaluate]
             [pcrit.command.select :as select]))
 
-(def init! core/init!)
+(def init!
+  "Creates a new, minimal experiment skeleton directory."
+  init/init!)
 
 (def bootstrap!
   "Executes the full bootstrap process for an experiment.

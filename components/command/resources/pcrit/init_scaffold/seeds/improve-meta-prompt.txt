@@ -1,0 +1,2 @@
+Analyze the following prompt and generate an improved, more robust version.
+{{OBJECT_PROMPT}}

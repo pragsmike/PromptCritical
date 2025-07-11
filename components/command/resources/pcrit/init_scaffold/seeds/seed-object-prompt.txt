@@ -1,0 +1,5 @@
+You are an expert text-processor. Your task is to clean up raw text scraped from the web.
+Remove all boilerplate, ads, navigation, and subscription offers.
+Preserve only the main article content.
+
+{{INPUT_TEXT}}

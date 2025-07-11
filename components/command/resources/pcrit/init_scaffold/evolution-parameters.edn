@@ -1,0 +1,5 @@
+{;; Models to run prompts against during `evaluate`
+ :evaluate {:models ["openai/gpt-4o-mini"]}
+
+ ;; Model to use for creating new prompts during `vary`
+ :vary {:model "openai/gpt-4o-mini"}}

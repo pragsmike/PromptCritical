@@ -13,6 +13,16 @@
   [["-h" "--help" "Show help for this command."]])
 
 ;; --- Command Handlers ---
+
+(defn- do-init [{:keys [options arguments]}]
+  (if (empty? arguments)
+    (log/error "The 'init' command requires an <experiment-dir> argument.")
+    (let [exp-dir (first arguments)
+          ctx (exp/new-experiment-context exp-dir)
+          {:keys [exit-code]} (cmd/init! ctx options)]
+      (when (and exit-code (not (zero? exit-code)))
+        (System/exit exit-code)))))
+
 (defn- do-bootstrap [{:keys [arguments]}]
   (if (empty? arguments)
     (log/error "The 'bootstrap' command requires an <experiment-dir> argument.")
@@ -47,7 +57,10 @@
 
 ;; --- Command Specification Map ---
 (def command-specs
-  {"bootstrap" {:doc "Initializes an experiment, ingests seeds, and creates gen-0."
+  {"init"      {:doc "Creates a new, minimal experiment skeleton directory."
+                :handler do-init
+                :options [["-f" "--force" "Overwrite existing scaffold files."]]}
+   "bootstrap" {:doc "Initializes an experiment, ingests seeds, and creates gen-0."
                 :handler do-bootstrap
                 :options []}
    "vary"      {:doc "Evolves the latest generation into a new one via mutation."
