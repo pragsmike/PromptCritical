@@ -8,10 +8,10 @@ auditable step at a time.*
 PromptCritical is a **data‑driven, experiment‑oriented toolchain** that breeds and evaluates prompts for LLMs. It automates the cycle of:
 
 ```
-bootstrap → vary → evaluate → select
+vary → evaluate → select
 ```
 
-so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing.
+so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing. A `bootstrap` command seeds the initial `gen-0` population, after which the main loop can begin.
 
 PromptCritical stands out by pairing a **multi-model judging
 architecture**—where evolved prompts face a panel of independent LLM “critics”
@@ -88,9 +88,9 @@ workspace/
 | Command | Status | Description |
 | :--- | :--- | :--- |
 | `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
-| `vary`      | ✅ | Evolves the latest generation into a new one via mutation/crossover. |
-| `evaluate`  | ✅ | Run the active population in a contest and collect results. |
-| `select`    | 🔜 | Create a new population of survivors based on evaluation scores. |
+| `vary`      | ✅ | Adds new prompt variations to the *current* generation's population. |
+| `evaluate`  | ✅ | Runs the active population in a contest and collects results. |
+| `select`    | 🔜 | Creates a **new generation** of survivors based on evaluation scores. |
 
 
 ---
@@ -100,10 +100,10 @@ workspace/
 | Term                                               | Notes                                                   | Meaning                                                                                                                                                                       |
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that seeds the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                                            |
-| **vary**                                           | Creates a new generation.                               | Generates new candidate prompts by mutating or recombining existing ones, writing them into the next population directory (`generations/gen-001/population`, …). |
+| **vary**                                           | Mutates the current generation.                         | Generates new candidate prompts by mutating or recombining existing ones, adding them to the *current* population directory (`generations/gen-000/population`, …). |
 | **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
 | **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
-| **select**                                         | Selection strategy is pluggable.                        | Picks the top-performing prompts according to `report.csv` and copies them forward as the “parents” for the next **vary** step.                                               |
+| **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `report.csv` and creates a **new generation folder** populated with symlinks to the survivors.                                  |
 | **population (`generations/gen-NNN/population/`)** | See *Directory Layout* section.                         | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                                  |
 | **experiment directory (`expdir/`)**               | Portable & reproducible.                                | Root folder that bundles prompt generations, results, Failter specs, and metadata for a single evolutionary run.                                                              |
 | **`report.csv`**                                   | Failter produces this.                                  | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                                     |
@@ -148,7 +148,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
     ```
 
 2.  **Vary the Population** (`✅ Implemented`)
-    Loads the latest generation, applies meta-prompts to create offspring, and creates a new generation containing both survivors and offspring.
+    Loads the latest generation, applies meta-prompts to create offspring, and adds the new prompts to the *current* generation's population.
     ```bash
     pcrit vary my-experiment/
     ```
@@ -160,7 +160,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
     ```
 
 4.  **Select the Survivors** (`🔜 In Development`)
-    Parses the `report.csv` from a contest and applies a selection strategy to create a new generation containing only the fittest prompts.
+    Parses `report.csv` from a contest and applies a selection strategy to create a **new generation** containing only the fittest prompts.
     ```bash
     pcrit select my-experiment/ --from-contest "web-cleanup-v1"
     ```
