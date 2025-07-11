@@ -51,30 +51,40 @@ First, create your experiment directory and the necessary seed files.
     mkdir my-first-experiment/seeds
     ```
 
-2.  **Create your raw prompt files** inside the `seeds/` directory. Be sure to include at least one object-prompt (`{{INPUT_TEXT}}`) and at least one meta-prompt (`{{OBJECT_PROMPT}}`).
+2.  **Create your raw prompt files** inside the `seeds/` directory.
 
-3.  **Create the bootstrap manifest file** (`bootstrap.edn`). This file gives logical names to your seed files.
+3.  **Create the bootstrap manifest file** (`bootstrap.edn`).
 
-4.  **Run the `bootstrap` command:** This reads your manifest, creates the experiment's internal structure (`pdb/`), ingests the prompts, and automatically creates the first population (`gen-0`) from your seed object-prompts.
+4.  **Run the `bootstrap` command:** This reads your manifest, ingests the prompts, and automatically creates the first population (`gen-0`).
 
     ```bash
     pcrit bootstrap my-first-experiment
     ```
     After this step, your experiment is initialized and you have a testable population in `generations/gen-000/`.
 
-### Step 2: Configure The Experiment (Optional)
+### Step 2: Configure The Experiment
 
-You can control the evolutionary process by creating an `evolution-parameters.edn` file in your experiment's root directory.
+Next, you **must** create an `evolution-parameters.edn` file in your experiment's root directory to control the `evaluate` and `vary` commands.
 
-For example, to change the model used by the `vary` command, create the file `my-first-experiment/evolution-parameters.edn` with the following content:
-```clojure
-{:vary {:model "gpt-4-turbo"}}
-```
-If this file is not present, the system will use sensible defaults (e.g., the "mistral" model).
+1.  **Create the configuration file:** `my-first-experiment/evolution-parameters.edn`
+2.  **Add parameters.** At a minimum, you must specify which models to test against in the `evaluate` command.
+
+    ```clojure
+    {
+     ;; This section is REQUIRED for the 'evaluate' command.
+     :evaluate {:models ["openai/gpt-4o-mini" "ollama/qwen3:8b"]
+                ;; This key is optional.
+                :judge-model "openai/gpt-4o"}
+
+     ;; This section is optional for the 'vary' command.
+     ;; If omitted, it will use a sensible default.
+     :vary {:model "gpt-4-turbo"}
+    }
+    ```
 
 ### Step 3: Evaluate the Initial Population
 
-With `gen-0` created, you can immediately evaluate its performance.
+With the experiment configured, you can evaluate the performance of `gen-0`.
 
 1.  **Gather your evaluation data.** You will need a directory of input files.
 2.  **Run the `evaluate` command.**
@@ -85,7 +95,11 @@ With `gen-0` created, you can immediately evaluate its performance.
       --name "initial-cleanup-contest" \
       --inputs path/to/my/inputs/
     ```
-    This command will execute the **Failter** pipeline and place the resulting `report.csv` in a contest subdirectory.
+    This command will read your `:models` configuration, run the Failter contest, and place the resulting `report.csv` in a contest subdirectory. You can also override the judge model from the command line:
+    ```bash
+    pcrit evaluate my-experiment/ --inputs ... --judge-model "anthropic/claude-3-sonnet"
+    ```
+
 
 ### Step 4: Select the Survivors
 
@@ -103,8 +117,7 @@ This will create a new generation directory (e.g., `gen-001/`) containing only t
 Now, you can apply your meta-prompts to the surviving population to breed new candidates for the next round of evaluation.
 
 ```bash
-pcrit vary my-first-experiment
-```
+pcrit vary my-first-experiment```
 This command loads the latest generation (e.g., `gen-001`), applies meta-prompts to create new candidates, and saves the result as a new generation (e.g., `gen-002`).
 
 By repeating the `evaluate`, `select`, and `vary` steps, you iteratively improve your prompt population.

@@ -9,7 +9,6 @@
 (def global-cli-options
   [["-h" "--help" "Print this help message"]])
 
-;; NEW: Define options common to all commands.
 (def shared-command-options
   [["-h" "--help" "Show help for this command."]])
 
@@ -19,18 +18,23 @@
     (log/error "The 'bootstrap' command requires an <experiment-dir> argument.")
     (let [exp-dir (first arguments)
           ctx (exp/new-experiment-context exp-dir)]
-      (log/info "Bootstrapping experiment in:" exp-dir)
-      (cmd/bootstrap! ctx)
-      (log/info "Bootstrap complete."))))
+      (cmd/bootstrap! ctx))))
 
 (defn- do-vary [{:keys [arguments]}]
   (if (empty? arguments)
     (log/error "The 'vary' command requires an <experiment-dir> argument.")
     (let [exp-dir (first arguments)
           ctx (exp/new-experiment-context exp-dir)]
-      (log/info "Varying population in experiment:" exp-dir)
-      (cmd/vary! ctx)
-      (log/info "Vary complete."))))
+      (cmd/vary! ctx))))
+
+(defn- do-evaluate [{:keys [options arguments]}]
+  (if (empty? arguments)
+    (log/error "The 'evaluate' command requires an <experiment-dir> argument.")
+    (if-not (:inputs options)
+      (log/error "The 'evaluate' command requires an --inputs <directory> option.")
+      (let [exp-dir (first arguments)
+            ctx (exp/new-experiment-context exp-dir)]
+        (cmd/evaluate! ctx options)))))
 
 ;; --- Command Specification Map ---
 (def command-specs
@@ -39,7 +43,15 @@
                 :options []}
    "vary"      {:doc "Evolves the latest generation into a new one via mutation."
                 :handler do-vary
-                :options []}})
+                :options []}
+   "evaluate"  {:doc "Runs a contest on a population using the Failter tool."
+                :handler do-evaluate
+                :options [;; CORRECTED: Added placeholders to signify required arguments.
+                          ["-g" "--generation GEN" "Generation number to evaluate (defaults to latest)"
+                           :parse-fn #(Integer/parseInt %)]
+                          ["-n" "--name NAME" "A unique name for this contest (defaults to 'contest')"]
+                          ["-i" "--inputs DIR" "Directory containing input files for the contest"]
+                          ["-j" "--judge-model MODEL" "LLM model to use as the judge (overrides config)"]]}})
 
 ;; --- Usage and Parsing Logic ---
 (defn- command-usage [command-name spec options-summary]
@@ -72,35 +84,22 @@
        (str/join \newline errors)))
 
 (defn process-cli-args
-  "Parses command-line arguments and dispatches to the correct command."
   [args {:keys [exit-fn out-fn]}]
   (let [{:keys [options arguments errors summary]} (cli/parse-opts args global-cli-options :in-order true)]
     (cond
-      (:help options)
-      (exit-fn 0 (out-fn (usage summary)))
-
-      (seq errors)
-      (exit-fn 1 (out-fn (error-msg errors)))
-
-      (empty? arguments)
-      (exit-fn 1 (out-fn (usage summary)))
-
+      (:help options) (exit-fn 0 (out-fn (usage summary)))
+      (seq errors)    (exit-fn 1 (out-fn (error-msg errors)))
+      (empty? arguments) (exit-fn 1 (out-fn (usage summary)))
       :else
       (let [command (first arguments)
             params (rest arguments)]
         (if-let [spec (get command-specs command)]
-          ;; CORRECTED: Merge shared options with command-specific ones before parsing.
           (let [all-cmd-options (into (:options spec) shared-command-options)
                 {:keys [options arguments errors sub-summary]} (cli/parse-opts params all-cmd-options)]
             (cond
-              (:help options)
-              (exit-fn 0 (out-fn (command-usage command spec sub-summary)))
-
-              (seq errors)
-              (exit-fn 1 (out-fn (error-msg errors)))
-
-              :else
-              ((:handler spec) {:options options :arguments arguments})))
+              (:help options) (exit-fn 0 (out-fn (command-usage command spec sub-summary)))
+              (seq errors)    (exit-fn 1 (out-fn (error-msg errors)))
+              :else           ((:handler spec) {:options options :arguments arguments})))
           (exit-fn 1 (out-fn (str "Unknown command: " command "\n" (usage summary)))))))))
 
 (defn -main [& args]

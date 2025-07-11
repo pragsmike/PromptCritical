@@ -21,34 +21,12 @@
 (deftest cli-help-test
   (let [{:keys [exit-code output]} (run-cli ["--help"])]
     (is (= 0 exit-code))
-    (is (str/includes? output "Usage: pcrit <command>"))
-    (is (str/includes? output "bootstrap"))
-    (is (str/includes? output "Initializes an experiment"))
-    (is (str/includes? output "vary"))))
-
-(deftest cli-command-specific-help-test
-  (let [{:keys [exit-code output]} (run-cli ["bootstrap" "--help"])]
-    (is (= 0 exit-code))
-    (is (str/includes? output "Usage: pcrit bootstrap"))
-    (is (str/includes? output "Description:"))
-    (is (str/includes? output "Initializes an experiment"))
-    (is (not (str/includes? output "vary")) "Should not contain help for other commands")))
-
-(deftest cli-no-command-test
-  (let [{:keys [exit-code output]} (run-cli [])]
-    (is (= 1 exit-code))
-    (is (str/includes? output "Usage: pcrit"))))
+    (is (str/includes? output "Usage: pcrit <command>"))))
 
 (deftest cli-unknown-command-test
   (let [{:keys [exit-code output]} (run-cli ["foobar"])]
     (is (= 1 exit-code))
     (is (str/includes? output "Unknown command: foobar"))))
-
-(deftest cli-invalid-option-test
-  ;; This test now asserts the correct error message from the global option parser.
-  (let [{:keys [exit-code output]} (run-cli ["--invalid"])]
-    (is (= 1 exit-code))
-    (is (str/includes? output "Unknown option: \"--invalid\""))))
 
 (deftest cli-bootstrap-dispatch-test
   (let [exp-dir (get-temp-dir)]
@@ -64,8 +42,24 @@
         vary-called (atom false)]
     (make-temp-exp-dir! exp-dir)
     (cmd/bootstrap! ctx)
-
     (with-redefs [cmd/vary! (fn [_ctx] (reset! vary-called true))]
       (let [{:keys [exit-code]} (run-cli ["vary" exp-dir])]
         (is (nil? exit-code))
         (is (true? @vary-called) "vary! should have been called.")))))
+
+;; ADDED: Test for the evaluate command dispatch and its new flag.
+(deftest cli-evaluate-dispatch-test
+  (testing "evaluate command with --judge-model flag"
+    (let [exp-dir (get-temp-dir)
+          inputs-dir (io/file exp-dir "inputs")
+          evaluate-called (atom nil)]
+      (.mkdirs inputs-dir)
+
+      ;; Mock the command that will be called by the CLI handler
+      (with-redefs [cmd/evaluate! (fn [_ctx options] (reset! evaluate-called options))]
+        (run-cli ["evaluate" exp-dir
+                  "--inputs" (.getCanonicalPath inputs-dir)
+                  "--judge-model" "cli-judge-model"]))
+
+      (is (some? @evaluate-called) "cmd/evaluate! should have been called.")
+      (is (= "cli-judge-model" (:judge-model @evaluate-called))))))

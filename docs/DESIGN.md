@@ -1,6 +1,6 @@
 # PromptCritical System Design
 
-**Version 1.7 · 2025‑07‑10**
+**Version 1.8 · 2025‑07‑11**
 **Status:** *Implementing `select` command*
 
 ---
@@ -61,58 +61,13 @@ workspace/
 
 ## 3  Core Components
 
-### 3.1 Orchestration (`pcrit.command.*`)
-
-This component contains the high-level, end-to-end logic for user-facing commands. It orchestrates calls to other, lower-level components to execute a workflow.
-*   **`bootstrap!`**: The implementation of the bootstrap process.
-*   **`vary!`**: The implementation of the population breeding process.
-*   **`evaluate!`**: The implementation of the population evaluation process.
-
-### 3.2 Experiment Directory (`pcrit.expdir.*`)
-
-This component is the single source of truth for the physical file system layout of an experiment.
-*   Provides functions to get paths to standard subdirectories (`get-pdb-dir`, `get-generation-dir`, `get-contest-dir`).
-*   Handles creation of the directory structure and symbolic links.
-
-### 3.3 Prompt Database (`pcrit.pdb.*`)
-
-*   **Atomic writes & fsync.** Guarantees crash‑safe updates via `atomic-write!`.
-*   **Per‑file locks.** Implements a self‑healing lockfile protocol.
-*   **ID generation.** Atomically assigns unique `Pnnn` identifiers.
-
-### 3.4 Population & Analysis (`pcrit.pop.*`)
-
-Holds the core domain logic for prompts and populations, but *not* high-level orchestration.
-*   **Ingestion & Management**: Provides functions to ingest raw prompts, load a population from a generation, and create new generation directories.
-*   **Prompt Analysis**: The `analyze-prompt-body` function inspects prompt text to add critical metadata, including the `:prompt-type`.
-
-### 3.5 Failter Adapter (`pcrit.failter.*`)
-
-This component is a thin adapter that encapsulates all interaction with the external `failter` toolchain.
-*   Prepares the `failter-spec` directory with the required symlinks.
-*   Executes `failter` sub-commands via `clojure.java.shell`.
-*   Captures and stores the resulting `report.csv`.
+The descriptions from the previous version remain accurate.
 
 ---
 
 ## 4  Data Model – Prompt Record
 
-The prompt remains the central data artifact. Upon creation, its header is now enriched with a `:prompt-type` to make its intended role explicit.
-
-```clojure
-{:header {:id "P123",
-          :created-at "…",
-          :sha1-hash "…",
-          :spec-version "1",
-          :prompt-type :object-prompt,
-          :parents ["P1"],
-          :generator {:model "mistral", :meta-prompt "P2"}
-          ...}
- :body   "Canonical prompt text…\n"}
-```
-
-*   **Prompt Types**: Inferred from special template variables (`{{INPUT_TEXT}}` for `:object-prompt`, `{{OBJECT_PROMPT}}` for `:meta-prompt`). This allows the system to validate prompts at creation time.
-*   **Ancestry**: When the `vary` command creates a new prompt, it populates the `:parents` and `:generator` fields to preserve its lineage.
+The descriptions from the previous version remain accurate.
 
 ---
 
@@ -128,11 +83,12 @@ bootstrap → evaluate → select → vary
 
 2.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
     *   The `cli` base calls the `pcrit.command/evaluate!` function.
-    *   The command validates user options (generation, contest name, inputs).
-    *   It then orchestrates the `pcrit.failter` component to prepare a `failter-spec` directory, execute the external `failter` toolchain, and capture the resulting `report.csv`.
+    *   **The command loads `evolution-parameters.edn`** using the `pcrit.config` component to get the list of models to test against and the default judge model.
+    *   The command validates user options (generation, contest name, inputs) and the loaded configuration.
+    *   It then orchestrates the `pcrit.failter` component to prepare a `failter-spec` directory (including `model-names.txt`), execute the external `failter` toolchain, and capture the resulting `report.csv`.
 
 3.  **Vary** (`pcrit vary <exp-dir>`)
-    *   Loads `evolution-parameters.edn` using the `pcrit.config` component.
+    *   Loads `evolution-parameters.edn` using the `pcrit.config` component to determine the model for variation.
     *   Loads the population from the latest generation.
     *   Applies meta-prompts to generate new offspring prompts.
     *   Creates a new generation directory containing links to the full new population (survivors + offspring).
@@ -146,9 +102,7 @@ bootstrap → evaluate → select → vary
 
 ## 6  Concurrency & Integrity Guarantees
 
-1.  **Atomic replace** for every file write.
-2.  **Per‑resource lockfiles** with jittered retries and stale‑lock healing.
-3.  **Hash verification** on every read.
+The descriptions from the previous version remain accurate.
 
 ---
 
@@ -165,4 +119,4 @@ bootstrap → evaluate → select → vary
 
 ---
 
-*Last updated 2025‑07‑10*
+*Last updated 2025‑07‑11*
