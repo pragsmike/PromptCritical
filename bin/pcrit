@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Wrapper script for the PromptCritical CLI.
+# This script ensures that the clojure command is run from the correct
+# directory within the Polylith workspace.
+
+# Determine the absolute path of the script's directory.
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# The project root is one level above the 'bin' directory.
+PROJECT_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
+
+# The runnable 'pcrit-cli' project is located in 'projects/pcrit-cli'.
+# We must change to this directory so that its deps.edn file is used,
+which # assembles all the necessary components for the application.
+CLI_DIR="${PROJECT_ROOT}/projects/pcrit-cli"
+
+# Change into the CLI project directory before running the command.
+cd "${CLI_DIR}" || exit
+
+# Use 'exec' to replace the shell process with the clojure process.
+# The '-M:run' alias in projects/pcrit-cli/deps.edn contains the main class.
+# "$@" passes all command-line arguments from this script to the program.
+exec clojure -M:run "$@"
