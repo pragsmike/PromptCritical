@@ -48,7 +48,7 @@ Using git for population snapshots is attractive because:
 For more information, see:
    * [OVERVIEW](docs/OVERVIEW.md)
    * [DESIGN](docs/DESIGN.md)
-   * [RISKS](docs/RISKs.md)
+   * [RISKS](docs/RISKS.md)
 
 ---
 

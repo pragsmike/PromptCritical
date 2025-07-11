@@ -90,8 +90,7 @@ bootstrap → evaluate → select → vary
 3.  **Vary** (`pcrit vary <exp-dir>`)
     *   Loads `evolution-parameters.edn` using the `pcrit.config` component to determine the model for variation.
     *   Loads the population from the latest generation.
-    *   Applies meta-prompts to generate new offspring prompts.
-    *   Creates a new generation directory containing links to the full new population (survivors + offspring).
+    *   Applies meta-prompts to generate new offspring prompts in the current generation.
 
 4.  **Select** (`pcrit select <exp-dir>`)
     *   Reads `report.csv` from one or more contests.
