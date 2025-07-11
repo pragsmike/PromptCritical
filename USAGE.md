@@ -37,6 +37,8 @@ The prompt types are determined by the presence of special template variables. Y
 | `{{INPUT_TEXT}}`  | `:object-prompt` | `pcrit evaluate` | The content of a file from the `--inputs` directory during a Failter run. |
 | `{{OBJECT_PROMPT}}` | `:meta-prompt`   | `pcrit vary`     | The body of another prompt being mutated or combined.              |
 
+NOTE: Allowed placeholders (INPUT_TEXT, OBJECT_PROMPT, …) are being formalised; expect expansion in the next release.
+
 ## The Standard Workflow
 
 Here is a step-by-step guide to running your first experiment.
@@ -65,6 +67,7 @@ First, create your experiment directory and the necessary seed files.
 ### Step 2: Configure The Experiment
 
 Next, you **must** create an `evolution-parameters.edn` file in your experiment's root directory to control the `evaluate` and `vary` commands.
+NOTE: Models default to `mistral` if not specified.
 
 1.  **Create the configuration file:** `my-first-experiment/evolution-parameters.edn`
 2.  **Add parameters.** At a minimum, you must specify which models to test against in the `evaluate` command.
@@ -81,8 +84,11 @@ Next, you **must** create an `evolution-parameters.edn` file in your experiment'
      :vary {:model "gpt-4-turbo"}
     }
     ```
-
 ### Step 3: Evaluate the Initial Population
+
+NOTE: After bootstrap you may evaluate immediately to capture a baseline — or
+vary first to explore the space before scoring. Choose the sequence that serves
+your research goal.
 
 With the experiment configured, you can evaluate the performance of `gen-0`.
 
@@ -121,3 +127,12 @@ pcrit vary my-first-experiment```
 This command loads the latest generation (e.g., `gen-001`), applies meta-prompts to create new candidates, and saves the result as a new generation (e.g., `gen-002`).
 
 By repeating the `evaluate`, `select`, and `vary` steps, you iteratively improve your prompt population.
+
+## Choosing your loop order
+
+After `bootstrap` seeds **gen-000**, you have two common entry points into the cycle:
+
+  * **evaluate → select → vary** (baseline-first). Run `evaluate` immediately to capture how the hand-crafted prompts perform *unchanged*; keep that CSV as a control. Then `select` your top performers and let `vary` generate the first novel population.
+  * **vary → evaluate → select** (explore-first). Skip the baseline, mutate the seeds straight away with `vary`, and score the brand-new offspring instead. This is useful when your seeds are only rough sketches and you want the LLM to expand the search space quickly.
+
+ Both orders are valid; pick the one that best fits your research question. You can even alternate—e.g., baseline once, then run several *vary → evaluate → select* rounds—by calling the commands in the sequence that matches your experimental design.
