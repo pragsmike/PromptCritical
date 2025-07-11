@@ -9,7 +9,7 @@ PromptCritical treats prompt engineering as a scientific, evolutionary process. 
 1.  **Bootstrap**: Ingest initial, hand-written prompts and create the first population folder (`gen-0`).
 2.  **Vary**: Produce new candidate prompts by applying meta-prompts (mutation, crossover) to the *current* population. This adds new prompts to the current generation's folder.
 3.  **Evaluate**: Run all prompts in the current population against a corpus of inputs using the **Failter** tool to generate performance scores. This creates a `report.csv` inside the current generation's `contests/` directory.
-4.  **Select**: Use the scores to select the fittest prompts and create a **new generation folder** containing only the survivors.
+4.  **Select**: Use the scores from a contest report to select the fittest prompts and create a **new generation folder** containing only the survivors.
 
 Steps 2 through 4 are repeated in a cycle, with each `select` command producing a new, more refined generation. This entire process is managed from the command line within a dedicated **Experiment Directory**.
 
@@ -110,20 +110,26 @@ With the experiment configured and the population expanded, you can evaluate the
 
 ### Step 5: Select the Survivors to Create the Next Generation
 
-After evaluating, use the scores to create a new generation comprised of only the best performers. This is the only command that creates a new generation folder.
+After evaluating, use the scores from the contest report to create a new generation comprised of only the best performers. This is the only command that creates a new generation folder. By default, it selects the top 5 prompts based on score.
 
 ```bash
-# This is the future goal (v0.2)
 pcrit select my-first-experiment --from-contest "initial-cleanup-contest"
 ```
 
-This will read the report, pick the winners, and create a new generation directory (e.g., `gen-001/`) containing only symlinks to the surviving prompts. The process then repeats from Step 3, but now operating on the new generation.
+This will read the report, pick the winners based on the selection policy (e.g., top 5), and create a new generation directory (`gen-001/`) containing only symlinks to the surviving prompts. The process then repeats from Step 3 (`vary`), but now operating on the new, more refined generation.
+
+To change the selection policy, you can use the `--policy` flag. For example, to keep the top 10 prompts:
+```bash
+pcrit select my-first-experiment \
+  --from-contest "initial-cleanup-contest" \
+  --policy "top-N=10"
+```
 
 ## Choosing your loop order
 
 After `bootstrap` seeds **gen-000**, you have two common entry points into the cycle:
 
-  * **evaluate → select → vary** (baseline-first). Run `evaluate` immediately on `gen-000` to capture how the hand-crafted prompts perform *unchanged*. Then run `select` to create `gen-001` with the top performers, and finally run `vary` on `gen-001` to generate the first novel population.
+  * **evaluate → select → vary** (baseline-first). Run `evaluate` immediately on `gen-000` to capture how the hand-crafted prompts perform *unchanged*. Then run `select` to create `gen-001` with the top performers, and finally run `vary` on `gen-001` to generate new candidates for the next round.
   * **vary → evaluate → select** (explore-first). Skip the baseline. Run `vary` immediately on `gen-000` to mutate the seeds straight away. Then run `evaluate` on the expanded `gen-000` population and `select` the winners into `gen-001`. This is useful when your seeds are only rough sketches and you want to expand the search space quickly.
 
-Both orders are valid. The commands `vary` and `evaluate` operate on the latest generation, while `select` creates the next one.
+Both orders are valid. The commands `vary` and `evaluate` operate on the latest generation, while `select` reads from the latest generation to create the next one.

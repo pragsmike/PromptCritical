@@ -1,7 +1,8 @@
 (ns pcrit.command.interface
   (:require [pcrit.command.core :as core]
             [pcrit.command.vary :as vary]
-            [pcrit.command.evaluate :as evaluate])) ; ADDED
+            [pcrit.command.evaluate :as evaluate]
+            [pcrit.command.select :as select]))
 
 (def init! core/init!)
 
@@ -17,3 +18,7 @@
 (def evaluate!
   "Orchestrates the evaluation of a prompt population."
   evaluate/evaluate!)
+
+(def select!
+  "Selects survivors from a contest and creates a new generation."
+  select/select!)

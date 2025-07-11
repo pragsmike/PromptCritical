@@ -1,7 +1,7 @@
 # PromptCritical System Design
 
-**Version 1.8 · 2025‑07‑11**
-**Status:** *Implementing `select` command*
+**Version 1.9 · 2025‑07‑11**
+**Status:** *v0.2 Core Loop Complete*
 
 ---
 
@@ -28,6 +28,7 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 | **Component** | `pcrit.failter` | **Adapter for the external Failter toolchain** |
 | **Component** | `pcrit.pdb` | **Immutable prompt database** (file I/O, locking, ID generation) |
 | **Component** | `pcrit.pop` | **Population domain model** and prompt analysis (`:prompt-type`) |
+| **Component** | `pcrit.reports` | **Parses contest result files** (e.g., `report.csv`) |
 | **Component** | `pcrit.config` | Central configuration map & helpers |
 | **Component** | `pcrit.log` | Structured logging and log setup |
 | **Component** | `pcrit.llm` | Thin HTTP client façade for LLMs |
@@ -43,6 +44,7 @@ workspace/
 │   ├── failter/      ; adapter for the external failter tool
 │   ├── pdb/          ; prompt DB internals
 │   ├── pop/          ; population + analysis logic
+│   ├── reports/      ; contest result parsing
 │   ├── config/       ; runtime config
 │   ├── log/          ; logging helpers
 │   ├── llm/          ; LLM HTTP client
@@ -74,28 +76,29 @@ The descriptions from the previous version remain accurate.
 ## 5  Experiment Flow (v0.2)
 
 ```
-bootstrap → evaluate → select → vary
+bootstrap → vary → evaluate → select
 ```
 
 1.  **Bootstrap** (`pcrit bootstrap <exp-dir>`)
     *   The `cli` base calls the `pcrit.command/bootstrap!` function.
     *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`, creating `gen-0`.
 
-2.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
-    *   The `cli` base calls the `pcrit.command/evaluate!` function.
-    *   **The command loads `evolution-parameters.edn`** using the `pcrit.config` component to get the list of models to test against and the default judge model.
-    *   The command validates user options (generation, contest name, inputs) and the loaded configuration.
-    *   It then orchestrates the `pcrit.failter` component to prepare a `failter-spec` directory (including `model-names.txt`), execute the external `failter` toolchain, and capture the resulting `report.csv`.
-
-3.  **Vary** (`pcrit vary <exp-dir>`)
+2.  **Vary** (`pcrit vary <exp-dir>`)
     *   Loads `evolution-parameters.edn` using the `pcrit.config` component to determine the model for variation.
     *   Loads the population from the latest generation.
-    *   Applies meta-prompts to generate new offspring prompts in the current generation.
+    *   Applies meta-prompts to generate new offspring prompts, adding them to the *current* generation.
 
-4.  **Select** (`pcrit select <exp-dir>`)
-    *   Reads `report.csv` from one or more contests.
-    *   Applies a selection strategy to determine which prompts survive.
-    *   Creates a new generation directory containing links to only the surviving members.
+3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
+    *   The `cli` base calls the `pcrit.command/evaluate!` function.
+    *   The command loads `evolution-parameters.edn` using the `pcrit.config` component to get the list of models to test against and the default judge model.
+    *   It then orchestrates the `pcrit.failter` component to prepare a `failter-spec` directory, execute the external `failter` toolchain, and capture the resulting `report.csv`.
+
+4.  **Select** (`pcrit select <exp-dir> --from-contest <name>`)
+    *   The `cli` base calls `pcrit.command/select!`.
+    *   The command uses the `pcrit.reports` component to parse the specified `report.csv`.
+    *   It applies a selection strategy (defaulting to `top-N=5`) to determine the survivors.
+    *   It calls `pdb/update-metadata` to append a `:selection` event to each survivor's header.
+    *   Finally, it calls `pop/create-new-generation!` to create the next generation directory populated with links to the surviving members.
 
 ---
 
@@ -113,8 +116,8 @@ The descriptions from the previous version remain accurate.
 
 ## 8  Open Issues & Next Steps
 
-*   **Implement `select` command**: Use contest results from the `evaluate` step to eliminate less-fit members and create a new, smaller survivor population.
-*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `evaluate` → `select` → `vary` loop (using a mocked Failter) in the CI matrix.
+*   **Implement `evolve` command (v0.3)**: Create a high-level command that composes the `vary`, `evaluate`, and `select` steps into an automated evolutionary loop, running for a specified number of generations.
+*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `vary` → `evaluate` → `select` loop (using a mocked Failter) in the CI matrix.
 
 ---
 

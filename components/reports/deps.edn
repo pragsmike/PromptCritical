@@ -1,0 +1,4 @@
+{:paths ["src" "interface"]
+ :deps  {clojure-csv/clojure-csv {:mvn/version "2.0.2"}}
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps  {pcrit/test-helper {:local/root "../../components/test-helper"}}}}}

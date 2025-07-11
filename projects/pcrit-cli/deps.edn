@@ -6,6 +6,7 @@
              pcrit/pop        {:local/root "../../components/pop"}
              pcrit/expdir     {:local/root "../../components/expdir"}
              pcrit/failter     {:local/root "../../components/failter"}
+             pcrit/reports    {:local/root "../../components/reports"}
              pcrit/test-helper {:local/root "../../components/test-helper"}
              pcrit/cli        {:local/root "../../bases/cli"}
              pcrit/command    {:local/root "../../components/command"}

@@ -36,6 +36,15 @@
             ctx (exp/new-experiment-context exp-dir)]
         (cmd/evaluate! ctx options)))))
 
+(defn- do-select [{:keys [options arguments]}]
+  (if (empty? arguments)
+    (log/error "The 'select' command requires an <experiment-dir> argument.")
+    (if-not (:from-contest options)
+      (log/error "The 'select' command requires a --from-contest <name> option.")
+      (let [exp-dir (first arguments)
+            ctx (exp/new-experiment-context exp-dir)]
+        (cmd/select! ctx options)))))
+
 ;; --- Command Specification Map ---
 (def command-specs
   {"bootstrap" {:doc "Initializes an experiment, ingests seeds, and creates gen-0."
@@ -46,12 +55,20 @@
                 :options []}
    "evaluate"  {:doc "Runs a contest on a population using the Failter tool."
                 :handler do-evaluate
-                :options [;; CORRECTED: Added placeholders to signify required arguments.
+                :options [
                           ["-g" "--generation GEN" "Generation number to evaluate (defaults to latest)"
                            :parse-fn #(Integer/parseInt %)]
                           ["-n" "--name NAME" "A unique name for this contest (defaults to 'contest')"]
                           ["-i" "--inputs DIR" "Directory containing input files for the contest"]
-                          ["-j" "--judge-model MODEL" "LLM model to use as the judge (overrides config)"]]}})
+                          ["-j" "--judge-model MODEL" "LLM model to use as the judge (overrides config)"]]}
+   "select"    {:doc "Selects survivors from a contest to create the next generation."
+                :handler do-select
+                :options [
+                          ["-c" "--from-contest NAME" "Name of the contest report to use for selection"]
+                          ["-g" "--generation GEN" "Generation number where the contest resides (defaults to latest)"
+                           :parse-fn #(Integer/parseInt %)]
+                          ["-p" "--policy POLICY" "Selection policy (e.g., 'top-N=5')"
+                           :default "top-N=5"]]}})
 
 ;; --- Usage and Parsing Logic ---
 (defn- command-usage [command-name spec options-summary]

@@ -33,7 +33,7 @@ Key ingredients:
 | **Immutable Prompt DB** | Atomic, hash‑verified store with per‑file lock‑healing |
 | **Git as temporal database** | Second layer of tamper-detection, allows experiment branching and backtracking |
 | **Failter integration** | Runs large‑scale prompt contests and collects scores |
-| **Evolution engine** (*WIP*) | Varies, evaluates, and selects prompts to improve fitness |
+| **Evolution engine** | Varies, evaluates, and selects prompts to improve fitness |
 
 ### Git as Temporal Database
 
@@ -75,6 +75,7 @@ workspace/
 │   ├── expdir/       ; Manages experiment directory layout
 │   ├── pdb/          ; The immutable prompt database
 │   ├── pop/          ; Population domain model & analysis
+│   ├── reports/      ; Parses contest result files (e.g., report.csv)
 │   ├── config/       ; Runtime configuration (EDN → map)
 │   ├── log/          ; Structured logging facade
 │   ├── llm/          ; Thin HTTP client for LLMs
@@ -90,7 +91,7 @@ workspace/
 | `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
 | `vary`      | ✅ | Adds new prompt variations to the *current* generation's population. |
 | `evaluate`  | ✅ | Runs the active population in a contest and collects results. |
-| `select`    | 🔜 | Creates a **new generation** of survivors based on evaluation scores. |
+| `select`    | ✅ | Creates a **new generation** of survivors based on evaluation scores. |
 
 
 ---
@@ -116,13 +117,14 @@ workspace/
 
 ## 📦 Current State (Post-Refactoring)
 
-The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `bootstrap`, `vary`, and `evaluate` commands are fully implemented according to this improved architecture.
+The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `bootstrap`, `vary`, `evaluate`, and `select` commands are now fully implemented.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`bootstrap!`, `vary!`, `evaluate!`).
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`bootstrap!`, `vary!`, `evaluate!`, `select!`).
 *   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
 *   **`pcrit.pop`**: Handles core prompt domain logic, including population management.
+*   **`pcrit.reports`**: Parses contest result files like `report.csv`.
 *   **`pcrit.failter`**: A dedicated adapter for running the external Failter toolchain.
 
 ---
@@ -139,7 +141,7 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 
 ## 🚧 Current Milestone (v0.2): The Core Evolutionary Loop
 
-The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This will prove the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
+The immediate goal is to implement the full **`bootstrap → vary → evaluate → select`** vertical slice. This proves the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
 
 1.  **Bootstrap an Experiment** (`✅ Implemented`)
     Ingests seed prompts, creates named links, and populates `gen-0` with the initial object-prompts.
@@ -159,7 +161,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
     pcrit evaluate my-experiment/ --generation 0 --name "web-cleanup-v1" --inputs ...
     ```
 
-4.  **Select the Survivors** (`🔜 In Development`)
+4.  **Select the Survivors** (`✅ Implemented`)
     Parses `report.csv` from a contest and applies a selection strategy to create a **new generation** containing only the fittest prompts.
     ```bash
     pcrit select my-experiment/ --from-contest "web-cleanup-v1"
@@ -174,7 +176,7 @@ The immediate goal is to implement the full **`bootstrap → vary → evaluate �
 | **v0.2**  | Implement core `vary`, `evaluate`, `select` commands. |
 | **v0.3**  | Automated `evolve` command that composes the v0.2 commands. |
 | **v0.4**  | Advanced selection & mutation operators. |
-| **v0.5**  | Surrogate critic to pre-filter variants before Failter. |
+| **v.5**  | Surrogate critic to pre-filter variants before Failter. |
 | **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability. |
 | **v0.7**  | Reporting dashboard (`pcrit.web` base). |
 | **v1.0**  | Distributed workers, advanced semantic validators. |

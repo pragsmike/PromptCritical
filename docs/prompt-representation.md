@@ -99,13 +99,16 @@ their full lineage directly within the prompt artifact itself.
       meta-prompt: "P2"
       vary-run: "2025-07-11T12:00:00Z"
     ```
-*   `selection`: (map) A description of the `select` operation that confirmed the prompt as a "survivor". Added by the `select` command.
+*   `selection`: (**list of maps**) A description of each `select` operation that confirmed the prompt as a "survivor". Each time a prompt survives a selection event, a new map is appended to this list.
     ```yaml
-    # Example selection block
+    # Example selection block with two survival events
     selection:
-      policy: "top-k"
-      contest-name: "web-cleanup-v3"
+    - contest-name: "web-cleanup-v3"
+      policy: "top-N=5"
       select-run: "2025-07-11T13:00:00Z"
+    - contest-name: "web-cleanup-v4"
+      policy: "top-N=2"
+      select-run: "2025-07-12T09:00:00Z"
     ```
 
 Other ancestry information MAY be added by further research. The depth of the ancestry chain is not
@@ -151,7 +154,7 @@ SHA-1 produces a 160-bit (20-byte) hash value, represented as a 40-character hex
 These are written using lowercase characters, but the parser will also accept uppercase.
 NOTE: The purpose of the hash is to detect corruption, NOT to uniquely identify the prompt.
 It is OK if two prompts have the same hash. It's very likely that they're the same text,
-but it doesn't matter if they don't due to (unlikely) hash collision.
+but it's a feature if they don't due to (unlikely) hash collision.
 
 The hash is computed over the prompt text as if it were extracted from the prompt file as follows:
    * The starting point is the beginning of the first nonblank line after the YAML ending separator.
@@ -191,8 +194,8 @@ generator:
   meta-prompt: "P2"
   vary-run: "2025-07-11T12:00:00Z"
 selection:
-  policy: "top-k-5"
-  contest-name: "web-cleanup-v4"
+- contest-name: "web-cleanup-v4"
+  policy: "top-N=5"
   select-run: "2025-07-11T14:00:00Z"
 ---
 
