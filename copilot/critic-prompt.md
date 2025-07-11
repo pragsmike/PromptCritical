@@ -6,5 +6,3 @@ that a file has been included twice.
 Compare what the documentation claims with what the code actually does.
 Spot discrepancies that need to be addressed.
 Also note improvements from previous versions, if you can. What's good about this snapshot?
-
-
