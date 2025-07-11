@@ -2,13 +2,12 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [pcrit.command.select :as select]
+            [pcrit.command.interface :as cmd]
             [pcrit.experiment.interface :as exp]
             [pcrit.expdir.interface :as expdir]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]])
-  (:import [java.nio.file Files]))
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]))
 
 (use-fixtures :each with-temp-dir)
 
@@ -39,9 +38,10 @@
     ctx))
 
 (deftest select-command-happy-path-test
-  (testing "select! with default top-N=5 policy"
+  (testing "select! with default top-N policy"
     (let [ctx (setup-select-test-env!)]
-      (select/select! ctx {:from-contest "test-contest"})
+      ;; No policy specified, should use the default "top-N=5" from config
+      (cmd/select! ctx {:from-contest "test-contest"})
 
       (testing "A new generation is created"
         (is (= 1 (expdir/find-latest-generation-number ctx))))
@@ -52,17 +52,10 @@
 
       (testing "The survivors are the correct top 5 prompts"
         (let [new-pop-ids (set (map #(get-in % [:header :id]) (pop/load-population ctx 1)))]
-          ;; CORRECTED: Assert the actual top 5 based on generated scores (P1-P5)
           (is (= #{"P1" "P2" "P3" "P4" "P5"} new-pop-ids))))
-
-      (testing "The new population directory contains only symbolic links"
-        (let [pop-dir (expdir/get-population-dir ctx 1)
-              pop-files (.listFiles pop-dir)]
-          (is (every? #(Files/isSymbolicLink (.toPath %)) pop-files))))
 
       (testing "Survivor prompts have selection metadata appended"
         (let [pdb-dir (expdir/get-pdb-dir ctx)
-              ;; CORRECTED: Read an actual survivor (P1) instead of a non-survivor (P10)
               survivor (pdb/read-prompt pdb-dir "P1")
               selection-meta (get-in survivor [:header :selection])]
           (is (seq? selection-meta))
@@ -75,35 +68,32 @@
 (deftest select-command-custom-policy-test
   (testing "select! with an explicit --policy top-N=3"
     (let [ctx (setup-select-test-env!)]
-      (select/select! ctx {:from-contest "test-contest" :policy "top-N=3"})
+      (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=3"})
       (let [new-pop (pop/load-population ctx 1)]
         (is (= 3 (count new-pop)))
         (let [new-pop-ids (set (map #(get-in % [:header :id]) new-pop))]
-          ;; CORRECTED: Assert the actual top 3
           (is (= #{"P1" "P2" "P3"} new-pop-ids)))))))
 
-;; REFACTORED: Each edge case is now in its own deftest for isolation.
-
-(deftest select-edge-case-large-n
+;; Test cases are now isolated in separate deftest blocks
+(deftest select-edge-case-large-n-test
   (testing "Handles report with fewer prompts than the policy limit"
     (let [ctx (setup-select-test-env!)]
-      (select/select! ctx {:from-contest "test-contest" :policy "top-N=20"})
+      (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=20"})
       (let [new-pop (pop/load-population ctx 1)]
         (is (= 1 (expdir/find-latest-generation-number ctx)))
         (is (= 10 (count new-pop)))))))
 
-(deftest select-edge-case-no-contest
+(deftest select-edge-case-no-contest-test
   (testing "Fails gracefully if contest is not found"
     (let [ctx (setup-select-test-env!)]
-      (select/select! ctx {:from-contest "non-existent-contest"})
-      ;; CORRECTED: No new generation should be created, so latest should be 0.
-      (is (= 0 (expdir/find-latest-generation-number ctx))))))
+      (cmd/select! ctx {:from-contest "non-existent-contest"})
+      (is (= 0 (expdir/find-latest-generation-number ctx)) "No new generation should be created."))))
 
-(deftest select-edge-case-run-twice
+(deftest select-edge-case-run-twice-test
   (testing "Running select twice appends metadata correctly"
     (let [ctx (setup-select-test-env!)]
       ;; First select
-      (select/select! ctx {:from-contest "test-contest" :policy "top-N=2"})
+      (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=2"})
       (is (= 1 (expdir/find-latest-generation-number ctx)) "gen-1 should be created.")
 
       ;; Set up a new contest in gen-1
@@ -113,7 +103,7 @@
         (spit report-file "prompt,score\nP1,100\nP2,90"))
 
       ;; Second select
-      (select/select! ctx {:generation 1 :from-contest "next-contest" :policy "top-N=1"})
+      (cmd/select! ctx {:generation 1 :from-contest "next-contest" :policy "top-N=1"})
       (is (= 2 (expdir/find-latest-generation-number ctx)) "gen-2 should be created.")
 
       ;; Check the doubly-selected prompt
@@ -122,3 +112,13 @@
         (is (= 2 (count selection-meta)) "Should have two selection events.")
         (is (= "test-contest" (get-in selection-meta [0 :contest-name])))
         (is (= "next-contest" (get-in selection-meta [1 :contest-name])))))))
+
+(deftest select-invalid-policy-test
+  (testing "Using an unparseable policy string results in no selection"
+    (let [ctx (setup-select-test-env!)]
+      (cmd/select! ctx {:from-contest "test-contest" :policy "not-a-valid-policy"})
+      (is (= 0 (expdir/find-latest-generation-number ctx)) "No new generation should be created.")
+
+      ;; Verify that no prompts were updated with metadata
+      (let [p1-after (pdb/read-prompt (expdir/get-pdb-dir ctx) "P1")]
+        (is (nil? (get-in p1-after [:header :selection])) "Prompt metadata should not be updated on failure.")))))

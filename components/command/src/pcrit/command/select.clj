@@ -9,26 +9,45 @@
             [pcrit.reports.interface :as reports])
   (:import [java.time Instant]))
 
-(defn- parse-policy [policy-str]
-  (if-let [[_ n] (re-matches #"top-N=(\d+)" policy-str)]
-    {:type :top-n, :n (Integer/parseInt n)}
-    (do
-      (log/warn "Invalid policy string:" policy-str ". Defaulting to " (:selection-policy config/defaults))
-      ;; This assumes the default policy is also top-N. This is acceptable
-      ;; for now, as the next refactoring will make this more robust.
-      (if-let [[_ default-n] (re-matches #"top-N=(\d+)" (:selection-policy config/defaults))]
-        {:type :top-n, :n (Integer/parseInt default-n)}
-        ;; Fallback in case the default in config is malformed.
-        {:type :top-n, :n 5}))))
+;; --- Pluggable Selection Policy Implementation ---
 
-(defn- apply-selection-policy [report-data policy]
-  (let [sorted-data (sort-by :score > report-data)]
-    (case (:type policy)
-      :top-n (take (:n policy) sorted-data)
-      ;; Default case
-      (do
-        (log/warn "Unknown selection policy type:" (:type policy))
-        (take 5 sorted-data)))))
+(defn- parse-policy
+  "Parses a policy string (e.g., \"top-N=10\") into a map representation
+  (e.g., {:type :top-n, :n 10})."
+  [policy-str]
+  (cond
+    (nil? policy-str) (parse-policy (:selection-policy config/defaults))
+
+    (str/starts-with? policy-str "top-N=")
+    (if-let [[_ n] (re-matches #"top-N=(\d+)" policy-str)]
+      {:type :top-n, :policy-string policy-str, :n (Integer/parseInt n)}
+      nil)
+
+    ;; Future policies would be parsed here, e.g.:
+    ;; (str/starts-with? policy-str "roulette")
+    ;; {:type :roulette-wheel, ...}
+
+    :else nil))
+
+(defmulti apply-selection-policy
+  "Selects survivor data from a report based on a parsed policy map.
+  Dispatches on the :type key of the policy map."
+  (fn [_report-data policy] (:type policy)))
+
+(defmethod apply-selection-policy :top-n
+  [report-data {:keys [n]}]
+  (->> report-data
+       (sort-by :score >)
+       (take n)))
+
+(defmethod apply-selection-policy :default
+  [_report-data policy]
+  (log/warn "Unknown or unparseable selection policy:" (:policy-string policy)
+            "or type:" (:type policy) ". No selection performed.")
+  [])
+
+
+;; --- Core Command Logic ---
 
 (defn- update-survivor-metadata! [ctx survivor-id selection-event]
   (let [pdb-dir (expdir/get-pdb-dir ctx)
@@ -67,7 +86,7 @@
         (if-not valid?
           (log/error "Select validation failed:" reason)
           (let [report-data     (reports/parse-report report-file)
-                parsed-policy   (parse-policy policy-str)
+                parsed-policy   (or (parse-policy policy-str) {:type :default, :policy-string policy-str})
                 survivors-data  (apply-selection-policy report-data parsed-policy)
                 survivor-ids    (map :prompt survivors-data)
                 selection-event {:contest-name from-contest
