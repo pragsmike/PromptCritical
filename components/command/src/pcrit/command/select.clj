@@ -13,8 +13,13 @@
   (if-let [[_ n] (re-matches #"top-N=(\d+)" policy-str)]
     {:type :top-n, :n (Integer/parseInt n)}
     (do
-      (log/warn "Invalid policy string:" policy-str ". Defaulting to top-N=5.")
-      {:type :top-n, :n 5})))
+      (log/warn "Invalid policy string:" policy-str ". Defaulting to " (:selection-policy config/defaults))
+      ;; This assumes the default policy is also top-N. This is acceptable
+      ;; for now, as the next refactoring will make this more robust.
+      (if-let [[_ default-n] (re-matches #"top-N=(\d+)" (:selection-policy config/defaults))]
+        {:type :top-n, :n (Integer/parseInt default-n)}
+        ;; Fallback in case the default in config is malformed.
+        {:type :top-n, :n 5}))))
 
 (defn- apply-selection-policy [report-data policy]
   (let [sorted-data (sort-by :score > report-data)]
@@ -27,17 +32,12 @@
 
 (defn- update-survivor-metadata! [ctx survivor-id selection-event]
   (let [pdb-dir (expdir/get-pdb-dir ctx)
-        ;; FINAL CORRECTION 2: This logic robustly handles nil, single maps, and any collection type.
         update-fn (fn [header]
                     (let [current-val (get header :selection)
                           base-vec (cond
-                                     ;; If it's already a vector, use it.
                                      (vector? current-val) current-val
-                                     ;; If it's a map (the case of a single YAML entry), put it in a vector.
                                      (map? current-val) [current-val]
-                                     ;; If it's any other kind of collection (list, set), convert to vector.
                                      (coll? current-val) (vec current-val)
-                                     ;; Otherwise, start fresh.
                                      :else [])]
                       (assoc header :selection (conj base-vec selection-event))))]
     (pdb/update-metadata pdb-dir survivor-id update-fn)))
@@ -58,7 +58,7 @@
   [ctx {:keys [generation from-contest policy]}]
   (let [latest-gen (expdir/find-latest-generation-number ctx)
         gen-num    (or generation latest-gen)
-        policy-str (or policy "top-N=5")]
+        policy-str (or policy (:selection-policy config/defaults))]
 
     (if-not gen-num
       (log/error "Cannot select: No generations found in this experiment.")

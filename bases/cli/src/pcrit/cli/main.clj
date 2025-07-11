@@ -3,8 +3,8 @@
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
             [pcrit.experiment.interface :as exp]
-            [pcrit.log.interface :as log])
-  (:gen-class))
+            [pcrit.log.interface :as log]
+            [pcrit.config.interface :as config]))
 
 (def global-cli-options
   [["-h" "--help" "Print this help message"]])
@@ -81,7 +81,7 @@
                           ["-g" "--generation GEN" "Generation number where the contest resides (defaults to latest)"
                            :parse-fn #(Integer/parseInt %)]
                           ["-p" "--policy POLICY" "Selection policy (e.g., 'top-N=5')"
-                           :default "top-N=5"]]}})
+                           :default (:selection-policy config/defaults)]]}})
 
 ;; --- Usage and Parsing Logic ---
 (defn- command-usage [command-name spec options-summary]

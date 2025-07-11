@@ -1,6 +1,10 @@
 (ns pcrit.config.interface
   (:require [pcrit.config.core :as core]))
 
+(def defaults
+  "A map of application-wide default values."
+  core/defaults)
+
 (def config
   "A centralized map for all application configuration."
   core/config)

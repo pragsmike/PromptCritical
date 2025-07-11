@@ -3,6 +3,10 @@
             [clojure.edn :as edn]
             [pcrit.log.interface :as log]))
 
+(def defaults
+  "A map of application-wide default values."
+  {:selection-policy "top-N=5"})
+
 (def config
   "A centralized map for all application configuration."
   {:llm {:endpoint "http://localhost:8000/chat/completions"
