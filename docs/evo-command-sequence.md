@@ -1,8 +1,8 @@
-### The Core Design Proposal: Generation-Specific Populations
+### The Implemented Design: Generation-Specific Populations
 
-The best place to indicate the active population is the directory for each generation. We create a specific subdirectory, `population/`, inside each `gen-NNN` directory.
+The active population for any stage of the evolution is explicitly defined by the directory for that generation. A specific subdirectory, `population/`, inside each `gen-NNN` directory holds the active members.
 
-*   **`generations/gen-NNN/population/`**: This directory will contain symbolic links to all the *active object-prompts* that constitute the population for generation `N`.
+*   **`generations/gen-NNN/population/`**: This directory contains symbolic links to all the *active object-prompts* that constitute the population for generation `N`.
 
 This design has several key advantages:
 1.  **Explicitness:** It provides a single, clear location to see the exact members of any given generation's population.
@@ -14,11 +14,11 @@ This design has several key advantages:
 
 ### The `bootstrap` → `vary` → `evaluate` → `select` Workflow
 
-Let's trace the lifecycle of an evolutionary cycle, starting from a fresh experiment.
+Here is a trace of the lifecycle of an evolutionary cycle, starting from a fresh experiment.
 
 #### State 1: After `pcrit bootstrap`
 
-The user runs `pcrit bootstrap my-experiment`. This command ingests the seed prompts, creates top-level links, and **critically, creates `gen-0`**, populating it with any object-prompts found in the manifest. The experiment now has an initial population ready for evolution.
+The user runs `pcrit bootstrap my-experiment`. This command ingests the seed prompts, creates top-level links, and creates `gen-0`, populating it with any object-prompts found in the manifest. The experiment now has an initial population ready for evolution.
 
 **Directory Structure:**
 ```
@@ -51,7 +51,7 @@ The user runs `vary` to "breed" the initial population, creating new candidates.
 ```bash
 pcrit vary my-experiment/
 ```
-**Computation / Actions:**
+**Actions:**
 1.  The `vary` command identifies the latest generation, `gen-000`.
 2.  It applies meta-prompts to the population members of `gen-000`, generating new object-prompts, say `P4` and `P5`.
 3.  It adds symlinks for the new offspring (`P4`, `P5`) into the **existing `gen-000/population/` directory**.
@@ -79,7 +79,7 @@ pcrit evaluate my-experiment/ \
   --inputs path/to/web-articles/
 ```
 
-**Computation / Actions:**
+**Actions:**
 1.  The `evaluate` command resolves the path to `my-experiment/generations/gen-000/`.
 2.  It creates a contest directory: `.../gen-000/contests/initial-web-cleanup/`.
 3.  It creates the `failter-spec/` subdirectory and populates it with links to the three prompts currently in `gen-000/population/`.
@@ -109,10 +109,10 @@ The user now runs the `select` command to winnow the population. This is the com
 pcrit select my-experiment/ --from-contest "initial-web-cleanup"
 ```
 
-**Computation / Actions:**
+**Actions:**
 1.  The `select` command reads `report.csv` from the specified contest.
 2.  It applies a selection strategy (e.g., "keep `P1` and `P4`").
-3.  It calls `pcrit.pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
+3.  It calls `pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
 
 **Directory Structure After Selection:**
 ```my-experiment/

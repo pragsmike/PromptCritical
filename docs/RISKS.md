@@ -1,16 +1,17 @@
 # PromptCritical Project Risks
 
-**Version 1.1 · 2025‑07‑08**
-**Status:** *Reviewed and updated for v0.2 workflow*
+**Version 1.2 · 2025‑07‑11**
+**Status:** *Reviewed post-v0.2 implementation*
 
 Here are ten key risks for the PromptCritical project, ranked from most to least severe.
 
 ## 1. **Premature Convergence to Local Optima**
-**Risk**: A simplistic selection strategy (e.g., keeping only the single best prompt) could cause the population to lose diversity and converge on a suboptimal solution, preventing the discovery of better alternatives.
+**Risk**: A simplistic selection strategy could cause the population to lose diversity and converge on a suboptimal solution, preventing the discovery of better alternatives.
 
 **Mitigation**:
-- Implement diverse selection strategies in the `select` command (e.g., tournament selection, keeping top N performers).
-- The `vary` command should include operators for random mutation to maintain exploration.
+- The `select` command defaults to a `top-N=5` policy, which presents a direct risk of premature convergence. Users can mitigate this for more exploratory tasks by passing a higher value to the `--policy` flag (e.g., `--policy top-N=20`).
+- The `vary` command includes operators for random mutation to maintain exploration.
+- Future versions will introduce more advanced selection strategies (e.g., tournament selection, diversity-preserving algorithms).
 - Monitor population diversity metrics in `contest-metadata.edn` to detect convergence.
 
 ## 2. **Evaluation Brittleness/Inconsistency**
@@ -27,7 +28,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 
 **Mitigation**:
 - Implement cost budgets and tracking per-experiment.
-- Use cheaper models in the `vary` step and reserve more expensive models for the final `evaluate` step.
+- Use cheaper models in the `vary` step by configuring them in `evolution-parameters.edn`, reserving more expensive models for the `evaluate` step.
 - Develop "surrogate critics" (cheaper models or heuristics) to pre-filter prompts before a full evaluation contest.
 - Implement early-stopping rules based on cost thresholds.
 
@@ -45,7 +46,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Mitigation**:
 - The `pcrit.pop` component already validates template fields upon ingestion.
 - The meta-prompts used by the `vary` command must be carefully designed to preserve or correctly modify template variables.
-- The `evaluate` command should have a validation step to ensure all prompts in a population have the required `{{INPUT_TEXT}}` field before starting a contest.
+- The `evaluate` command has a validation step to ensure all prompts in a population have the required `{{INPUT_TEXT}}` field before starting a contest.
 
 ## 6. **Meta-Prompt Bias/Limitations**
 **Risk**: The initial meta-prompts used by the `vary` command may have inherent biases that constrain the evolutionary search space and prevent novel solutions from emerging.
@@ -90,4 +91,4 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 - Maintain comprehensive integration tests for the `evaluate` -> `Failter` boundary.
 
 ### **Overall Risk Management Strategy**
-Our current v0.2 plan—implementing the `vary`, `evaluate`, and `select` commands—is designed to validate the core evolutionary loop. The modular Polylith architecture is our primary strategic tool for managing these risks, as it allows us to improve or swap out individual components (selection strategies, evaluation methods, storage backends) as the system matures.
+With the `v0.2` core evolutionary loop (`vary`, `evaluate`, and `select`) now complete, our risk management focus shifts from implementation to practical application. The modular Polylith architecture remains our primary strategic tool, as it allows us to improve or swap out individual components (selection policies, evaluation methods, storage backends) to address these risks as the system matures and is applied to more complex problems.
