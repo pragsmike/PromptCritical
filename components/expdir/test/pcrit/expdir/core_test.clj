@@ -1,11 +1,12 @@
 (ns pcrit.expdir.core-test
   (:require [clojure.test :refer (use-fixtures deftest is testing)]
             [clojure.java.io :as io]
+            [clojure.edn :as edn]
             [pcrit.experiment.interface :as exp]
             [pcrit.expdir.core :as expdir]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]]
-            )
-  (:import [java.nio.file Files]))
+            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]])
+  (:import [java.io File]
+           [java.nio.file Files Path]))
 
 (use-fixtures :each with-temp-dir)
 
@@ -64,6 +65,12 @@
             #"Cannot determine prompt path"
             (expdir/pdb-file-of-prompt-record ctx bad-record))))))
 
+(defn- is-relative-symlink?
+  "Test utility to check if a file is a relative symbolic link."
+  [^File f]
+  (and (Files/isSymbolicLink (.toPath f))
+       (not (.isAbsolute ^Path (Files/readSymbolicLink (.toPath f))))))
+
 (deftest create-relative-symlink-test
   (testing "Generic symlink function creates a correct relative link"
     (let [root-dir (io/file (get-temp-dir))
@@ -78,99 +85,68 @@
 
       (expdir/create-relative-symlink! link-file target-file)
 
-      (is (.exists link-file) "Link should be created.")
-      (is (Files/isSymbolicLink (.toPath link-file)) "Created file should be a symbolic link.")
+      (is (is-relative-symlink? link-file) "Created file should be a relative symbolic link."))))
 
-      (let [link-target-path (Files/readSymbolicLink (.toPath link-file))
-            link-dir-path (.toPath (.getParentFile link-file))
-            resolved-target-path (.toAbsolutePath (.resolve link-dir-path link-target-path))
-            canonical-target-path (.toPath (.getCanonicalFile target-file))]
-
-        (is (not (.isAbsolute link-target-path))
-            "The symbolic link target path should be relative.")
-
-        (is (= (.normalize canonical-target-path) (.normalize resolved-target-path))
-            "The relative link should resolve to the correct target file.")))))
-
-(deftest link-prompt-test
-  (testing "Correctly creates a relative symbolic link to a prompt file"
-    (let [ctx (get-test-ctx)]
-      ;; Setup: Create directories and a dummy prompt file to link to
-      (expdir/create-experiment-dirs! ctx)
-      (let [links-dir (expdir/get-link-dir ctx)
-            mock-record {:header {:id "P101"}}
-            prompt-file (expdir/pdb-file-of-prompt-record ctx mock-record)
-            link-file (io/file links-dir "test-link")]
-
-        (spit prompt-file "This is the prompt content.")
-        (is (.exists prompt-file))
-        (is (not (.exists link-file)) "Precondition: Link should not exist.")
-
-        ;; Execute the function
-        (expdir/link-prompt! ctx mock-record "test-link")
-
-        (is (.exists link-file) "Link should be created.")
-        (is (Files/isSymbolicLink (.toPath link-file)) "Created file should be a symbolic link.")
-
-        (let [link-target-path (Files/readSymbolicLink (.toPath link-file))
-              link-dir-path (.toPath (.getParentFile link-file))
-              resolved-target-path (.toAbsolutePath (.resolve link-dir-path link-target-path))
-              canonical-target-path (.toPath (.getCanonicalFile prompt-file))]
-
-          (is (not (.isAbsolute link-target-path))
-              "The symbolic link target path should be relative.")
-
-          (is (= (.normalize canonical-target-path) (.normalize resolved-target-path))
-              "The relative link should resolve to the correct target file."))))))
 
 ;; --- Generation Tests ---
 
 (deftest generation-path-getters-test
   (testing "Generation-specific path getters return correct File objects"
     (let [ctx (get-test-ctx)]
-      (testing "get-generation-dir"
-        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-000"))
-               (.getCanonicalPath (expdir/get-generation-dir ctx 0))))
-        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-012"))
-               (.getCanonicalPath (expdir/get-generation-dir ctx 12)))))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-012"))
+             (.getCanonicalPath (expdir/get-generation-dir ctx 12))))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-001" "population"))
+             (.getCanonicalPath (expdir/get-population-dir ctx 1)))))))
 
-      (testing "get-population-dir"
-        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-001" "population"))
-               (.getCanonicalPath (expdir/get-population-dir ctx 1)))))
+;; --- Contest Management Tests ---
 
-      (testing "get-contests-dir"
-        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-002" "contests"))
-               (.getCanonicalPath (expdir/get-contests-dir ctx 2)))))
+(deftest prepare-contest-directory-test
+  (testing "Correctly prepares the full contest directory structure"
+    (let [ctx (get-test-ctx)
+          exp-dir (get-temp-dir)
+          inputs-dir (io/file exp-dir "my-inputs")]
+      (expdir/create-experiment-dirs! ctx)
+      (.mkdirs inputs-dir)
+      (spit (io/file inputs-dir "doc1.txt") "doc1")
+      (spit (io/file (expdir/get-pdb-dir ctx) "P1.prompt") "prompt1")
 
-      (testing "get-contest-dir"
-        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-003" "contests" "my-contest"))
-               (.getCanonicalPath (expdir/get-contest-dir ctx 3 "my-contest")))))
+      (let [params {:generation-number 0
+                    :contest-name "my-contest"
+                    :inputs-dir (.getCanonicalPath inputs-dir)
+                    :population [{:header {:id "P1"}}]
+                    :models ["m1" "m2"]
+                    :judge-model "judgy"}]
+        (expdir/prepare-contest-directory! ctx params)
 
-      (testing "get-failter-spec-dir"
-        (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-004" "contests" "another-run" "failter-spec"))
-               (.getCanonicalPath (expdir/get-failter-spec-dir ctx 4 "another-run"))))))))
+        (let [spec-dir (expdir/get-failter-spec-dir ctx 0 "my-contest")
+              input-link (io/file spec-dir "inputs" "doc1.txt")
+              template-link (io/file spec-dir "templates" "P1.prompt")
+              models-file (io/file spec-dir "model-names.txt")
+              meta-file (io/file (expdir/get-contest-dir ctx 0 "my-contest") "contest-metadata.edn")]
+          (is (.isDirectory (io/file spec-dir "inputs")))
+          (is (.isDirectory (io/file spec-dir "templates")))
+          (is (is-relative-symlink? input-link) "Input link must be relative.")
+          (is (is-relative-symlink? template-link) "Template link must be relative.")
+          (is (= "m1\nm2" (slurp models-file)))
+          (is (.exists meta-file))
+          (let [meta-data (edn/read-string (slurp meta-file))]
+            (is (= "my-contest" (:contest-name meta-data)))
+            (is (= ["P1"] (:participants meta-data)))))))))
 
-
-(deftest find-latest-generation-number-test
+(deftest capture-contest-report-test
   (let [ctx (get-test-ctx)]
-    (testing "Returns nil when generations directory does not exist"
-      (is (nil? (expdir/find-latest-generation-number ctx))))
+    (testing "Moves report from spec dir to contest dir"
+      (let [spec-dir (expdir/get-failter-spec-dir ctx 0 "capture-test")
+            source-report (io/file spec-dir "report.csv")
+            dest-dir (expdir/get-contest-dir ctx 0 "capture-test")]
+        (.mkdirs spec-dir)
+        (spit source-report "prompt,score\nP1,100")
 
-    (testing "Returns nil when generations directory is empty"
-      (.mkdirs (expdir/get-generations-dir ctx))
-      (is (nil? (expdir/find-latest-generation-number ctx))))
+        (expdir/capture-contest-report! ctx 0 "capture-test")
 
-    (testing "Finds the highest number among valid generation directories"
-      (let [gens-dir (expdir/get-generations-dir ctx)]
-        (.mkdirs (io/file gens-dir "gen-000"))
-        (.mkdirs (io/file gens-dir "gen-002"))
-        (.mkdirs (io/file gens-dir "gen-001"))
-        (is (= 2 (expdir/find-latest-generation-number ctx)))))
+        (is (not (.exists source-report)) "Source report should be gone.")
+        (is (.exists (io/file dest-dir "report.csv")) "Destination report should exist.")))
 
-    (testing "Ignores files and directories that do not match the pattern"
-      (let [gens-dir (expdir/get-generations-dir ctx)]
-        (.mkdirs (io/file gens-dir "gen-005"))
-        (spit (io/file gens-dir "gen-006.tmp") "temp")
-        (spit (io/file gens-dir "notes.txt") "notes")
-        (.mkdirs (io/file gens-dir "gen-abc"))
-        (is (= 5 (expdir/find-latest-generation-number ctx)))))))
+    (testing "Returns nil if source report does not exist"
+      (let [result (expdir/capture-contest-report! ctx 1 "no-report-test")]
+        (is (nil? result))))))

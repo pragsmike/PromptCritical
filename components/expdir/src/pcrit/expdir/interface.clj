@@ -38,7 +38,6 @@
   directory under the given name."
   core/link-prompt!)
 
-;; --- NEW Generic Symlink Function ---
 (def create-relative-symlink!
   "Creates a relative symbolic link from `link-file` to `target-file`."
   core/create-relative-symlink!)
@@ -68,3 +67,16 @@
 (def find-latest-generation-number
   "Scans the 'generations' directory, returning the highest generation number found, or nil."
   core/find-latest-generation-number)
+
+;; --- NEW: High-Level Contest Management ---
+
+(def prepare-contest-directory!
+  "Creates the full directory structure and symlinks for a Failter contest.
+  This is the authoritative function for contest setup. Takes a context map
+  and a contest parameters map."
+  core/prepare-contest-directory!)
+
+(def capture-contest-report!
+  "Moves the report.csv from the failter-spec dir to the parent contest dir.
+  Returns a File object to the final report path, or nil if not found."
+  core/capture-contest-report!)
