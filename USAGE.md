@@ -52,12 +52,6 @@ The easiest way to start is with the `init` command. It creates a new directory 
 pcrit init my-first-experiment
 ```
 
-This single command creates the `my-first-experiment` directory and populates it with:
-*   `seeds/`: A directory with example object and meta prompts.
-*   `bootstrap.edn`: A manifest file that tells `pcrit bootstrap` which prompts to ingest.
-*   `evolution-parameters.edn`: A configuration file for the `evaluate` and `vary` commands.
-*   `.gitignore`: A file to ignore transient runtime files.
-
 ### Step 2: Bootstrap the Initial Population
 
 Now, move into your new directory and run the `bootstrap` command. This reads the manifest, ingests the prompts created by `init`, and creates the first population (`gen-0`).
@@ -91,39 +85,54 @@ The `init` command creates a default `evolution-parameters.edn` file. You should
 Now, you can apply your meta-prompts to the population to breed new candidates for evaluation. The `vary` command adds new prompts to the current generation.
 
 ```bash
-pcrit vary .```
-This command loads the population from `gen-000`, applies meta-prompts to create new candidates, and adds them to the `generations/gen-000/population/` directory. You can run this command multiple times to generate more variations before evaluating.
+pcrit vary .
+```
 
 ### Step 5: Evaluate the Current Population
 
-With the population expanded, you can evaluate the performance of all prompts in `gen-0`.
+With the population expanded, you can evaluate the performance of all prompts in `gen-0`. Note that upon completion, `evaluate` will log the total cost of the contest.
 
-1.  **Gather your evaluation data.** You will need a directory of input files.
-2.  **Run the `evaluate` command.**
-
-    ```bash
-    pcrit evaluate . \
-      --generation 0 \
-      --name "initial-cleanup-contest" \
-      --inputs path/to/my/inputs/
-    ```
-    This command will run the Failter contest and place the resulting `report.csv` in `generations/gen-000/contests/initial-cleanup-contest/`.
+```bash
+pcrit evaluate . \
+  --generation 0 \
+  --name "initial-cleanup-contest" \
+  --inputs path/to/my/inputs/
+```
 
 ### Step 6: Select the Survivors to Create the Next Generation
 
-After evaluating, use the scores from the contest report to create a new generation comprised of only the best performers. This is the only command that creates a new generation folder. By default, it selects the top 5 prompts based on score.
+After evaluating, use the scores from the contest report to create a new generation comprised of only the best performers.
 
 ```bash
 pcrit select . --from-contest "initial-cleanup-contest"
 ```
 
-This will read the report, pick the winners, and create a new generation directory (`gen-001/`) containing only symlinks to the surviving prompts. The process then repeats from Step 4 (`vary`), but now operating on the new, more refined generation.
+## Analyzing Results with the `stats` Command
 
-To change the selection policy, you can use the `--policy` flag. For example, to keep the top 10 prompts:
+After you've run one or more `evaluate` contests, you can analyze their performance and cost using the `stats` command. This command can show you statistics for a single contest or for an entire generation.
+
+**To see stats for a specific contest:**
 ```bash
-pcrit select . \
-  --from-contest "initial-cleanup-contest" \
-  --policy "top-N=10"
+pcrit stats . --from-contest "initial-cleanup-contest"
+```
+
+**To see aggregated stats for all contests in a generation:**
+```bash
+pcrit stats . --generation 0
+```
+If you omit the `--generation` flag, it will show stats for the latest generation by default.
+
+**Example Output:**
+```
+Stats for contest: initial-cleanup-contest
+-------------------------------------------
+Prompts evaluated:   50
+Total Cost:          $2.4567
+Average Cost:        $0.0491
+
+Highest Score:       0.980 (id: P42)
+Lowest Score:        0.650 (id: P18)
+Average Score:       0.855
 ```
 
 ## Choosing your loop order

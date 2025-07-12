@@ -9,11 +9,22 @@
 
 (defn- apply-meta-prompt
   "Applies a meta-prompt to an object-prompt using the templating LLM call."
-  [ctx meta-prompt object-prompt call-template-fn model-name]
+  [model-name meta-prompt object-prompt call-template-fn]
   (let [template (:body meta-prompt)
         vars {:OBJECT_PROMPT (:body object-prompt)}]
     (log/info "Applying meta-prompt" (get-in meta-prompt [:header :id]) "to" (get-in object-prompt [:header :id]))
     (call-template-fn model-name template vars)))
+
+(defn gen-offspring [ctx run-id model-name parent-prompt call-template-fn]
+  (let [refine-prompt (pop/read-linked-prompt ctx "refine")
+        response (apply-meta-prompt model-name refine-prompt parent-prompt call-template-fn)]
+    (when-not (:error response)
+      (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
+                               :generator {:model model-name
+                                           :meta-prompt (get-in refine-prompt [:header :id])
+                                           :vary-run run-id}}
+            new-content (:content response)]
+        {:header ancestry-metadata :body new-content}))))
 
 (defn vary!
   "Adds new offspring to the latest generation by applying meta-prompts.
@@ -25,24 +36,19 @@
           model-name (get-in evo-params [:vary :model] "mistral")
           _ (log/info (str "Using model '" model-name "' for variation."))
           current-pop (pop/load-population ctx latest-gen-num)
-          refine-prompt (pop/read-linked-prompt ctx "refine")
           current-pop-dir (expdir/get-population-dir ctx latest-gen-num)
           run-id (.toString (Instant/now))]
 
       (log/info "Varying generation" latest-gen-num "which has" (count current-pop) "members.")
 
       ;; Generate Offspring
-      (let [offspring (->> current-pop
-                           (map (fn [parent-prompt]
-                                  (let [response (apply-meta-prompt ctx refine-prompt parent-prompt call-template-fn model-name)]
-                                    (when-not (:error response)
-                                      (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
-                                                               :generator {:model model-name
-                                                                           :meta-prompt (get-in refine-prompt [:header :id])
-                                                                           :vary-run run-id}}
-                                            new-content (:content response)]
-                                        (pop/ingest-prompt ctx new-content :metadata ancestry-metadata))))))
-                           (remove nil?)
+      (let [offspring0 (->> current-pop
+                            (map (fn [parent-prompt]
+                                   (gen-offspring ctx run-id model-name parent-prompt call-template-fn)
+                                   ))
+                            (remove nil?))
+            offspring (->> offspring0
+                           (map (fn [child] (pop/ingest-prompt ctx (:body child) :metadata (:header child))))
                            (doall))]
 
         (log/info "Created" (count offspring) "new offspring prompts.")
