@@ -61,12 +61,21 @@
         mock-post-fn (fn [url options]
                        (reset! last-call {:url url :options options})
                        {:status 200
-                        :body (json/write-str {:choices [{:message {:content "Mock response"}}]})})]
+                        :body (json/write-str {:choices [{:message {:content "Mock response"}}]
+                                               :usage {:total_tokens 50}
+                                               :cost 0.0005})})]
 
-    (testing "Successful API call returns a parsed map"
+    (testing "Successful API call returns a structured map with generation metadata"
       (let [result (llm/call-model "test-model" "A prompt" :post-fn mock-post-fn)]
-        (is (= (get-in config/config [:llm :endpoint]) (:url @last-call)))
         (is (= "Mock response" (:content result)))
+        (is (some? (:generation-metadata result)))
+        (let [gen-meta (:generation-metadata result)]
+          (is (= 0.0005 (:cost gen-meta)))
+          (is (= {:total_tokens 50} (:usage gen-meta)))
+          (is (integer? (:duration-ms gen-meta))))
+
+        ;; Verify underlying call is still correct
+        (is (= (get-in config/config [:llm :endpoint]) (:url @last-call)))
         (is (some? (get-in @last-call [:options :headers "Authorization"])))
         (is (= "test-model" (-> @last-call :options :body (json/read-str :key-fn keyword) :model)))))
 

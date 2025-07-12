@@ -7,28 +7,33 @@
             [pcrit.pop.interface :as pop])
   (:import [java.time Instant]))
 
-(defn- apply-meta-prompt
-  "Applies a meta-prompt to an object-prompt using the templating LLM call."
-  [model-name meta-prompt object-prompt call-template-fn]
+(defn- breed-prompt
+  "The generic 'breeding' function. Applies a chosen meta-prompt to a parent
+  prompt to produce a new proto-prompt map with full metadata."
+  [model-name meta-prompt parent-prompt run-id call-template-fn]
   (let [template (:body meta-prompt)
-        vars {:OBJECT_PROMPT (:body object-prompt)}]
-    (log/info "Applying meta-prompt" (get-in meta-prompt [:header :id]) "to" (get-in object-prompt [:header :id]))
-    (call-template-fn model-name template vars)))
+        vars {:OBJECT_PROMPT (:body parent-prompt)}]
+    (log/info "Applying meta-prompt" (get-in meta-prompt [:header :id]) "to" (get-in parent-prompt [:header :id]))
+    (let [{:keys [content generation-metadata error]} (call-template-fn model-name template vars)]
+      (when-not error
+        (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
+                                 :generator {:model model-name
+                                             :meta-prompt (get-in meta-prompt [:header :id])
+                                             :vary-run run-id}}
+              final-metadata (merge ancestry-metadata generation-metadata)]
+          {:header final-metadata :body content})))))
 
 (defn gen-offspring
-  "Given a parent prompt, returns offspring as {:header {...} :body {...}}"
+  "The 'strategy' function for generating offspring. For now, it implements
+  a single, hardcoded strategy: apply the 'improve' meta-prompt. This function
+  is the intended extension point for future multimethod-based strategies."
   [ctx evo-params run-id parent-prompt call-template-fn]
   (let [model-name (get-in evo-params [:vary :model] "mistral")
         _ (log/info (str "Using model '" model-name "' for variation."))
-        refine-prompt (pop/read-linked-prompt ctx "refine")
-        response (apply-meta-prompt model-name refine-prompt parent-prompt call-template-fn)]
-    (when-not (:error response)
-      (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
-                               :generator {:model model-name
-                                           :meta-prompt (get-in refine-prompt [:header :id])
-                                           :vary-run run-id}}
-            new-content (:content response)]
-        {:header ancestry-metadata :body new-content}))))
+        ;; This is the strategy-specific part: choosing the meta-prompt.
+        improve-prompt (pop/read-linked-prompt ctx "improve")]
+    (when improve-prompt
+      (breed-prompt model-name improve-prompt parent-prompt run-id call-template-fn))))
 
 (defn vary!
   "Adds new offspring to the latest generation by applying meta-prompts.
@@ -43,12 +48,12 @@
 
       (log/info "Varying generation" latest-gen-num "which has" (count current-pop) "members.")
 
-      ;; Generate Offspring
+      ;; Generate Offspring proto-prompts
       (let [offspring0 (->> current-pop
                             (map (fn [parent-prompt]
-                                   (gen-offspring ctx evo-params run-id parent-prompt call-template-fn)
-                                   ))
+                                   (gen-offspring ctx evo-params run-id parent-prompt call-template-fn)))
                             (remove nil?))
+            ;; Ingest the proto-prompts into the PDB
             offspring (->> offspring0
                            (map (fn [child] (pop/ingest-prompt ctx (:body child) :metadata (:header child))))
                            (doall))]

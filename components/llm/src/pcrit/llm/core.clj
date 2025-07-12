@@ -15,7 +15,6 @@
       (log/error "Please set it before running the application.")
       false)))
 
-;; REFACTORED: Now accepts the entire response map to centralize parsing.
 (defn parse-llm-response
   "Parses a clj-http response map to extract content, usage, and cost.
   Returns a map with {:content, :usage, :cost}, pulling cost from
@@ -27,13 +26,13 @@
           usage       (:usage parsed-body)
           content     (-> parsed-body :choices first :message :content)
           header-cost (some-> response :headers (get "x-litellm-cost") Double/parseDouble)
-          body-cost   (or (:cost parsed-body) ; Top-level
-                          (:cost usage)         ; LiteLLM v1.x
-                          (:total_cost usage))] ; LiteLLM v2.x
+          body-cost   (or (:cost parsed-body)
+                          (:cost usage)
+                          (:total_cost usage))]
       (if content
         {:content content
          :usage   usage
-         :cost    (or body-cost header-cost 0.0)} ; Centralized cost logic
+         :cost    (or body-cost header-cost 0.0)}
         (do
           (log/error (str "Could not extract content from LLM response for " model-name ". Body: " (:body response)))
           {:error (str "No content in LLM response: " (pr-str parsed-body))})))
@@ -41,7 +40,6 @@
       (log/error (str "Failed to parse LLM JSON response for " model-name ". Error: " (.getMessage e) ". Body: " (:body response)))
       {:error (str "Malformed JSON from LLM: " (.getMessage e))})))
 
-;; REFACTORED: Now delegates all parsing to `parse-llm-response`.
 (defn call-model
   [model-name prompt-string & {:keys [timeout post-fn]
                                :or {timeout (get-in config/config [:llm :default-timeout-ms])
@@ -53,6 +51,7 @@
       (let [request-body {:model model-name
                           :messages [{:role "user" :content prompt-string}]}
             headers {"Authorization" (str "Bearer " LITELLM_API_KEY)}
+            start-time (System/currentTimeMillis)
             response (post-fn endpoint
                               {:body (json/write-str request-body)
                                :content-type :json
@@ -60,9 +59,17 @@
                                :headers headers
                                :throw-exceptions false
                                :socket-timeout timeout
-                               :connection-timeout timeout})]
+                               :connection-timeout timeout})
+            duration-ms (- (System/currentTimeMillis) start-time)]
         (if (= 200 (:status response))
-          (parse-llm-response response model-name) ; Simplified call
+          (let [{:keys [content usage cost error]} (parse-llm-response response model-name)]
+            (if error
+              {:error error}
+              ;; Return a structured map with generation metadata
+              {:content content
+               :generation-metadata {:cost cost
+                                     :usage usage
+                                     :duration-ms duration-ms}}))
           (do
             (log/error (str "LLM call to " model-name " failed with status " (:status response) ". Body: " (:body response)))
             {:error (str "LLM API Error: " (:status response) " " (:body response))})))

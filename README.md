@@ -94,17 +94,19 @@ workspace/
 │   ├── llm/          ; Thin HTTP client for LLMs
 │   └── test-helper/  ; Shared utilities for testing
 └── bases/
-    └── cli/          ; `pcrit` command‑line entry point```
+    └── cli/          ; `pcrit` command‑line entry point
+```
 
 ### CLI Overview
 
 | Command | Status | Description |
 | :--- | :--- | :--- |
-| `init`      | ✅ | Creates a new, minimal experiment skeleton directory. |
 | `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
-| `vary`      | ✅ | Adds new prompt variations to the *current* generation's population. |
 | `evaluate`  | ✅ | Runs the active population in a contest and collects results. |
+| `init`      | ✅ | Creates a new, minimal experiment skeleton directory. |
 | `select`    | ✅ | Creates a **new generation** of survivors based on evaluation scores. |
+| `stats`     | ✅ | Displays cost and score statistics for a contest or generation. |
+| `vary`      | ✅ | Adds new prompt variations to the *current* generation's population. |
 
 
 ---
@@ -119,6 +121,7 @@ workspace/
 | **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
 | **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
 | **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `report.csv` and creates a **new generation folder** populated with symlinks to the survivors.                                  |
+| **stats**                                          | An analysis command. Does not mutate state.             | Reads one or more `report.csv` files and displays aggregated statistics about cost and performance scores.                                                                    |
 | **population (`generations/gen-NNN/population/`)** | See *Directory Layout* section.                         | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                                  |
 | **experiment directory (`expdir/`)**               | Portable & reproducible.                                | Root folder that bundles prompt generations, results, Failter specs, and metadata for a single evolutionary run.                                                              |
 | **`report.csv`**                                   | Failter produces this.                                  | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                                     |
@@ -131,9 +134,9 @@ workspace/
 
 ## 📦 Current State (Post-Refactoring)
 
-The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. The `init`, `bootstrap`, `vary`, `evaluate`, and `select` commands are now fully implemented.
+The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. All core commands are now fully implemented.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`).
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`, `stats!`).
 *   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
@@ -193,10 +196,10 @@ The immediate goal is to implement the full **`init` → `bootstrap` → `vary` 
 
 | Milestone | New Capability |
 |-----------|----------------|
-| **v0.2**  | Implement core `init`, `vary`, `evaluate`, `select` commands. |
+| **v0.2**  | Implement core commands (`init`, `stats`, etc). |
 | **v0.3**  | Automated `evolve` command that composes the v0.2 commands. |
 | **v0.4**  | Advanced selection & mutation operators. |
-| **v.5**  | Surrogate critic to pre-filter variants before Failter. |
+| **v0.5**  | Surrogate critic to pre-filter variants before Failter. |
 | **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability. |
 | **v0.7**  | Reporting dashboard (`pcrit.web` base). |
 | **v1.0**  | Distributed workers, advanced semantic validators. |
@@ -216,3 +219,4 @@ The immediate goal is to implement the full **`init` → `bootstrap` → `vary` 
 ---
 
 **PromptCritical**: because great prompts shouldn’t be accidental.
+```
