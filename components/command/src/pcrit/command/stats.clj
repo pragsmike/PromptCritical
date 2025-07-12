@@ -70,4 +70,4 @@
                     (str "Stats for contest: " (:from-contest options))
                     (str "Aggregated Stats for Generation: " (or (:generation options) (expdir/find-latest-generation-number ctx))))]
         (print-stats title stats))
-      (log/info "No reports found for the given criteria."))))
+      (println "\nNo reports found for the given criteria.\n"))))
