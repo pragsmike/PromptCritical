@@ -8,37 +8,11 @@ PromptCritical treats prompt engineering as a scientific, evolutionary process. 
 
 1.  **Init**: Create a new, ready-to-use experiment skeleton directory with default prompts and configuration.
 2.  **Bootstrap**: Ingest the initial prompts from the skeleton and create the first population folder (`gen-0`).
-3.  **Vary**: Produce new candidate prompts by applying meta-prompts (mutation, crossover) to the *current* population. This adds new prompts to the current generation's folder.
-4.  **Evaluate**: Run all prompts in the current population against a corpus of inputs using the **Failter** tool to generate performance scores. This creates a `report.csv` inside the current generation's `contests/` directory.
+3.  **Vary**: Produce new candidate prompts by applying meta-prompts to the *current* population.
+4.  **Evaluate**: Run all prompts in the current population against a corpus of inputs using the **Failter** tool to generate performance scores.
 5.  **Select**: Use the scores from a contest report to select the fittest prompts and create a **new generation folder** containing only the survivors.
 
 Steps 3 through 5 are repeated in a cycle, with each `select` command producing a new, more refined generation. This entire process is managed from the command line within a dedicated **Experiment Directory**.
-
-## Core Concepts
-
-### 1. The Experiment Directory
-
-Everything related to a single experiment lives in one directory. This is the first argument you will pass to most `pcrit` commands. It contains the prompt database, generation data, and links to key prompts.
-
-### 2. Prompt Types
-
-Every prompt ingested into the database is automatically analyzed and assigned a `:prompt-type` in its metadata. This type defines its role in the system.
-
-*   **:object-prompt**: A prompt that performs a task on an external input (e.g., summarizing a document). These are the main members of a population.
-*   **:meta-prompt**: A prompt that operates on *another prompt*. It is used during the `vary` step to create new prompt variations (e.g., "Rephrase this prompt to be more concise: {{OBJECT_PROMPT}}").
-*   **:static-prompt**: A prompt with no special template fields. It can be used for analysis but not directly in the evolution or contest loops.
-*   **:invalid-mixed-type**: A prompt that incorrectly contains both special template fields. It cannot be used.
-
-### 3. Template Variables
-
-The prompt types are determined by the presence of special template variables. Your prompt files **must** use these specific names for the system to work correctly.
-
-| Variable Name     | Required For     | Used By          | Value Provided By                                                  |
-| :---------------- | :--------------- | :--------------- | :----------------------------------------------------------------- |
-| `{{INPUT_TEXT}}`  | `:object-prompt` | `pcrit evaluate` | The content of a file from the `--inputs` directory during a Failter run. |
-| `{{OBJECT_PROMPT}}` | `:meta-prompt`   | `pcrit vary`     | The body of another prompt being mutated or combined.              |
-
-NOTE: Allowed placeholders (INPUT_TEXT, OBJECT_PROMPT, …) are being formalised; expect expansion in the next release.
 
 ## The Standard Workflow
 
@@ -51,6 +25,12 @@ The easiest way to start is with the `init` command. It creates a new directory 
 ```bash
 pcrit init my-first-experiment
 ```
+
+This single command creates the `my-first-experiment` directory and populates it with:
+*   `seeds/`: A directory with example object and meta prompts.
+*   `bootstrap.edn`: A manifest file that tells `pcrit bootstrap` which prompts to ingest.
+*   `evolution-parameters.edn`: A configuration file for the `evaluate` and `vary` commands.
+*   `.gitignore`: A file to ignore transient runtime files.
 
 ### Step 2: Bootstrap the Initial Population
 
@@ -76,7 +56,7 @@ The `init` command creates a default `evolution-parameters.edn` file. You should
 
  ;; This section is optional for the 'vary' command.
  ;; If omitted, it will use a sensible default.
- :vary {:model "gpt-4-turbo"}
+ :vary {:model "openai/gpt-4o-mini"}
 }
 ```
 
@@ -90,14 +70,13 @@ pcrit vary .
 
 ### Step 5: Evaluate the Current Population
 
-With the population expanded, you can evaluate the performance of all prompts in `gen-0`. Note that upon completion, `evaluate` will log the total cost of the contest.
+With the population expanded, you can evaluate the performance of all prompts in `gen-0`. Upon completion, `evaluate` will log the total cost of the contest, giving you immediate feedback.
 
 ```bash
 pcrit evaluate . \
   --generation 0 \
   --name "initial-cleanup-contest" \
-  --inputs path/to/my/inputs/
-```
+  --inputs path/to/my/inputs/```
 
 ### Step 6: Select the Survivors to Create the Next Generation
 
@@ -135,7 +114,29 @@ Lowest Score:        0.650 (id: P18)
 Average Score:       0.855
 ```
 
-## Choosing your loop order
+## Core Concepts Reference
+
+### The Experiment Directory
+
+Everything related to a single experiment lives in one directory. This is the first argument you will pass to most `pcrit` commands. It contains the prompt database, generation data, and links to key prompts.
+
+### Prompt Types
+
+Every prompt ingested into the database is automatically analyzed and assigned a `:prompt-type` in its metadata. This type defines its role in the system.
+
+*   **:object-prompt**: A prompt that performs a task on an external input (e.g., summarizing a document). These are the main members of a population.
+*   **:meta-prompt**: A prompt that operates on *another prompt*. It is used during the `vary` step to create new prompt variations.
+
+### Template Variables
+
+The prompt types are determined by the presence of special template variables. Your prompt files **must** use these specific names for the system to work correctly.
+
+| Variable Name     | Required For     | Used By          | Value Provided By                                                  |
+| :---------------- | :--------------- | :--------------- | :----------------------------------------------------------------- |
+| `{{INPUT_TEXT}}`  | `:object-prompt` | `pcrit evaluate` | The content of a file from the `--inputs` directory during a Failter run. |
+| `{{OBJECT_PROMPT}}` | `:meta-prompt`   | `pcrit vary`     | The body of another prompt being mutated or combined.              |
+
+## Alternative Workflows
 
 After `bootstrap` seeds **gen-000**, you have two common entry points into the cycle:
 
