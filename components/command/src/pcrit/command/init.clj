@@ -17,9 +17,14 @@
               out (io/output-stream target-file)]
     (io/copy in out)))
 
+(defn- directory-is-empty? [^java.io.File dir]
+  (let [user-visible-files (some->> (.list dir)
+                                    (remove #{"." ".."}))]
+    (empty? user-visible-files)))
+
 (defn- pre-flight-checks! [target-dir force?]
   (cond
-    (and (.exists target-dir) (seq (.list target-dir)) (not force?))
+    (and (.exists target-dir) (not (directory-is-empty? target-dir)) (not force?))
     (throw (ex-info (str "Directory " (.getCanonicalPath target-dir)
                          " exists and is not empty. Use --force to overwrite.")
                     {:type :validation-error}))
@@ -38,11 +43,11 @@
         (.mkdirs (io/file target-dir "seeds"))
         (doseq [[resource-path target-path] scaffold-files]
           (copy-resource! resource-path (io/file target-dir target-path)))
-        (log/info "✓ Experiment skeleton created at" (.getCanonicalPath target-dir))
+        (log/info "✓ Experiment skeleton created at " (.getCanonicalPath target-dir))
         {:exit-code 0}))
     (catch clojure.lang.ExceptionInfo e
       (log/error (.getMessage e))
       {:exit-code 1})
     (catch Exception e
-      (log/error "An unexpected I/O error occurred:" (.getMessage e))
+      (log/error "An unexpected I/O error occurred: " (.getMessage e))
       {:exit-code 2})))
