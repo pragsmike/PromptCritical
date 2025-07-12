@@ -37,10 +37,10 @@ The **keys in `bootstrap.edn` are the contract**.  Example from the default scaf
 
 ````edn
 {:seed    "seeds/seed-object-prompt.txt"
- :improve "seeds/improve-meta-prompt.txt"}
+ :refine "seeds/improve-meta-prompt.txt"}
 ``` :contentReference[oaicite:4]{index=4}
 
-* The *key* (`:seed`, `:improve`, …) becomes the filename under `links/`.
+* The *key* (`:seed`, `:refine`, …) becomes the filename under `links/`.
 * The *value* is the path of the raw text file to ingest.
 * During bootstrap the ingestion process assigns each prompt an internal ID (`P1`, `P2`, …); the symlink is then created to that packed filename.
 

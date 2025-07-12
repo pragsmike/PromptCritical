@@ -149,7 +149,7 @@ The following files will be placed in the `resources/` directory of the new `sca
 *   **`scaffold/bootstrap.edn`**:
     ```clojure
     {:seed   "seeds/seed-object-prompt.txt"
-     :improve "seeds/improve-meta-prompt.txt"}
+     :refine "seeds/improve-meta-prompt.txt"}
     ```
 *   **`scaffold/evolution-parameters.edn`**:
     ```clojure

@@ -15,8 +15,12 @@
     (log/info "Applying meta-prompt" (get-in meta-prompt [:header :id]) "to" (get-in object-prompt [:header :id]))
     (call-template-fn model-name template vars)))
 
-(defn gen-offspring [ctx run-id model-name parent-prompt call-template-fn]
-  (let [refine-prompt (pop/read-linked-prompt ctx "refine")
+(defn gen-offspring
+  "Given a parent prompt, returns offspring as {:header {...} :body {...}}"
+  [ctx evo-params run-id parent-prompt call-template-fn]
+  (let [model-name (get-in evo-params [:vary :model] "mistral")
+        _ (log/info (str "Using model '" model-name "' for variation."))
+        refine-prompt (pop/read-linked-prompt ctx "refine")
         response (apply-meta-prompt model-name refine-prompt parent-prompt call-template-fn)]
     (when-not (:error response)
       (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
@@ -33,8 +37,6 @@
   [ctx & [{:keys [call-template-fn] :or {call-template-fn llm/call-model-template}}]]
   (if-let [latest-gen-num (expdir/find-latest-generation-number ctx)]
     (let [evo-params (config/load-evolution-params ctx)
-          model-name (get-in evo-params [:vary :model] "mistral")
-          _ (log/info (str "Using model '" model-name "' for variation."))
           current-pop (pop/load-population ctx latest-gen-num)
           current-pop-dir (expdir/get-population-dir ctx latest-gen-num)
           run-id (.toString (Instant/now))]
@@ -44,7 +46,7 @@
       ;; Generate Offspring
       (let [offspring0 (->> current-pop
                             (map (fn [parent-prompt]
-                                   (gen-offspring ctx run-id model-name parent-prompt call-template-fn)
+                                   (gen-offspring ctx evo-params run-id parent-prompt call-template-fn)
                                    ))
                             (remove nil?))
             offspring (->> offspring0

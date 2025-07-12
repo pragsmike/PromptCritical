@@ -1,2 +1,2 @@
-{:seed   "seeds/seed-object-prompt.txt"
- :improve "seeds/improve-meta-prompt.txt"}
+{:seed    "seeds/seed-object-prompt.txt"
+ :refine  "seeds/improve-meta-prompt.txt"}
