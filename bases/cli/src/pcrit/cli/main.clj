@@ -5,15 +5,15 @@
             [pcrit.command.interface :as cmd]
             [pcrit.experiment.interface :as exp]
             [pcrit.log.interface :as log]
-            [pcrit.config.interface :as config])
-  (:gen-class))
+            [pcrit.config.interface :as config]
+            [taoensso.telemere])) ; For setting log level
 
 (def global-cli-options
   [["-h" "--help" "Print this help message"]
+   ["-l" "--log LEVEL" "Set the logging level (e.g., info, debug, warn)"
+    :default :info
+    :parse-fn #(keyword (str/lower-case %))]
    [nil "--pcrit-user-cwd CWD" "The user's original working directory (set by wrapper script)."]])
-
-(def shared-command-options
-  [["-h" "--help" "Show help for this command."]])
 
 ;; --- Path Resolution Helper ---
 (defn- resolve-exp-dir
@@ -159,15 +159,21 @@
         (nil? command) (exit-fn 1 (out-fn (usage (:summary first-pass))))
         :else
         (if-let [spec (get command-specs command)]
-          (let [all-cmd-options (into (:options spec) shared-command-options)
+          (let [all-valid-options (into (:options spec) global-cli-options)
                 {command-opts :options, final-args :arguments, :as second-pass}
-                (cli/parse-opts params all-cmd-options)]
+                (cli/parse-opts params all-valid-options)]
             (if-let [errors (:errors second-pass)]
               (exit-fn 1 (out-fn (error-msg errors)))
-              (cond
-                (:help command-opts) (exit-fn 0 (out-fn (command-usage command spec (:summary second-pass))))
-                :else ((:handler spec) {:options   (merge global-opts command-opts)
-                                        :arguments final-args}))))
+              (let [final-opts (merge global-opts command-opts)]
+                ;; CORRECTED: Set log level after all options are merged.
+                (taoensso.telemere/set-min-level! (:log final-opts))
+                (cond
+                  (:help final-opts)
+                  (exit-fn 0 (out-fn (command-usage command spec (:summary second-pass))))
+
+                  :else
+                  ((:handler spec) {:options   final-opts
+                                    :arguments final-args})))))
           (exit-fn 1 (out-fn (str "Unknown command: " command "\n" (usage (:summary first-pass))))))))))
 
 (defn -main [& args]
