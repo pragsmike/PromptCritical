@@ -31,7 +31,7 @@
   (let [model-name (get-in evo-params [:vary :model] "mistral")
         _ (log/info (str "Using model '" model-name "' for variation."))
         ;; This is the strategy-specific part: choosing the meta-prompt.
-        improve-prompt (pop/read-linked-prompt ctx "improve")]
+        improve-prompt (pop/read-linked-prompt ctx "refine")]
     (when improve-prompt
       (breed-prompt model-name improve-prompt parent-prompt run-id call-template-fn))))
 

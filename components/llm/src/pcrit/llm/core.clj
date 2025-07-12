@@ -1,6 +1,7 @@
 (ns pcrit.llm.core
   (:require [clj-http.client :as http]
             [clojure.data.json :as json]
+            [clojure.string :as str]
             [pcrit.config.interface :as config]
             [pcrit.log.interface :as log]))
 
@@ -15,10 +16,12 @@
       (log/error "Please set it before running the application.")
       false)))
 
+(defn- -parse-provider [model-name]
+  (keyword (first (str/split model-name #"/"))))
+
 (defn parse-llm-response
-  "Parses a clj-http response map to extract content, usage, and cost.
-  Returns a map with {:content, :usage, :cost}, pulling cost from
-  several potential locations in the body and headers."
+  "Parses a clj-http response map to extract content and all generation metadata.
+  Returns a map containing the prompt content and a nested :generation-metadata map."
   [response model-name]
   (log/debug (str "Response from " model-name "\n" (:body response)))
   (try
@@ -26,13 +29,14 @@
           usage       (:usage parsed-body)
           content     (-> parsed-body :choices first :message :content)
           header-cost (some-> response :headers (get "x-litellm-cost") Double/parseDouble)
-          body-cost   (or (:cost parsed-body)
-                          (:cost usage)
-                          (:total_cost usage))]
+          body-cost   (or (:cost parsed-body) (:cost usage) (:total_cost usage))]
       (if content
         {:content content
-         :usage   usage
-         :cost    (or body-cost header-cost 0.0)}
+         :generation-metadata {:model             model-name
+                               :provider          (-parse-provider model-name)
+                               :token-in          (or (:prompt_tokens usage) 0)
+                               :token-out         (or (:completion_tokens usage) 0)
+                               :cost-usd-snapshot (or body-cost header-cost 0.0)}}
         (do
           (log/error (str "Could not extract content from LLM response for " model-name ". Body: " (:body response)))
           {:error (str "No content in LLM response: " (pr-str parsed-body))})))
@@ -62,14 +66,12 @@
                                :connection-timeout timeout})
             duration-ms (- (System/currentTimeMillis) start-time)]
         (if (= 200 (:status response))
-          (let [{:keys [content usage cost error]} (parse-llm-response response model-name)]
+          (let [{:keys [content generation-metadata error]} (parse-llm-response response model-name)]
             (if error
               {:error error}
-              ;; Return a structured map with generation metadata
+              ;; Return a structured map with generation metadata, now including duration
               {:content content
-               :generation-metadata {:cost cost
-                                     :usage usage
-                                     :duration-ms duration-ms}}))
+               :generation-metadata (assoc generation-metadata :duration-ms duration-ms)}))
           (do
             (log/error (str "LLM call to " model-name " failed with status " (:status response) ". Body: " (:body response)))
             {:error (str "LLM API Error: " (:status response) " " (:body response))})))
