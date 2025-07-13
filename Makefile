@@ -16,6 +16,7 @@ pack:
 					docs/evo-process.md \
 					docs/evo-population-bootstrapping.md \
 					docs/evo-command-sequence.md \
+					docs/evo-cost-calculation.md \
 					docs/prompt-representation.md \
 					copilot/onboard-*.md \
 					Makefile `find . -name deps.edn` ;\
