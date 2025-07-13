@@ -1,2 +1,3 @@
 Analyze the following prompt and generate an improved, more robust version.
+Emit ONLY the new prompt, with no explanatory header or footer.
 {{OBJECT_PROMPT}}

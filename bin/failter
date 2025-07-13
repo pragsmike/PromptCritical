@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Wrapper script for the Failter CLI.
+# This script ensures that the clojure command is run from the correct
+# directory, and it passes the user's original working directory to
+# the application so that relative paths are resolved correctly.
+
+echo ---------------------
+pwd
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd $SCRIPT_DIR
+cd ../../failter || exit
+
+exec clojure -M:run "$@"
