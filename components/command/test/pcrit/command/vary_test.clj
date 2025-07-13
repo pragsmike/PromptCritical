@@ -7,14 +7,27 @@
             [pcrit.experiment.interface :as exp]
             [pcrit.llm.interface :as llm]
             [pcrit.pop.interface :as pop]
-            [pcrit.test-helper.interface :refer [get-temp-dir make-temp-exp-dir! with-temp-dir with-quiet-logging]]))
+            [pcrit.test-helper.interface :refer [get-temp-dir with-temp-dir with-quiet-logging]]))
 
 (use-fixtures :each with-temp-dir with-quiet-logging)
+
+;; --- CORRECTED TEST SETUP HELPER ---
+(defn- make-bootstrap-prereqs!
+  "Creates the necessary files for a `bootstrap` command to run successfully.
+  Crucially, it does NOT create the `generations/` directory."
+  [target-dir]
+  (let [seeds-dir (io/file target-dir "seeds")]
+    (.mkdirs seeds-dir)
+    (spit (io/file seeds-dir "seed-object-prompt.txt") "The seed! {{INPUT_TEXT}}")
+    (spit (io/file seeds-dir "improve-meta-prompt.txt") "Refine this: {{OBJECT_PROMPT}}")
+    (spit (io/file target-dir "bootstrap.edn")
+          (pr-str {:seed "seeds/seed-object-prompt.txt"
+                   :refine "seeds/improve-meta-prompt.txt"}))))
+
 
 (deftest vary-command-test
   (let [exp-dir (get-temp-dir)
         ctx (exp/new-experiment-context exp-dir)
-        ;; Mock LLM response now includes the full generation metadata structure
         mock-llm-response {:content "New offspring content"
                            :generation-metadata {:provider          :mock-provider
                                                  :model             "mock-provider/mock-model"
@@ -25,10 +38,10 @@
         mock-sender-fn (fn [_model-name _prompt-body] mock-llm-response)
         mock-template-caller (fn [model-name template vars] (llm/call-model-template model-name template vars mock-sender-fn))]
 
-    ;; Setup a complete experiment with a gen-0 population
-    (make-temp-exp-dir! exp-dir)
-    ;; The test helper creates a 'refine' link, which the vary command now expects.
-    (cmd/bootstrap! (assoc ctx ::bootstrap-spec (io/file exp-dir "bootstrap.edn")))
+    ;; CORRECTED: Use the correct, minimal setup function.
+    (make-bootstrap-prereqs! exp-dir)
+    ;; Now this bootstrap call will succeed.
+    (cmd/bootstrap! ctx)
 
 
     (testing "Pre-condition: gen-0 exists and has 1 member"
@@ -36,7 +49,6 @@
       (is (= 1 (count (pop/load-population ctx 0)))))
 
     (testing "vary! adds offspring with full generation metadata to its header"
-      ;; Run vary! command
       (vary/vary! ctx {:call-template-fn mock-template-caller})
 
       (let [varied-pop (pop/load-population ctx 0)
@@ -46,8 +58,6 @@
         (is (some? offspring-header) "An offspring with parent metadata should exist.")
         (is (= ["P1"] (:parents offspring-header)) "Offspring should list P1 as its parent.")
 
-        ;; Verify new generation metadata is present
-        ;; CORRECTED: Asserting for a string, which is what the YAML parser returns for values.
         (is (= "mock-provider" (:provider offspring-header)))
         (is (= "mock-provider/mock-model" (:model offspring-header)))
         (is (= 120 (:token-in offspring-header)))
@@ -55,5 +65,4 @@
         (is (= 0.0025 (:cost-usd-snapshot offspring-header)))
         (is (= 750 (:duration-ms offspring-header)))
 
-        ;; Verify existing generator metadata is still present
         (is (some? (get-in offspring-header [:generator :model])) "Generator block should still exist.")))))

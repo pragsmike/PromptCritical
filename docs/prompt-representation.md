@@ -203,3 +203,73 @@ Find a more precise way to state this instruction:
 Discard all HTML tags.
 
 ```
+
+# Metadata key ordering is preserved
+
+Because the system enforces a canonical, alphabetical sorting of keys every time it writes a prompt file (`:sort-keys true`), the `git diff` will be minimal and semantic.
+
+Let's walk through the exact scenario:
+
+### Step 1: Initial State (Commit A)
+
+A prompt file `P123.prompt` is created by `pcrit bootstrap`. Its header has a few initial keys. The file written to disk will have those keys sorted alphabetically.
+
+```yaml
+# P123.prompt in Commit A
+---
+created-at: "2025-07-11T12:00:00Z"
+id: "P123"
+prompt-type: :object-prompt
+sha1-hash: "7fd8e8e70235bc6fd5c17fd8e8e70235bc6fd5c1"
+---
+The prompt body...```
+This file is committed to Git.
+
+### Step 2: The Update
+
+Later, `pcrit select` runs and determines that `P123` is a survivor. It calls `pdb/update-metadata` to add a `:selection` key to the prompt's header.
+
+### Step 3: New State (Commit B)
+
+The `pdb` component reads the old file, gets the header map, adds the new `:selection` key, and then writes the *entire file* back to disk. During the write, the `:sort-keys true` option ensures the new set of keys is again sorted alphabetically.
+
+The `:selection` key will be inserted in its correct alphabetical position between `:prompt-type` and `:sha1-hash`.
+
+```yaml
+# P123.prompt in Commit B
+---
+created-at: "2025-07-11T12:00:00Z"
+id: "P123"
+prompt-type: :object-prompt
+selection:
+- contest-name: "web-cleanup-v4"
+  policy: "top-N=5"
+  select-run: "2025-07-11T14:00:00Z"
+sha1-hash: "7fd8e8e70235bc6fd5c17fd8e8e70235bc6fd5c1"
+---
+The prompt body...
+```
+
+### Step 4: The `git diff`
+
+When you run `git diff` between Commit A and Commit B, Git will perform a line-by-line comparison. It will see that all the old lines (`created-at`, `id`, etc.) are still present and in the exact same order. The only change is the *addition* of the new `selection` block.
+
+The resulting diff would look like this:
+
+```diff
+--- a/pdb/P123.prompt
++++ b/pdb/P123.prompt
+@@ -3,6 +3,10 @@
+ id: "P123"
+ prompt-type: :object-prompt
++selection:
++- contest-name: "web-cleanup-v4"
++  policy: "top-N=5"
++  select-run: "2025-07-11T14:00:00Z"
+ sha1-hash: "7fd8e8e70235bc6fd5c17fd8e8e70235bc6fd5c1"
+ ---
+ The prompt body...
+
+```
+
+This behavior is a crucial and intentional design feature. It makes the Git history clean, auditable, and free of cosmetic noise, directly supporting the project's core goal of **Immutable Provenance**.

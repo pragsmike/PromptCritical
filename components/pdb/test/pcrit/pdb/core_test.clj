@@ -141,3 +141,4 @@
       (let [read-p (pdb/read-prompt *db-dir* "P99")]
         (is (= (util/canonicalize-text crlf-body) (:body read-p)))
         (is (= "P99" (get-in read-p [:header :id])))))))
+

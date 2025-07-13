@@ -37,9 +37,10 @@
 (defn- prompt-record->string [record]
   (let [{:keys [header body]} record
         full-header-str (if (seq header)
-                          (str "---\n"
-                               (yaml/generate-string header :dumper-options {:flow-style :block :sort-keys true})
-                               "---\n")
+                          (let [sorted-header (into (sorted-map) header)]
+                            (str "---\n"
+                                 (yaml/generate-string sorted-header :dumper-options {:flow-style :block})
+                                 "---\n"))
                           "")
         canonical-header (util/canonicalize-text full-header-str)]
     (str canonical-header body)))
