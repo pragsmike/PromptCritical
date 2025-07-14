@@ -3,38 +3,39 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
-            [pcrit.experiment.interface :as exp]
             [pcrit.expdir.interface :as expdir]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
-            [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir with-quiet-logging]]))
+            [pcrit.test-helper.interface :as th-generic]
+            [pcrit.command.test-helper :as th-cmd]))
 
-(use-fixtures :each with-temp-dir with-quiet-logging)
+(use-fixtures :each th-generic/with-temp-dir th-generic/with-quiet-logging)
 
 (defn- setup-select-test-env!
-  "Creates a test experiment with 10 prompts in gen-0 and a contest report.
+  "Creates a test experiment with 10 prompts in the PDB, gen-0, and a contest report.
   Scores are generated such that P1 has the highest score (10.0) and P10 has the lowest (1.0)."
   []
-  (let [exp-dir (get-temp-dir)
-        ctx (exp/new-experiment-context exp-dir)
+  ;; 1. Use the shared helper to create a bootstrapped experiment.
+  ;; This gives us a ctx, pdb, and gen-0 with P1 (object) and P2 (meta).
+  (let [ctx (th-cmd/setup-bootstrapped-exp! (th-generic/get-temp-dir))
         pdb-dir (expdir/get-pdb-dir ctx)]
-    (expdir/create-experiment-dirs! ctx)
 
-    ;; 1. Create 10 prompts in the PDB
-    (let [prompts (for [i (range 1 11)]
-                    (pop/ingest-prompt ctx (str "Prompt " i "{{INPUT_TEXT}}")))]
-      ;; 2. Create gen-0 with all 10 prompts
-      (pop/create-new-generation! ctx prompts)
+    ;; 2. Ingest the remaining prompts needed for the test directly into the PDB.
+    ;; The bootstrap created P1 and P2, so we start from 3.
+    (doseq [i (range 3 11)]
+      (pdb/create-prompt pdb-dir (str "Prompt " i)))
 
-      ;; 3. Create a contest report for gen-0
-      (let [contest-dir (expdir/get-contest-dir ctx 0 "test-contest")
-            report-file (io/file contest-dir "report.csv")
-            csv-content (->> (for [i (range 1 11)]
-                               (str "P" i "," (- 11.0 i))) ; P1=10.0, P2=9.0, ... P10=1.0
-                             (cons "prompt,score")
-                             (str/join "\n"))]
-        (.mkdirs contest-dir)
-        (spit report-file csv-content)))
+    ;; 3. Create the contest report file that the 'select' command will use.
+    ;; Note: gen-0's population directory doesn't need to match this report,
+    ;; as `select!` only reads the report and then looks up prompts in the PDB.
+    (let [contest-dir (expdir/get-contest-dir ctx 0 "test-contest")
+          report-file (io/file contest-dir "report.csv")
+          csv-content (->> (for [i (range 1 11)]
+                             (str "P" i "," (- 11.0 i))) ; P1=10.0, P2=9.0, ... P10=1.0
+                           (cons "prompt,score")
+                           (str/join "\n"))]
+      (.mkdirs contest-dir)
+      (spit report-file csv-content))
     ctx))
 
 (deftest select-command-happy-path-test

@@ -25,7 +25,36 @@
       (.getCanonicalPath user-dir-file)
       (.getCanonicalPath (io/file user-cwd user-dir-str)))))
 
-;; --- Command Handlers ---
+;; --- NEW: Central Command Dispatcher ---
+(defn- dispatch-exp-command
+  "Handles boilerplate for commands that operate on an experiment directory.
+  Resolves the experiment path, creates a context, checks for required options,
+  and then calls the provided command function."
+  [parsed-args cmd-name cmd-fn & {:keys [required-opts takes-opts?]}]
+  (let [{:keys [options arguments]} parsed-args]
+    (cond
+      (empty? arguments)
+      (log/error "The" (str "'" cmd-name "'") "command requires an <experiment-dir> argument.")
+
+      (some (fn [opt-key] (not (contains? options opt-key))) required-opts)
+      (log/error "The" (str "'" cmd-name "'") "command is missing required option(s):"
+                 (str/join ", " (map #(str "--" (name %))
+                                     (filter #(not (contains? options %)) required-opts))))
+
+      :else
+      (let [user-cwd (:pcrit-user-cwd options)
+            resolved-dir (resolve-exp-dir (first arguments) user-cwd)
+            ctx (exp/new-experiment-context resolved-dir)
+            ;; Also resolve the --inputs path if it exists
+            resolved-opts (if (:inputs options)
+                            (assoc options :inputs (resolve-exp-dir (:inputs options) user-cwd))
+                            options)]
+        (if takes-opts?
+          (cmd-fn ctx resolved-opts)
+          (cmd-fn ctx))))))
+
+
+;; --- Command Handlers (Now Refactored) ---
 (defn- do-init [{:keys [options arguments]}]
   (let [user-cwd (:pcrit-user-cwd options)]
     (if (empty? arguments)
@@ -36,65 +65,31 @@
         (when (and exit-code (not (zero? exit-code)))
           (System/exit exit-code))))))
 
-(defn- do-bootstrap [{:keys [options arguments]}]
-  (let [user-cwd (:pcrit-user-cwd options)]
-    (if (empty? arguments)
-      (log/error "The 'bootstrap' command requires an <experiment-dir> argument.")
-      (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
-            ctx (exp/new-experiment-context resolved-dir)]
-        (cmd/bootstrap! ctx)))))
+(defn- do-bootstrap [parsed-args]
+  (dispatch-exp-command parsed-args "bootstrap" cmd/bootstrap!))
 
-(defn- do-vary [{:keys [options arguments]}]
-  (let [user-cwd (:pcrit-user-cwd options)]
-    (if (empty? arguments)
-      (log/error "The 'vary' command requires an <experiment-dir> argument.")
-      (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
-            ctx (exp/new-experiment-context resolved-dir)]
-        (cmd/vary! ctx)))))
+(defn- do-vary [parsed-args]
+  (dispatch-exp-command parsed-args "vary" cmd/vary!))
 
-(defn- do-evaluate [{:keys [options arguments]}]
-  (let [user-cwd (:pcrit-user-cwd options)]
-    (if (empty? arguments)
-      (log/error "The 'evaluate' command requires an <experiment-dir> argument.")
-      (if-not (:inputs options)
-        (log/error "The 'evaluate' command requires an --inputs <directory> option.")
-        (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
-              ctx (exp/new-experiment-context resolved-dir)
-              resolved-opts (if (:inputs options)
-                              (assoc options :inputs (resolve-exp-dir (:inputs options) user-cwd))
-                              options)]
-          (cmd/evaluate! ctx resolved-opts))))))
+(defn- do-evaluate [parsed-args]
+  (dispatch-exp-command parsed-args "evaluate" cmd/evaluate!
+    :takes-opts? true
+    :required-opts [:inputs]))
 
-(defn- do-select [{:keys [options arguments]}]
-  (let [user-cwd (:pcrit-user-cwd options)]
-    (if (empty? arguments)
-      (log/error "The 'select' command requires an <experiment-dir> argument.")
-      (if-not (:from-contest options)
-        (log/error "The 'select' command requires a --from-contest <name> option.")
-        (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
-              ctx (exp/new-experiment-context resolved-dir)]
-          (cmd/select! ctx options))))))
+(defn- do-select [parsed-args]
+  (dispatch-exp-command parsed-args "select" cmd/select!
+    :takes-opts? true
+    :required-opts [:from-contest]))
 
-(defn- do-stats [{:keys [options arguments]}]
-  (let [user-cwd (:pcrit-user-cwd options)]
-    (if (empty? arguments)
-      (log/error "The 'stats' command requires an <experiment-dir> argument.")
-      (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
-            ctx (exp/new-experiment-context resolved-dir)]
-        (cmd/stats! ctx options)))))
+(defn- do-stats [parsed-args]
+  (dispatch-exp-command parsed-args "stats" cmd/stats!
+    :takes-opts? true))
 
-(defn- do-evolve [{:keys [options arguments]}]
-  (let [user-cwd (:pcrit-user-cwd options)]
-    (if (empty? arguments)
-      (log/error "The 'evolve' command requires an <experiment-dir> argument.")
-      (if-not (:inputs options)
-        (log/error "The 'evolve' command requires an --inputs <directory> option.")
-        (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
-              ctx (exp/new-experiment-context resolved-dir)
-              resolved-opts (if (:inputs options)
-                              (assoc options :inputs (resolve-exp-dir (:inputs options) user-cwd))
-                              options)]
-          (cmd/evolve! ctx resolved-opts))))))
+(defn- do-evolve [parsed-args]
+  (dispatch-exp-command parsed-args "evolve" cmd/evolve!
+    :takes-opts? true
+    :required-opts [:inputs]))
+
 
 (def command-specs
   {"init"      {:doc "Creates a new, minimal experiment skeleton directory."
@@ -179,7 +174,7 @@
         :else
         (if-let [spec (get command-specs command)]
           (let [all-valid-options (into (:options spec) global-cli-options)
-                {command-opts :options, final-args :arguments, :as second-pass}
+                {command-opts :options, :as second-pass}
                 (cli/parse-opts params all-valid-options)]
             (if-let [errors (:errors second-pass)]
               (exit-fn 1 (out-fn (error-msg errors)))
@@ -190,8 +185,7 @@
                   (exit-fn 0 (out-fn (command-usage command spec (:summary second-pass))))
 
                   :else
-                  ((:handler spec) {:options   final-opts
-                                    :arguments final-args})))))
+                  ((:handler spec) (assoc second-pass :options final-opts))))))
           (exit-fn 1 (out-fn (str "Unknown command: " command "\n" (usage (:summary first-pass))))))))))
 
 (defn -main [& args]

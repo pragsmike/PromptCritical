@@ -13,7 +13,6 @@
   [model-name meta-prompt parent-prompt run-id call-template-fn]
   (let [template (:body meta-prompt)
         vars {:OBJECT_PROMPT (:body parent-prompt)}]
-    (log/info "Applying meta-prompt" (get-in meta-prompt [:header :id]) "to" (get-in parent-prompt [:header :id]))
     (let [{:keys [content generation-metadata error]} (call-template-fn model-name template vars)]
       (when-not error
         (let [ancestry-metadata {:parents [(get-in parent-prompt [:header :id])]
@@ -23,18 +22,36 @@
               final-metadata (merge ancestry-metadata generation-metadata)]
           {:header final-metadata :body content})))))
 
-(defn- gen-offspring
-  "The 'strategy' function for generating offspring. For now, it implements
-  a single, hardcoded strategy: apply the 'improve' meta-prompt. This function
-  is the intended extension point for future multimethod-based strategies."
+;; --- Pluggable Offspring Generation Strategy ---
+
+(defn- dispatch-strategy [evo-params]
+  (get-in evo-params [:vary :strategy] :refine))
+
+(defmulti gen-offspring
+  "Generates offspring using a pluggable strategy. Dispatches on the value of
+  [:vary :strategy] in evolution-parameters.edn, defaulting to :refine."
+  (fn [_ctx evo-params _run-id _parent-prompt _call-template-fn]
+    (dispatch-strategy evo-params)))
+
+(defmethod gen-offspring :refine
   [ctx evo-params run-id parent-prompt call-template-fn]
-  ;; CORRECTED: Default to a valid, fully-qualified model name.
   (let [model-name (get-in evo-params [:vary :model] "openai/gpt-4o-mini")
-        _ (log/info (str "Using model '" model-name "' for variation."))
-        ;; This is the strategy-specific part: choosing the meta-prompt.
         improve-prompt (pop/read-linked-prompt ctx "refine")]
-    (when improve-prompt
-      (breed-prompt model-name improve-prompt parent-prompt run-id call-template-fn))))
+    (if improve-prompt
+      (do
+        (log/info "Using :refine strategy. Applying meta-prompt" (get-in improve-prompt [:header :id]) "to" (get-in parent-prompt [:header :id]))
+        (breed-prompt model-name improve-prompt parent-prompt run-id call-template-fn))
+      (do
+        (log/warn "Vary strategy is ':refine' but the linked prompt 'refine' was not found. Skipping parent:" (get-in parent-prompt [:header :id]))
+        nil))))
+
+(defmethod gen-offspring :default
+  [_ctx evo-params _run-id parent-prompt _call-template-fn]
+  (log/warn "Unknown vary strategy" (dispatch-strategy evo-params) "requested for parent" (get-in parent-prompt [:header :id]) ". Skipping.")
+  nil)
+
+
+;; --- Main Command Function ---
 
 (defn vary!
   "Adds new offspring to the latest generation by applying meta-prompts.
