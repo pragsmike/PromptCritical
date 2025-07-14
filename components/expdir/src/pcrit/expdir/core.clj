@@ -40,10 +40,10 @@
 
 
 (defn create-experiment-dirs!
-  "Creates the standard subdirectories within a given experiment root directory."
+  "Creates the standard subdirectories required for a pre-bootstrapped experiment.
+  It intentionally does NOT create the 'generations' directory."
   [ctx]
   (.mkdirs (get-pdb-dir ctx))
-  (.mkdirs (get-generations-dir ctx))
   (.mkdirs (get-link-dir ctx))
   (.mkdirs (get-seeds-dir ctx)))
 

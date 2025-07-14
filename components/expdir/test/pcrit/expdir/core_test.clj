@@ -40,9 +40,10 @@
       (expdir/create-experiment-dirs! ctx)
 
       (is (.isDirectory pdb-dir))
-      (is (.isDirectory gens-dir))
       (is (.isDirectory links-dir))
       (is (.isDirectory seeds-dir))
+      ;; CORRECTED: Assert that the generations dir is NOT created.
+      (is (not (.exists gens-dir)) "Generations dir should NOT be created by this fn.")
 
       ;; Second call (should not throw an error)
       (expdir/create-experiment-dirs! ctx)

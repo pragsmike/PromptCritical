@@ -24,33 +24,3 @@
         (test-fn))                             ; ← run the test
       (finally
         (delete-recursively tmp-dir)))))       ; ← always runs
-
-(defn create-experiment-dirs!
-  "Creates the standard subdirectories (pdb, generations, links, seeds)
-  within a given experiment root directory. This operation is idempotent."
-  [exp-root-dir]
-  (doseq [subdir ["pdb" "generations" "links" "seeds"]]
-    (.mkdirs (io/file exp-root-dir subdir))))
-
-(defn make-temp-exp-dir!
-  "Creates and populates a self-contained experiment directory for testing.
-
-  - Creates the standard subdirectory layout (pdb, seeds, etc.).
-  - Creates a 'seeds' subdirectory with sample raw prompt files.
-  - Creates a 'bootstrap.edn' manifest in the root, pointing to the seed files.
-
-  This makes the directory suitable for testing the bootstrap process."
-  [exp-root-dir]
-  (create-experiment-dirs! exp-root-dir)
-  (let [seeds-dir (io/file exp-root-dir "seeds")]
-    ;; Create raw prompt files in the 'seeds' directory
-    (spit (io/file seeds-dir "seed-prompt.txt") "This is the initial object prompt. {{INPUT_TEXT}}")
-    (spit (io/file seeds-dir "refine-prompt.txt") "Refine this prompt: {{OBJECT_PROMPT}}")
-    (spit (io/file seeds-dir "vary-prompt.txt") "Vary this prompt: {{OBJECT_PROMPT}}")
-
-    ;; Create the bootstrap.edn manifest in the experiment root
-    (spit (io/file exp-root-dir "bootstrap.edn")
-          (pr-str {:seed "seeds/seed-prompt.txt"
-                   :refine "seeds/refine-prompt.txt"
-                   :vary "seeds/vary-prompt.txt"}))))
-

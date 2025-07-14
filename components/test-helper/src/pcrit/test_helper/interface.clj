@@ -13,5 +13,3 @@
   tmpdir/with-temp-dir)
 
 (defn get-temp-dir [] tmpdir/*tmp-dir*)
-
-(def make-temp-exp-dir! tmpdir/make-temp-exp-dir!)
