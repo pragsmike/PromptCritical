@@ -118,10 +118,10 @@ workspace/
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **init**                                           | Creates the initial experiment files.                   | One-time step that scaffolds a runnable experiment directory, including the `seeds/` folder, `bootstrap.edn`, and default configurations.                                     |
 | **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that ingests prompts from `seeds/` into the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                |
-| **vary**                                           | Mutates the current generation.                         | Generates new candidate prompts by mutating or recombining existing ones, adding them to the *current* population directory (`generations/gen-000/population`, …). |
+| **vary**                                           | Mutates the current generation.                         | Generates new candidate prompts by mutating or recombining existing ones, adding them to the *current* population directory (`generations/gen-000/population`, …). Now supports multiple strategies like `:refine` and `:crossover`. |
 | **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
 | **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
-| **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `report.csv` and creates a **new generation folder** populated with symlinks to the survivors.                                  |
+| **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `report.csv` and creates a **new generation folder** populated with symlinks to the survivors. Now supports policies like `top-N` and `tournament`. |
 | **stats**                                          | An analysis command. Does not mutate state.             | Reads one or more `report.csv` files and displays aggregated statistics about cost and performance scores.                                                                    |
 | **population (`generations/gen-NNN/population/`)** | See *Directory Layout* section.                         | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                                  |
 | **experiment directory (`expdir/`)**               | Portable & reproducible.                                | Root folder that bundles prompt generations, results, Failter specs, and metadata for a single evolutionary run.                                                              |
@@ -133,17 +133,13 @@ workspace/
 
 ---
 
-## 📦 Current State (Post-Refactoring)
+## 📦 Current State (v0.4): Advanced Evolution Strategies
 
-The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. All core commands are now fully implemented.
+The project has undergone a significant architectural refactoring into a clean Polylith structure. With the completion of the v0.4 milestone, the evolutionary engine is now equipped with more sophisticated, pluggable operators for selection and mutation, mitigating the risk of premature convergence on suboptimal prompts.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`, `stats!`, `evolve!`).
-*   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
-*   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
-*   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
-*   **`pcrit.pop`**: Handles core prompt domain logic, including population management.
-*   **`pcrit.reports`**: Parses contest result files like `report.csv`.
-*   **`pcrit.failter`**: A dedicated adapter for running the external Failter toolchain.
+*   **Tournament Selection**: The `select` command now supports a `tournament-k=N` policy, which helps preserve population diversity by giving lower-scoring prompts a chance to survive into the next generation.
+*   **Crossover Mutation**: The `vary` command can be configured to use a `:crossover` strategy, which breeds the top two performers of a generation to create a new hybrid offspring.
+*   **Automated `evolve` Loop**: The high-level `evolve` command composes these steps into a fully automated loop, allowing for multi-generation experiments to be run with a single command.
 
 ---
 
@@ -157,35 +153,13 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 
 ---
 
-## 🚧 Current Milestone (v0.3): The Automated Evolutionary Loop
-
-The goal of this milestone was to implement the high-level `evolve` command to compose the core `vary` → `evaluate` → `select` steps into a fully automated loop.
-
-1.  **Initialize an Experiment** (`✅ Implemented`)
-    ```bash
-    pcrit init my-experiment/
-    ```
-
-2.  **Bootstrap an Experiment** (`✅ Implemented`)
-    ```bash
-    pcrit bootstrap my-experiment/
-    ```
-
-3.  **Evolve the Population** (`✅ Implemented`)
-    Runs the full `vary` -> `evaluate` -> `select` cycle automatically for a specified number of generations or until a cost budget is met.
-    ```bash
-    pcrit evolve my-experiment/ --generations 5 --inputs path/to/my/inputs/
-    ```
-
----
-
 ## 🗺 Roadmap Snapshot
 
 | Milestone | New Capability |
 |-----------|----------------|
 | **v0.2**  | DONE Implement core commands (`init`, `stats`, etc). |
 | **v0.3**  | DONE Automated `evolve` command that composes the v0.2 commands. |
-| **v0.4**  | Advanced selection & mutation operators. |
+| **v0.4**  | DONE Advanced selection & mutation operators (tournament, crossover). |
 | **v0.5**  | Surrogate critic to pre-filter variants before Failter. |
 | **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability. |
 | **v0.7**  | Reporting dashboard (`pcrit.web` base). |

@@ -29,13 +29,16 @@ The user runs `pcrit bootstrap my-experiment`. This command ingests the seed pro
 my-experiment/
 ├── links/
 │   ├── improve -> ../pdb/P2.prompt
+│   ├── crossover -> ../pdb/P3.prompt
 │   └── seed -> ../pdb/P1.prompt
 ├── pdb/
 │   ├── P1.prompt   ; The seed :object-prompt
-│   ├── P2.prompt   ; A :meta-prompt
-│   └── pdb.counter ; Contains "2"
+│   ├── P2.prompt   ; A :meta-prompt (:refine)
+│   ├── P3.prompt   ; A :meta-prompt (:crossover)
+│   └── pdb.counter ; Contains "3"
 ├── seeds/
 │   ├── improve-meta-prompt.txt
+│   ├── crossover-meta-prompt.txt
 │   └── seed-object-prompt.txt
 ├── bootstrap.edn
 └── generations/
@@ -46,55 +49,55 @@ my-experiment/
 
 #### State 2: After `pcrit vary`
 
-The user runs `vary` to "breed" the initial population, creating new candidates. This command **mutates the current generation in-place**.
+The user runs `vary` to "breed" the population, creating new candidates. This command **mutates the current generation in-place** and its behavior depends on the `:strategy` configured in `evolution-parameters.edn`.
 
-**User Command:**
-```bash
-pcrit vary my-experiment/
-```
-**Actions:**
+**User Command:** `pcrit vary my-experiment/`
+
+**Behavior 1: `:refine` strategy (default)**
 1.  The `vary` command identifies the latest generation, `gen-000`.
-2.  It applies meta-prompts to the population members of `gen-000`, generating new object-prompts, say `P3` and `P4`.
-3.  It adds symlinks for the new offspring (`P3`, `P4`) into the **existing `gen-000/population/` directory**.
+2.  It applies the `refine` meta-prompt to each member of the `gen-000` population, generating new object-prompts, say `P4` and `P5`.
+3.  It adds symlinks for the new offspring (`P4`, `P5`) into the **existing `gen-000/population/` directory**.
 
-**Directory Structure:**
+**Directory Structure after `:refine`:**
 ```
 my-experiment/
 └── generations/
     └── gen-000/
         └── population/
             ├── P1.prompt -> ../../../pdb/P1.prompt
-            ├── P3.prompt -> ../../../pdb/P3.prompt
-            └── P4.prompt -> ../../../pdb/P4.prompt
+            ├── P4.prompt -> ../../../pdb/P4.prompt
+            └── P5.prompt -> ../../../pdb/P5.prompt
 ```
+
+**Behavior 2: `:crossover` strategy (on `gen-1`)**
+Let's assume we've already run `evaluate` and `select` on `gen-0`, and now we are at `gen-1`.
+1.  The `vary` command identifies the latest generation, `gen-1`.
+2.  It looks for contest reports inside the *previous* generation's directory (`gen-0/contests/`).
+3.  It finds the top two performing prompts from the latest report (e.g., `P1` and `P3`).
+4.  It applies the `crossover` meta-prompt to these two parents, generating a single new offspring, `P6`.
+5.  It adds a symlink for the new offspring (`P6`) into the **current `gen-1/population/` directory**.
 
 #### State 3: After `pcrit evaluate`
 
-The user evaluates the now-expanded population of Generation 0.
+The user evaluates the now-expanded population of the current generation.
 
-**User Command:**
-```bash
-pcrit evaluate my-experiment/ \
-  --generation 0 \
-  --name "initial-web-cleanup" \
-  --inputs path/to/web-articles/
-```
+**User Command:** `pcrit evaluate my-experiment/ --name "my-contest" --inputs ...`
 
 **Actions:**
-1.  The `evaluate` command resolves the path to `my-experiment/generations/gen-000/`.
-2.  It creates a contest directory: `.../gen-000/contests/initial-web-cleanup/`.
+1.  The `evaluate` command resolves the path to the latest generation directory.
+2.  It creates a contest directory: `.../gen-N/contests/my-contest/`.
 3.  It generates a `spec.yml` file in that directory, defining the contest for Failter.
-4.  It shells out to `failter run --spec ...`, which reads the spec and populates its own idempotent `failter-artifacts/` directory.
+4.  It shells out to `failter run --spec ...`.
 5.  It captures the JSON output from Failter and processes it into the final `report.csv`.
 
 **Final Directory Structure of the Contest:**
 ```my-experiment/
 └── generations/
-    └── gen-000/
+    └── gen-N/
         ├── population/
         │   └── ... (unchanged)
         └── contests/
-            └── initial-web-cleanup/
+            └── my-contest/
                 ├── spec.yml                  ; <-- Declarative spec for Failter
                 ├── failter-artifacts/        ; <-- Idempotent state dir for Failter
                 │   └── ...
@@ -107,25 +110,22 @@ pcrit evaluate my-experiment/ \
 
 The user now runs the `select` command to winnow the population. This is the command that **creates the next generation**.
 
-**User Command:**
-```bash
-pcrit select my-experiment/ --from-contest "initial-web-cleanup"
-```
+**User Command:** `pcrit select my-experiment/ --from-contest "my-contest"`
 
 **Actions:**
 1.  The `select` command reads `report.csv` from the specified contest.
-2.  It applies a selection strategy (e.g., "keep `P1` and `P4`").
-3.  It calls `pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
+2.  It applies a selection policy (e.g., `top-N=5` or `tournament-k=2`), picking survivors.
+3.  It creates a new generation directory (`gen-N+1`) containing links to only the survivors.
 
 **Directory Structure After Selection:**
 ```
 my-experiment/
 └── generations/
-    ├── gen-000/
+    ├── gen-N/
     │   └── ... (unchanged, now a historical record)
-    └── gen-001/
+    └── gen-N+1/
         └── population/
             ├── P1.prompt -> ../../../pdb/P1.prompt
             └── P4.prompt -> ../../../pdb/P4.prompt
 ```
-This completes one full cycle. The experiment now has a new generation, `gen-001`, containing the fittest members of the previous generation, ready for the next `vary` or `evaluate` command.
+This completes one full cycle. The experiment now has a new generation, ready for the next `vary` or `evaluate` command.

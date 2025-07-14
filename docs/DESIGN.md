@@ -1,7 +1,7 @@
 # PromptCritical System Design
 
-**Version 2.1 · 2025‑07‑14**
-**Status:** *v0.3 Automated Evolution Complete*
+**Version 2.2 · 2025‑07‑14**
+**Status:** *v0.4 Advanced Evolution Strategies Complete*
 
 ---
 
@@ -35,30 +35,6 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 | **Component** | `pcrit.test-helper` | Shared utilities for the test suite |
 | **Base** | `pcrit.cli` | **Command‑line interface** (`pcrit …`) entry point |
 
-```
-workspace/
-├── components/
-│   ├── command/      ; high-level user commands (init, bootstrap, evolve, etc.)
-│   ├── experiment/   ; logical experiment context
-│   ├── expdir/       ; experiment directory layout logic
-│   ├── failter/      ; adapter for the external failter tool
-│   ├── pdb/          ; prompt DB internals
-│   ├── pop/          ; population + analysis logic
-│   ├── reports/      ; contest result parsing
-│   ├── config/       ; runtime config
-│   ├── log/          ; logging helpers
-│   ├── llm/          ; LLM HTTP client
-│   └── test-helper/  ; shared test utilities
-└── bases/
-    └── cli/          ; main – invokes components
-```
-
-### 2.1  Why Polylith?
-
-*   **Clear contracts.** Components expose stable, public interfaces, hiding implementation details.
-*   **Incremental builds/tests.** Polylith’s tooling runs tests only for affected components, enabling rapid development.
-*   **Multi‑base future.** Additional bases (e.g., `pcrit.web` dashboard) can reuse the `pcrit.command` component without code duplication.
-
 ---
 
 ## 3  Core Components
@@ -73,20 +49,23 @@ The descriptions from the previous version remain accurate.
 
 ---
 
-## 5  Experiment Flow (v0.3)
+## 5  Experiment Flow (v0.4)
 
 ```
 bootstrap → [ vary → evaluate → select ]*
 ```
-The new `evolve` command automates the core loop.
+The high-level `evolve` command automates the core loop, which is now enhanced with pluggable strategies for variation and selection.
 
 1.  **Bootstrap** (`pcrit bootstrap <exp-dir>`)
     *   The `cli` base calls the `pcrit.command/bootstrap!` function to create `gen-0`.
 
 2.  **Evolve** (`pcrit evolve <exp-dir> --generations N ...`)
     *   The `cli` base calls `pcrit.command/evolve!`, which loops for `N` generations.
-    *   In each loop, it calls `pcrit.command/vary!`, `pcrit.command/evaluate!`, and `pcrit.command/select!` in sequence.
-    *   It tracks cumulative cost and can halt early if a budget is exceeded.
+    *   In each loop, it calls the core command functions in sequence.
+    *   **`vary!`**: Now supports multiple strategies (e.g., `:refine`, `:crossover`) configured in `evolution-parameters.edn`. This step breeds new candidate prompts.
+    *   **`evaluate!`**: Orchestrates a `Failter` contest to score all prompts in the current population.
+    *   **`select!`**: Now supports multiple policies (e.g., `--policy top-N=5`, `--policy tournament-k=2`). This step winnows the population and creates the next generation.
+    *   The loop tracks cumulative cost and can halt early if a budget is exceeded.
 
 ---
 
@@ -104,9 +83,10 @@ The descriptions from the previous version remain accurate.
 
 ## 8  Open Issues & Next Steps
 
-*   **Implement `evolve` command (v0.3)**: (`✅ Done`) The `evolve!` function and corresponding CLI command have been implemented, automating the core evolutionary cycle.
-*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `evolve` loop (using a mocked Failter) in the CI matrix. This is the next priority.
-*   **Refactor test helpers**: Consolidate test setup logic into a shared `test-helper` namespace to reduce duplication and improve test reliability.
+*   **Implement advanced operators (v0.4)**: (`✅ Done`) The `select` and `vary` commands now support pluggable strategies, including Tournament Selection and Crossover, to promote population diversity.
+*   **Refactor test helpers (v0.4)**: (`✅ Done`) Test setup logic has been consolidated into shared helper namespaces, improving test reliability and maintainability.
+*   **Design Surrogate Critic (v0.5)**: This is the next major feature. The goal is to design and implement a component that can pre-filter prompt variations using cheaper heuristics or models before they are sent to the expensive `Failter` evaluation. This will be critical for managing cost at scale.
+*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `evolve` loop (using a mocked Failter) in the CI matrix. This remains a high priority for ensuring system stability.
 
 ---
 

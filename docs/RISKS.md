@@ -1,17 +1,17 @@
 # PromptCritical Project Risks
 
-**Version 2.0 · 2025‑07‑14**
-**Status:** *Reviewed post-v0.3 Failter refactoring*
+**Version 3.0 · 2025‑07‑14**
+**Status:** *Reviewed post-v0.4 Advanced Evolution Strategies*
 
 Here are ten key risks for the PromptCritical project, ranked from most to least severe.
 
 ## 1. **Premature Convergence to Local Optima**
-**Risk**: A simplistic selection strategy could cause the population to lose diversity and converge on a suboptimal solution, preventing the discovery of better alternatives.
+**Risk**: A simplistic or overly greedy selection strategy could cause the population to lose diversity and converge on a suboptimal solution, preventing the discovery of better alternatives.
 
 **Mitigation**:
-- The `select` command defaults to a `top-N=5` policy, which presents a direct risk of premature convergence. Users can mitigate this for more exploratory tasks by passing a higher value to the `--policy` flag (e.g., `--policy top-N=20`).
-- The `vary` command includes operators for random mutation to maintain exploration.
-- Future versions will introduce more advanced selection strategies (e.g., tournament selection, diversity-preserving algorithms).
+- **(Largely Mitigated)** The primary mitigation is the `select` command's support for **Tournament Selection** via the `--policy tournament-k=N` flag. This strategy is explicitly designed to preserve population diversity by giving lower-scoring individuals a chance to survive based on their performance within a smaller, random subset of the population.
+- The `top-N` policy remains available for more exploitative, "greedy" selection when desired.
+- The `vary` command's mutation operators continue to introduce new genetic material.
 - Monitor population diversity metrics in `contest-metadata.edn` to detect convergence.
 
 ## 2. **Evaluation Brittleness/Inconsistency**
@@ -27,9 +27,9 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: As population size or the number of generations grows, API costs from the `vary` and `evaluate` commands could quickly become prohibitive.
 
 **Mitigation**:
-- Implement cost budgets and tracking per-experiment. The upcoming `evolve` command will include a `--max-cost` flag.
+- Implement cost budgets and tracking per-experiment. The `evolve` command includes a `--max-cost` flag.
 - Use cheaper models in the `vary` step by configuring them in `evolution-parameters.edn`, reserving more expensive models for the `evaluate` step.
-- Develop "surrogate critics" (cheaper models or heuristics) to pre-filter prompts before a full evaluation contest.
+- Develop "surrogate critics" (cheaper models or heuristics) to pre-filter prompts before a full evaluation contest. (v0.5 Milestone)
 - Implement early-stopping rules based on cost thresholds.
 
 ## 4. **Data Leakage in Evaluation**
@@ -44,7 +44,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: The `{{FIELD}}` template system could break as prompts evolve during the `vary` step, causing runtime failures during the `evaluate` step.
 
 **Mitigation**:
-- The `pcrit.pop` component already validates template fields upon ingestion.
+- The `pcrit.pop` component validates template fields upon ingestion.
 - The meta-prompts used by the `vary` command must be carefully designed to preserve or correctly modify template variables.
 - The `evaluate` command has a validation step to ensure all prompts in a population have the required `{{INPUT_TEXT}}` field before starting a contest.
 
@@ -52,9 +52,9 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: The initial meta-prompts used by the `vary` command may have inherent biases that constrain the evolutionary search space and prevent novel solutions from emerging.
 
 **Mitigation**:
-- Start with multiple, diverse meta-prompts (e.g., "improve," "rephrase," "make more concise," "add examples").
-- Plan for meta-prompt evolution in later project versions (i.e., evolve the evolvers).
-- Track which meta-prompts produce the most successful offspring to guide future development.
+- **(Partially Mitigated)** The introduction of the `:crossover` mutation strategy provides an alternative evolutionary pathway that is not dependent on a single meta-prompt's phrasing. It combines existing high-performing prompts to generate novel solutions through a different mechanism.
+- The system still supports multiple, diverse meta-prompts (e.g., "improve," "rephrase," "make more concise").
+- Future versions may still explore meta-prompt evolution (i.e., evolve the evolvers).
 
 ## 7. **Scalability Bottlenecks**
 **Risk**: The file-based prompt store and symlink system may not scale efficiently to thousands of prompts and generations.
@@ -69,7 +69,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 
 **Mitigation**:
 - Record exact model versions and API parameters in `contest-metadata.edn`.
-- The new `Failter` spec records all parameters, and its artifacts directory provides for idempotent, resumable runs.
+- The `Failter` spec records all parameters, and its artifacts directory provides for idempotent, resumable runs.
 - Implement experiment replay functionality in a future version.
 - Document all external dependencies and their versions.
 
@@ -86,9 +86,6 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: The dependency on `Failter` for evaluation creates a potential single point of failure and adds complexity to the system.
 
 **Mitigation**:
-- **(Largely Mitigated)** The `evaluate` command now integrates with a much simpler, more robust `failter run --spec <path>` command. The declarative `spec.yml` and structured JSON output dramatically reduce integration complexity compared to the previous directory-based approach.
+- **(Largely Mitigated)** The `evaluate` command integrates with a simple, robust `failter run --spec <path>` command. The declarative `spec.yml` and structured JSON output dramatically reduce integration complexity.
 - The `pcrit.failter` component remains a clean abstraction layer, isolating the rest of the system from the specifics of the `Failter` tool.
 - Maintain comprehensive integration tests for the `evaluate` -> `Failter` boundary.
-
-### **Overall Risk Management Strategy**
-With the `v0.3` refactoring of the `evaluate` command for the new Failter interface now complete, our risk management focus shifts from implementation to practical application. The modular Polylith architecture remains our primary strategic tool, as it allowed us to cleanly swap out the `Failter` integration logic and will allow us to improve or replace other components (selection policies, storage backends) to address these risks as the system matures.
