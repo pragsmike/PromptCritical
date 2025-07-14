@@ -3,6 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
+            [pcrit.command.select :as select-impl] ; For testing private functions
             [pcrit.expdir.interface :as expdir]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
@@ -75,7 +76,6 @@
         (let [new-pop-ids (set (map #(get-in % [:header :id]) new-pop))]
           (is (= #{"P1" "P2" "P3"} new-pop-ids)))))))
 
-;; Test cases are now isolated in separate deftest blocks
 (deftest select-edge-case-large-n-test
   (testing "Handles report with fewer prompts than the policy limit"
     (let [ctx (setup-select-test-env!)]
@@ -120,6 +120,35 @@
       (cmd/select! ctx {:from-contest "test-contest" :policy "not-a-valid-policy"})
       (is (= 0 (expdir/find-latest-generation-number ctx)) "No new generation should be created.")
 
-      ;; Verify that no prompts were updated with metadata
       (let [p1-after (pdb/read-prompt (expdir/get-pdb-dir ctx) "P1")]
         (is (nil? (get-in p1-after [:header :selection])) "Prompt metadata should not be updated on failure.")))))
+
+
+;; --- CORRECTED TEST FOR TOURNAMENT SELECTION ---
+
+(deftest tournament-selection-policy-test
+  (testing "Tournament selection logic works deterministically with mocked randomness"
+    (let [report-data [{:prompt "P1", :score 10.0}
+                       {:prompt "P5", :score 6.0}
+                       {:prompt "P10", :score 1.0}]
+          policy {:type :tournament, :k 2}
+          ;; The main loop will run 3 times (population size).
+          ;; Each tournament has size k=2. So rand-nth will be called 6 times.
+          ;; We provide a deterministic sequence of 6 "random" draws.
+          deterministic-draws [(get report-data 2) ; P10
+                               (get report-data 1) ; P5 -> winner P5
+                               (get report-data 0) ; P1
+                               (get report-data 2) ; P10 -> winner P1
+                               (get report-data 1) ; P5
+                               (get report-data 0)] ; P1 -> winner P1
+          call-count (atom 0)
+          mock-rand-nth (fn [_coll]
+                          (let [res (nth deterministic-draws @call-count)]
+                            (swap! call-count inc)
+                            res))]
+      (with-redefs [rand-nth mock-rand-nth]
+        (let [survivors (select-impl/apply-selection-policy report-data policy)
+              survivor-ids (map :prompt survivors)]
+          (is (= 3 (count survivors)) "Population size should be maintained.")
+          (is (= {"P1" 2, "P5" 1} (frequencies survivor-ids))
+              "The correct winners should be selected from the deterministic tournaments."))))))

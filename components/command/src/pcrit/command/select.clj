@@ -16,16 +16,19 @@
   (e.g., {:type :top-n, :n 10})."
   [policy-str]
   (cond
-    (nil? policy-str) (parse-policy (:selection-policy config/defaults))
+    (nil? policy-str)
+    (parse-policy (:selection-policy config/defaults))
 
     (str/starts-with? policy-str "top-N=")
     (if-let [[_ n] (re-matches #"top-N=(\d+)" policy-str)]
       {:type :top-n, :policy-string policy-str, :n (Integer/parseInt n)}
       nil)
 
-    ;; Future policies would be parsed here, e.g.:
-    ;; (str/starts-with? policy-str "roulette")
-    ;; {:type :roulette-wheel, ...}
+    ;; NEW: Parse tournament selection policy
+    (str/starts-with? policy-str "tournament-k=")
+    (if-let [[_ k] (re-matches #"tournament-k=(\d+)" policy-str)]
+      {:type :tournament, :policy-string policy-str, :k (Integer/parseInt k)}
+      nil)
 
     :else nil))
 
@@ -39,6 +42,20 @@
   (->> report-data
        (sort-by :score >)
        (take n)))
+
+;; NEW: Tournament Selection Implementation
+(defmethod apply-selection-policy :tournament
+  [report-data {:keys [k]}]
+  (if (empty? report-data)
+    []
+    (let [population-vec (vec report-data)
+          population-size (count population-vec)]
+      (log/info "Running" population-size "tournaments with k=" k)
+      ;; To maintain population size, we run N tournaments, where N is the original size.
+      ;; We sample with replacement, so fitter individuals can be selected multiple times.
+      (for [_ (range population-size)]
+        (->> (repeatedly k #(rand-nth population-vec))
+             (apply max-key :score))))))
 
 (defmethod apply-selection-policy :default
   [_report-data policy]
@@ -92,7 +109,7 @@
                 selection-event {:contest-name from-contest
                                  :policy       policy-str
                                  :select-run   (.toString (Instant/now))}
-                _               (log/info "Selected" (count survivor-ids) "survivors from generation" gen-num "using policy" policy-str)
+                _               (log/info "Selected" (count survivor-ids) "survivors from generation" gen-num "using policy '" policy-str "'")
                 survivor-records (doall (map #(pdb/read-prompt (expdir/get-pdb-dir ctx) %) survivor-ids))]
 
             ;; Append metadata to each survivor in the PDB
