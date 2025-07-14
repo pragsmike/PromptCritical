@@ -1,7 +1,7 @@
 # PromptCritical Project Risks
 
-**Version 1.2 · 2025‑07‑11**
-**Status:** *Reviewed post-v0.2 implementation*
+**Version 2.0 · 2025‑07‑14**
+**Status:** *Reviewed post-v0.3 Failter refactoring*
 
 Here are ten key risks for the PromptCritical project, ranked from most to least severe.
 
@@ -18,7 +18,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: The `Failter` judges (LLM-based) may produce inconsistent scores for the same prompt across different runs, making fitness comparisons unreliable and rendering the `select` command's decisions random.
 
 **Mitigation**:
-- Run multiple evaluation trials per prompt within a contest and average the scores.
+- Run multiple evaluation trials per prompt within a contest and average the scores. (This is a planned `Failter` feature).
 - Implement evaluation confidence intervals in contest result analysis.
 - Add deterministic, rule-based metrics alongside LLM evaluation for a stable baseline.
 - Track evaluation variance in `contest-metadata.edn` to detect judge instability.
@@ -27,7 +27,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: As population size or the number of generations grows, API costs from the `vary` and `evaluate` commands could quickly become prohibitive.
 
 **Mitigation**:
-- Implement cost budgets and tracking per-experiment.
+- Implement cost budgets and tracking per-experiment. The upcoming `evolve` command will include a `--max-cost` flag.
 - Use cheaper models in the `vary` step by configuring them in `evolution-parameters.edn`, reserving more expensive models for the `evaluate` step.
 - Develop "surrogate critics" (cheaper models or heuristics) to pre-filter prompts before a full evaluation contest.
 - Implement early-stopping rules based on cost thresholds.
@@ -69,7 +69,7 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 
 **Mitigation**:
 - Record exact model versions and API parameters in `contest-metadata.edn`.
-- Use deterministic seeds for any random processes where possible.
+- The new `Failter` spec records all parameters, and its artifacts directory provides for idempotent, resumable runs.
 - Implement experiment replay functionality in a future version.
 - Document all external dependencies and their versions.
 
@@ -86,9 +86,9 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 **Risk**: The dependency on `Failter` for evaluation creates a potential single point of failure and adds complexity to the system.
 
 **Mitigation**:
-- The `evaluate` command acts as a crucial abstraction layer between PromptCritical and the `Failter` backend.
-- This layer can be extended to support fallback evaluation methods (e.g., direct API calls, simple rule-based scoring).
+- **(Largely Mitigated)** The `evaluate` command now integrates with a much simpler, more robust `failter run --spec <path>` command. The declarative `spec.yml` and structured JSON output dramatically reduce integration complexity compared to the previous directory-based approach.
+- The `pcrit.failter` component remains a clean abstraction layer, isolating the rest of the system from the specifics of the `Failter` tool.
 - Maintain comprehensive integration tests for the `evaluate` -> `Failter` boundary.
 
 ### **Overall Risk Management Strategy**
-With the `v0.2` core evolutionary loop (`vary`, `evaluate`, and `select`) now complete, our risk management focus shifts from implementation to practical application. The modular Polylith architecture remains our primary strategic tool, as it allows us to improve or swap out individual components (selection policies, evaluation methods, storage backends) to address these risks as the system matures and is applied to more complex problems.
+With the `v0.3` refactoring of the `evaluate` command for the new Failter interface now complete, our risk management focus shifts from implementation to practical application. The modular Polylith architecture remains our primary strategic tool, as it allowed us to cleanly swap out the `Failter` integration logic and will allow us to improve or replace other components (selection policies, storage backends) to address these risks as the system matures.

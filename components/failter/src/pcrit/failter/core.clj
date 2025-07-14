@@ -1,44 +1,63 @@
 (ns pcrit.failter.core
   (:require [clojure.java.shell :as shell]
             [clojure.string :as str]
+            [clojure.java.io :as io]
+            [clj-yaml.core :as yaml]
             [pcrit.expdir.interface :as expdir]
             [pcrit.log.interface :as log]))
 
-(defn- run-shell-command! [& args]
-  (let [full-command (cons "failter" args)
-        result (apply shell/sh full-command)]
-    (when-not (zero? (:exit result))
-      (let [error-msg (str "Failter command failed: " (str/join " " full-command))]
-        (log/error error-msg "\n" (:err result))
-        (throw (ex-info error-msg {:result result :command full-command}))))
-    (log/info "Failter output:\n" (:out result))))
+(defn- ensure-trailing-slash
+  "Ensures a path string ends with the platform-specific file separator."
+  [path-str]
+  (if (str/ends-with? path-str java.io.File/separator)
+    path-str
+    (str path-str java.io.File/separator)))
+
+(defn- write-spec-file!
+  "Constructs and writes the spec.yml file for a Failter run."
+  [ctx {:keys [generation-number contest-name inputs-dir population models judge-model]}]
+  (let [contest-dir (expdir/get-contest-dir ctx generation-number contest-name)
+        spec-file   (io/file contest-dir "spec.yml")
+        artifacts-dir-path (-> (expdir/get-failter-artifacts-dir ctx generation-number contest-name)
+                               .getCanonicalPath
+                               ensure-trailing-slash)
+        spec-data   {:version 2
+                     :inputs_dir    (.getCanonicalPath (io/file inputs-dir))
+                     :templates_dir (.getCanonicalPath (expdir/get-pdb-dir ctx))
+                     :templates     (mapv #(str (get-in % [:header :id]) ".prompt") population)
+                     :models        models
+                     :judge_model   judge-model
+                     :artifacts_dir artifacts-dir-path
+                     :retries       2
+                     :output_file   (.getCanonicalPath (io/file contest-dir "failter-report.json"))}]
+    (.mkdirs contest-dir)
+    (spit spec-file (yaml/generate-string spec-data :dumper-options {:flow-style :block}))
+    (log/info "Wrote Failter spec file to" (.getCanonicalPath spec-file))
+    spec-file))
 
 (defn run-contest!
-  "Prepares a failter-spec directory via the expdir component, runs the full
-  failter toolchain, and captures the results."
-  [ctx {:keys [generation-number contest-name judge-model] :as contest-params}]
-  (log/info "Setting up failter contest" contest-name "for generation" generation-number)
+  "Prepares a failter spec.yml, runs the `failter run` command, and captures the results.
+  Returns a map with `:success true` and the raw `:json-report` string from stdout,
+  or `:success false` and an `:error` message."
+  [ctx contest-params]
+  (let [gen-num      (:generation-number contest-params)
+        contest-name (:contest-name contest-params)]
+    (log/info "Setting up failter contest" contest-name "for generation" gen-num)
 
-  ;; 1. Delegate all directory and symlink creation to expdir.
-  (let [failter-spec-dir (expdir/prepare-contest-directory! ctx contest-params)
-        spec-path        (.getCanonicalPath failter-spec-dir)]
+    (let [spec-file (write-spec-file! ctx contest-params)
+          spec-path (.getCanonicalPath spec-file)
+          command   ["failter" "run" "--spec" spec-path]]
 
-    (log/info "Running failter toolchain on" spec-path)
+      (log/info "Running failter toolchain:" (str/join " " command))
 
-    ;; 2. Run the external toolchain.
-    (run-shell-command! "experiment" spec-path)
-
-    (if judge-model
-      (run-shell-command! "evaluate" spec-path "--judge-model" judge-model)
-      (run-shell-command! "evaluate" spec-path))
-
-    (run-shell-command! "report" spec-path)
-
-    ;; 3. Delegate report capture to expdir.
-    (if-let [report-file (expdir/capture-contest-report! ctx generation-number contest-name)]
-      (do
-        (log/info "Captured report.csv to" (.getCanonicalPath report-file))
-        {:success true :report-path (.getCanonicalPath report-file)})
-      (do
-        (log/error "Failter contest ran, but report.csv was not found.")
-        {:success false :report-path nil}))))
+      (let [result (apply shell/sh command)]
+        (if (zero? (:exit result))
+          (do
+            (log/info "Failter run completed successfully.")
+            (log/debug "Failter logs (stderr):\n" (:err result))
+            {:success true :json-report (:out result)})
+          (do
+            (log/error "Failter command failed with exit code" (:exit result))
+            (log/error "Failter logs (stderr):\n" (:err result))
+            (log/error "Failter output (stdout):\n" (:out result))
+            {:success false :error (:err result)}))))))

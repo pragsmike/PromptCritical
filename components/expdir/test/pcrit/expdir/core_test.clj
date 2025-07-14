@@ -1,7 +1,6 @@
 (ns pcrit.expdir.core-test
   (:require [clojure.test :refer (use-fixtures deftest is testing)]
             [clojure.java.io :as io]
-            [clojure.edn :as edn]
             [pcrit.experiment.interface :as exp]
             [pcrit.expdir.core :as expdir]
             [pcrit.test-helper.interface :refer [with-temp-dir get-temp-dir]])
@@ -88,7 +87,7 @@
       (is (is-relative-symlink? link-file) "Created file should be a relative symbolic link."))))
 
 
-;; --- Generation Tests ---
+;; --- Generation and Contest Tests ---
 
 (deftest generation-path-getters-test
   (testing "Generation-specific path getters return correct File objects"
@@ -96,57 +95,15 @@
       (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-012"))
              (.getCanonicalPath (expdir/get-generation-dir ctx 12))))
       (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-001" "population"))
-             (.getCanonicalPath (expdir/get-population-dir ctx 1)))))))
+             (.getCanonicalPath (expdir/get-population-dir ctx 1))))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-003" "contests"))
+             (.getCanonicalPath (expdir/get-contests-dir ctx 3))))
+      (is (= (.getCanonicalPath (io/file (get-temp-dir) "generations" "gen-004" "contests" "my-contest"))
+             (.getCanonicalPath (expdir/get-contest-dir ctx 4 "my-contest")))))))
 
-;; --- Contest Management Tests ---
-
-(deftest prepare-contest-directory-test
-  (testing "Correctly prepares the full contest directory structure"
+(deftest failter-artifacts-dir-test
+  (testing "get-failter-artifacts-dir returns the correct path"
     (let [ctx (get-test-ctx)
-          exp-dir (get-temp-dir)
-          inputs-dir (io/file exp-dir "my-inputs")]
-      (expdir/create-experiment-dirs! ctx)
-      (.mkdirs inputs-dir)
-      (spit (io/file inputs-dir "doc1.txt") "doc1")
-      (spit (io/file (expdir/get-pdb-dir ctx) "P1.prompt") "prompt1")
-
-      (let [params {:generation-number 0
-                    :contest-name "my-contest"
-                    :inputs-dir (.getCanonicalPath inputs-dir)
-                    :population [{:header {:id "P1"}}]
-                    :models ["m1" "m2"]
-                    :judge-model "judgy"}]
-        (expdir/prepare-contest-directory! ctx params)
-
-        (let [spec-dir (expdir/get-failter-spec-dir ctx 0 "my-contest")
-              input-link (io/file spec-dir "inputs" "doc1.txt")
-              template-link (io/file spec-dir "templates" "P1.prompt")
-              models-file (io/file spec-dir "model-names.txt")
-              meta-file (io/file (expdir/get-contest-dir ctx 0 "my-contest") "contest-metadata.edn")]
-          (is (.isDirectory (io/file spec-dir "inputs")))
-          (is (.isDirectory (io/file spec-dir "templates")))
-          (is (is-relative-symlink? input-link) "Input link must be relative.")
-          (is (is-relative-symlink? template-link) "Template link must be relative.")
-          (is (= "m1\nm2" (slurp models-file)))
-          (is (.exists meta-file))
-          (let [meta-data (edn/read-string (slurp meta-file))]
-            (is (= "my-contest" (:contest-name meta-data)))
-            (is (= ["P1"] (:participants meta-data)))))))))
-
-(deftest capture-contest-report-test
-  (let [ctx (get-test-ctx)]
-    (testing "Moves report from spec dir to contest dir"
-      (let [spec-dir (expdir/get-failter-spec-dir ctx 0 "capture-test")
-            source-report (io/file spec-dir "report.csv")
-            dest-dir (expdir/get-contest-dir ctx 0 "capture-test")]
-        (.mkdirs spec-dir)
-        (spit source-report "prompt,score\nP1,100")
-
-        (expdir/capture-contest-report! ctx 0 "capture-test")
-
-        (is (not (.exists source-report)) "Source report should be gone.")
-        (is (.exists (io/file dest-dir "report.csv")) "Destination report should exist.")))
-
-    (testing "Returns nil if source report does not exist"
-      (let [result (expdir/capture-contest-report! ctx 1 "no-report-test")]
-        (is (nil? result))))))
+          expected-path (io/file (get-temp-dir) "generations" "gen-002" "contests" "a-contest" "failter-artifacts")]
+      (is (= (.getCanonicalPath expected-path)
+             (.getCanonicalPath (expdir/get-failter-artifacts-dir ctx 2 "a-contest")))))))

@@ -77,27 +77,30 @@ The user evaluates the now-expanded population of Generation 0.
 pcrit evaluate my-experiment/ \
   --generation 0 \
   --name "initial-web-cleanup" \
-  --inputs path/to/web-articles/```
+  --inputs path/to/web-articles/
+```
 
 **Actions:**
 1.  The `evaluate` command resolves the path to `my-experiment/generations/gen-000/`.
 2.  It creates a contest directory: `.../gen-000/contests/initial-web-cleanup/`.
-3.  It creates the `failter-spec/` subdirectory and populates it with links to the prompts currently in `gen-000/population/`.
-4.  It shells out to `failter` to execute the contest and captures the `report.csv`.
+3.  It generates a `spec.yml` file in that directory, defining the contest for Failter.
+4.  It shells out to `failter run --spec ...`, which reads the spec and populates its own idempotent `failter-artifacts/` directory.
+5.  It captures the JSON output from Failter and processes it into the final `report.csv`.
 
 **Final Directory Structure of the Contest:**
-```
-my-experiment/
+```my-experiment/
 └── generations/
     └── gen-000/
         ├── population/
         │   └── ... (unchanged)
         └── contests/
             └── initial-web-cleanup/
-                ├── failter-spec/
-                │   └── ... (as prepared above)
-                ├── report.csv          ; <-- Raw output from Failter
-                └── contest-metadata.edn   ; <-- Auditable record of the pcrit run
+                ├── spec.yml                  ; <-- Declarative spec for Failter
+                ├── failter-artifacts/        ; <-- Idempotent state dir for Failter
+                │   └── ...
+                ├── failter-report.json       ; <-- Raw JSON output from Failter
+                ├── report.csv                ; <-- Final, cost-augmented report
+                └── contest-metadata.edn      ; <-- Auditable record of the pcrit run
 ```
 
 #### State 4: After `pcrit select`
@@ -114,7 +117,9 @@ pcrit select my-experiment/ --from-contest "initial-web-cleanup"
 2.  It applies a selection strategy (e.g., "keep `P1` and `P4`").
 3.  It calls `pop/create-new-generation!`, passing it the list of surviving prompt records. This creates a new generation directory (`gen-001`) containing links to only the survivors.
 
-**Directory Structure After Selection:**```my-experiment/
+**Directory Structure After Selection:**
+```
+my-experiment/
 └── generations/
     ├── gen-000/
     │   └── ... (unchanged, now a historical record)

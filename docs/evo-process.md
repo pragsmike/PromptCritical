@@ -50,12 +50,12 @@ The directory structure for a contest is designed for clear auditing and integra
 │       │   ├── P001.prompt -> ../../../pdb/P001.prompt
 │       │   └── ...
 │       └── contests/
-│           └── 2025-07-08-web-cleanup/
-│               ├── failter-spec/
-│               │   ├── inputs/
-│               │   ├── templates/
-│               │   └── ...
+│           └── 2025-07-14-web-cleanup/
+│               ├── spec.yml
+│               ├── failter-artifacts/
+│               │   └── (Intermediate files from Failter for idempotency)
 │               ├── report.csv
+│               ├── failter-report.json
 │               └── contest-metadata.edn
 ├── bootstrap.edn
 └── evolution-parameters.edn
@@ -65,8 +65,9 @@ The directory structure for a contest is designed for clear auditing and integra
 
 *   **`generations/gen-NNN/population/`**: This directory defines the active set of object-prompts for a given generation via symbolic links into the `pdb/`. This directory is mutable until the `select` command is run for this generation.
 *   **`generations/gen-NNN/contests/<contest-name>/`**: This is the self-contained record of a single evaluation run (a contest).
-*   **`.../failter-spec/`**: This subdirectory is prepared specifically for the Failter tool, with its `inputs/`, `templates/`, etc., populated with symlinks.
-*   **`.../report.csv`**: The raw output from a Failter run is stored here, providing an immutable record of performance. The `select` command uses this file as its input.
+*   **`.../spec.yml`**: This is the declarative specification file passed to the Failter tool.
+*   **`.../failter-artifacts/`**: This subdirectory is managed entirely by Failter to store intermediate results, making the `failter run` command idempotent and resumable.
+*   **`.../report.csv`**: The final, canonical output from a `pcrit evaluate` run, containing calculated costs. The `select` command uses this file as its input.
 
 ### The Evolutionary Steps in Practice
 
@@ -76,6 +77,6 @@ An experiment begins with a one-time `bootstrap` command, followed by a cycle of
 
 2.  **`vary`**: This is the "breeding" step. It loads the population from the latest generation, applies meta-prompts to create new prompt variations (offspring), and then **adds symlinks for these new offspring to the population directory of the *current* generation**. You can run `vary` multiple times to add more candidates before an evaluation.
 
-3.  **`evaluate`**: This is the "testing" step. The `pcrit evaluate` command targets a specific generation's population, packages it into a `failter-spec` directory, and runs a **contest**. The resulting scores are saved to a `report.csv` file within that generation's `contests/` subdirectory.
+3.  **`evaluate`**: This is the "testing" step. The `pcrit evaluate` command targets a specific generation's population, generates a `spec.yml` defining a **contest**, and invokes `failter run`. The resulting scores and token usage are processed, and the final results are saved to a `report.csv` file within that generation's `contests/` subdirectory.
 
 4.  **`select`**: This is the "winnowing" and "generation-creating" step. The `pcrit select` command reads a `report.csv` file from a contest, applies a selection strategy, and creates a **new generation folder** (e.g., `gen-001`) containing only the symlinks to the surviving prompts. This action "freezes" the previous generation as a complete, immutable historical record.

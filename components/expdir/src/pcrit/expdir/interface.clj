@@ -60,23 +60,11 @@
   "Returns a File object for a uniquely named contest within a specific generation."
   core/get-contest-dir)
 
-(def get-failter-spec-dir
-  "Returns a File object for the 'failter-spec' subdirectory within a contest."
-  core/get-failter-spec-dir)
+(def get-failter-artifacts-dir
+  "Returns a File object for the 'failter-artifacts' subdirectory within a contest,
+  used for storing intermediate files to ensure idempotency."
+  core/get-failter-artifacts-dir)
 
 (def find-latest-generation-number
   "Scans the 'generations' directory, returning the highest generation number found, or nil."
   core/find-latest-generation-number)
-
-;; --- NEW: High-Level Contest Management ---
-
-(def prepare-contest-directory!
-  "Creates the full directory structure and symlinks for a Failter contest.
-  This is the authoritative function for contest setup. Takes a context map
-  and a contest parameters map."
-  core/prepare-contest-directory!)
-
-(def capture-contest-report!
-  "Moves the report.csv from the failter-spec dir to the parent contest dir.
-  Returns a File object to the final report path, or nil if not found."
-  core/capture-contest-report!)

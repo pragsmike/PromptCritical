@@ -1,7 +1,7 @@
 # PromptCritical System Design
 
-**Version 1.9 · 2025‑07‑11**
-**Status:** *v0.2 Core Loop Complete*
+**Version 2.0 · 2025‑07‑14**
+**Status:** *v0.3 Failter Refactoring Complete*
 
 ---
 
@@ -25,10 +25,10 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 | **Component** | `pcrit.command` | **Reusable, high-level workflows** (e.g., `bootstrap!`, `vary!`) |
 | **Component** | `pcrit.experiment` | **Defines the logical Experiment context** passed between components |
 | **Component** | `pcrit.expdir` | **Manages the physical layout** of an experiment directory |
-| **Component** | `pcrit.failter` | **Adapter for the external Failter toolchain** |
+| **Component** | `pcrit.failter` | **Generates `spec.yml` and runs the `failter run` command** |
 | **Component** | `pcrit.pdb` | **Immutable prompt database** (file I/O, locking, ID generation) |
 | **Component** | `pcrit.pop` | **Population domain model** and prompt analysis (`:prompt-type`) |
-| **Component** | `pcrit.reports` | **Parses contest result files** (e.g., `report.csv`) |
+| **Component** | `pcrit.reports` | **Parses contest results** (legacy CSV & new Failter JSON) and writes reports |
 | **Component** | `pcrit.config` | Central configuration map & helpers |
 | **Component** | `pcrit.log` | Structured logging and log setup |
 | **Component** | `pcrit.llm` | Thin HTTP client façade for LLMs |
@@ -73,7 +73,7 @@ The descriptions from the previous version remain accurate.
 
 ---
 
-## 5  Experiment Flow (v0.2)
+## 5  Experiment Flow (v0.3)
 
 ```
 bootstrap → vary → evaluate → select
@@ -91,7 +91,9 @@ bootstrap → vary → evaluate → select
 3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
     *   The `cli` base calls the `pcrit.command/evaluate!` function.
     *   The command loads `evolution-parameters.edn` using the `pcrit.config` component to get the list of models to test against and the default judge model.
-    *   It then orchestrates the `pcrit.failter` component to prepare a `failter-spec` directory, execute the external `failter` toolchain, and capture the resulting `report.csv`.
+    *   It then orchestrates the `pcrit.failter` component to generate a `spec.yml` file defining the entire contest.
+    *   The `failter` component executes the external `failter run --spec <path>` command and captures the resulting JSON report from `stdout`.
+    *   Finally, the `command` component passes this JSON data to `pcrit.reports`, which calculates costs for each run and writes the final, canonical `report.csv`.
 
 4.  **Select** (`pcrit select <exp-dir> --from-contest <name>`)
     *   The `cli` base calls `pcrit.command/select!`.
@@ -121,4 +123,4 @@ The descriptions from the previous version remain accurate.
 
 ---
 
-*Last updated 2025‑07‑11*
+*Last updated 2025‑07‑14*

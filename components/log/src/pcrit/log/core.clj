@@ -20,18 +20,11 @@
     (:require [pcrit.log :as log]))
 
   (log/info \"Hello\" {:a 1})
-IGNORE_WHEN_COPYING_START
-content_copy
-download
-Use code with caution.
-Clojure
-IGNORE_WHEN_COPYING_END
-
-Produces:
-
-Generated code
-2025-06-27 16:12:03.456 INFO  my.ns                    | Hello {:a 1}
-```"
+  ```
+  Produces:
+  ```
+  2025-06-27 16:12:03.456 INFO  my.ns                    | Hello {:a 1}
+  ```"
 (:require [taoensso.telemere          :as tel]
           [taoensso.telemere.utils   :as u]
           [clojure.string :as str])
