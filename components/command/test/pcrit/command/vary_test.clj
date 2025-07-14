@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [pcrit.command.interface :as cmd]
-            [pcrit.command.vary :as vary]
             [pcrit.expdir.interface :as expdir]
             [pcrit.llm.interface :as llm]
             [pcrit.pop.interface :as pop]
@@ -72,32 +71,32 @@
         (is (zero? cost) "Cost should be zero when no offspring are created.")))))
 
 
-;; --- CORRECTED TEST FOR CROSSOVER STRATEGY ---
+;; --- REFACTORED TEST FOR CROSSOVER STRATEGY ---
 
 (deftest crossover-strategy-test
   (testing ":crossover strategy creates one child from the top two parents of the previous generation"
     (let [exp-dir (th-generic/get-temp-dir)
+          ;; The updated helper now correctly creates the crossover link.
           ctx (th-cmd/setup-bootstrapped-exp! exp-dir)
           pdb-dir (expdir/get-pdb-dir ctx)]
-      ;; Setup:
-      ;; 1. Manually ingest the crossover prompt and link it, ensuring it exists for the test.
-      (let [crossover-prompt (pop/ingest-prompt ctx "Crossover: {{OBJECT_PROMPT_A}} vs {{OBJECT_PROMPT_B}}")]
-        (expdir/link-prompt! ctx crossover-prompt "crossover")
-        (is (.exists (io/file (expdir/get-link-dir ctx) "crossover")) "Precondition: Crossover link must exist."))
 
-      ;; 2. Ingest another prompt to be a parent. P1 and P2 already exist.
+      ;; Precondition check: Bootstrap should have created the crossover link.
+      (is (.exists (io/file (expdir/get-link-dir ctx) "crossover")) "Precondition: Crossover link must exist.")
+
+      ;; Setup:
+      ;; 1. Ingest another prompt to be a parent. P1, P2, P3 already exist.
       (let [p4 (pdb/create-prompt pdb-dir "Parent B")]
-        ;; 3. Create a fake contest report for gen-0, making P4 and P1 the winners.
+        ;; 2. Create a fake contest report for gen-0, making P4 and P1 the winners.
         (let [contest-dir (expdir/get-contest-dir ctx 0 "crossover-setup-contest")
               report-file (io/file contest-dir "report.csv")]
           (.mkdirs contest-dir)
           (spit report-file "prompt,score\nP4,100\nP1,90\nP2,80"))
 
-        ;; 4. Create gen-1 with these two winners. `vary` will be run on gen-1.
+        ;; 3. Create gen-1 with these two winners. `vary` will be run on gen-1.
         (pop/create-new-generation! ctx [(pdb/read-prompt pdb-dir "P1") p4])
         (is (= 1 (expdir/find-latest-generation-number ctx)) "Precondition: gen-1 should exist.")
 
-        ;; 5. Configure the experiment to use the :crossover strategy for gen-1.
+        ;; 4. Configure the experiment to use the :crossover strategy for gen-1.
         (let [config-file (io/file exp-dir "evolution-parameters.edn")]
           (spit config-file (pr-str {:vary {:strategy :crossover}})))
 

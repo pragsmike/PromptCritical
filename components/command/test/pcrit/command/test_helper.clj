@@ -7,7 +7,7 @@
 (defn setup-bootstrappable-exp!
   "Creates the minimal file structure required to run `bootstrap!`.
   - Creates the 'seeds/' directory.
-  - Creates seed prompts and a manifest that points to them."
+  - Creates all standard seed prompts and a manifest that points to them."
   [exp-dir]
   (let [ctx (exp/new-experiment-context exp-dir)
         seeds-dir (expdir/get-seeds-dir ctx)]
@@ -16,9 +16,11 @@
     (.mkdirs seeds-dir)
     (spit (io/file seeds-dir "seed-object-prompt.txt") "The seed! {{INPUT_TEXT}}")
     (spit (io/file seeds-dir "improve-meta-prompt.txt") "Refine this: {{OBJECT_PROMPT}}")
+    (spit (io/file seeds-dir "crossover-meta-prompt.txt") "Combine the best... PROMPT A: {{OBJECT_PROMPT_A}} PROMPT B: {{OBJECT_PROMPT_B}}")
     (spit (expdir/bootstrap-spec-file ctx)
           (pr-str {:seed "seeds/seed-object-prompt.txt"
-                   :refine "seeds/improve-meta-prompt.txt"}))
+                   :refine "seeds/improve-meta-prompt.txt"
+                   :crossover "seeds/crossover-meta-prompt.txt"}))
     ctx))
 
 (defn setup-bootstrapped-exp!
