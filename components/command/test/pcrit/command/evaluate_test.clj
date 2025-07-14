@@ -10,7 +10,7 @@
 
 (use-fixtures :each th-generic/with-temp-dir th-generic/with-quiet-logging)
 
-(def ^:private mock-failter-json-success "[]")
+(def ^:private mock-failter-parsed-json [])
 
 (deftest evaluate-happy-path-test
   (testing "evaluate! with all options calls failter and reports correctly"
@@ -20,9 +20,10 @@
           reports-called (atom nil)]
       (with-redefs [failter/run-contest! (fn [_ctx params]
                                            (reset! failter-called params)
-                                           {:success true :json-report mock-failter-json-success})
-                    reports/process-and-write-csv-report! (fn [json-str path]
-                                                            (reset! reports-called {:json json-str :path path}))]
+                                           ;; Mock now returns pre-parsed JSON data
+                                           {:success true :parsed-json mock-failter-parsed-json})
+                    reports/process-and-write-csv-report! (fn [parsed-data path]
+                                                            (reset! reports-called {:data parsed-data :path path}))]
         (evaluate/evaluate! ctx {:generation 0
                                  :name "my-test"
                                  :inputs (.getCanonicalPath inputs-dir)})
@@ -32,7 +33,8 @@
         (is (= "mock-judge" (:judge-model @failter-called)))
 
         (is (some? @reports-called) "reports/process-and-write-csv-report! should have been called.")
-        (is (= mock-failter-json-success (:json @reports-called)))
+        ;; Assert that the function received the parsed data structure, not a string
+        (is (= mock-failter-parsed-json (:data @reports-called)))
         (is (.endsWith (:path @reports-called) (str "my-test" java.io.File/separator "report.csv")))))))
 
 (deftest evaluate-cli-override-test

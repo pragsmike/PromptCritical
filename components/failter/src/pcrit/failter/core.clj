@@ -4,7 +4,8 @@
             [clojure.java.io :as io]
             [clj-yaml.core :as yaml]
             [pcrit.expdir.interface :as expdir]
-            [pcrit.log.interface :as log]))
+            [pcrit.log.interface :as log]
+            [clojure.data.json :as json]))
 
 (defn- ensure-trailing-slash
   "Ensures a path string ends with the platform-specific file separator."
@@ -14,10 +15,12 @@
     (str path-str java.io.File/separator)))
 
 (defn- write-spec-file!
-  "Constructs and writes the spec.yml file for a Failter run."
+  "Constructs and writes the spec.yml file for a Failter run.
+  Returns the path to the report file that failter will generate."
   [ctx {:keys [generation-number contest-name inputs-dir population models judge-model]}]
   (let [contest-dir (expdir/get-contest-dir ctx generation-number contest-name)
         spec-file   (io/file contest-dir "spec.yml")
+        report-file (io/file contest-dir "failter-report.json")
         artifacts-dir-path (-> (expdir/get-failter-artifacts-dir ctx generation-number contest-name)
                                .getCanonicalPath
                                ensure-trailing-slash)
@@ -29,35 +32,48 @@
                      :judge_model   judge-model
                      :artifacts_dir artifacts-dir-path
                      :retries       2
-                     :output_file   (.getCanonicalPath (io/file contest-dir "failter-report.json"))}]
+                     :output_file   (.getCanonicalPath report-file)}]
     (.mkdirs contest-dir)
     (spit spec-file (yaml/generate-string spec-data :dumper-options {:flow-style :block}))
     (log/info "Wrote Failter spec file to" (.getCanonicalPath spec-file))
-    spec-file))
+    report-file))
 
 (defn run-contest!
-  "Prepares a failter spec.yml, runs the `failter run` command, and captures the results.
-  Returns a map with `:success true` and the raw `:json-report` string from stdout,
+  "Prepares a failter spec.yml, runs the `failter run` command, captures logs, and parses the JSON report file.
+  Returns a map with `:success true` and the parsed `:parsed-json` data,
   or `:success false` and an `:error` message."
   [ctx contest-params]
   (let [gen-num      (:generation-number contest-params)
-        contest-name (:contest-name contest-params)]
+        contest-name (:contest-name contest-params)
+        contest-dir  (expdir/get-contest-dir ctx gen-num contest-name)]
     (log/info "Setting up failter contest" contest-name "for generation" gen-num)
 
-    (let [spec-file (write-spec-file! ctx contest-params)
-          spec-path (.getCanonicalPath spec-file)
-          command   ["failter" "run" "--spec" spec-path]]
+    (let [report-file (write-spec-file! ctx contest-params)
+          spec-path   (.getCanonicalPath (.getParentFile report-file))
+          command     ["failter" "run" "--spec" (str spec-path "/spec.yml")]]
 
       (log/info "Running failter toolchain:" (str/join " " command))
 
       (let [result (apply shell/sh command)]
+        ;; Capture stdout for debugging, regardless of outcome.
+        (spit (io/file contest-dir "failter.stdout.log") (:out result))
+        (spit (io/file contest-dir "failter.stderr.log") (:err result))
+
         (if (zero? (:exit result))
           (do
-            (log/info "Failter run completed successfully.")
-            (log/debug "Failter logs (stderr):\n" (:err result))
-            {:success true :json-report (:out result)})
+            (log/info "Failter run completed successfully (exit 0). Reading report file...")
+            (if (.exists report-file)
+              (try
+                (let [parsed-json (json/read-str (slurp report-file) :key-fn keyword)]
+                  {:success true :parsed-json parsed-json})
+                (catch Exception e
+                  (log/error "Failter report file was not valid JSON. Error:" (.getMessage e))
+                  (log/error "Report file location:" (.getCanonicalPath report-file))
+                  {:success false :error "Failter report file was not valid JSON."}))
+              (do
+                (log/error "Failter run succeeded but the specified report file was not created.")
+                (log/error "Report file location:" (.getCanonicalPath report-file))
+                {:success false :error "Failter report file not found."})))
           (do
             (log/error "Failter command failed with exit code" (:exit result))
-            (log/error "Failter logs (stderr):\n" (:err result))
-            (log/error "Failter output (stdout):\n" (:out result))
             {:success false :error (:err result)}))))))

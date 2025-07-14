@@ -2,7 +2,6 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure-csv.core :as csv]
-            [clojure.data.json :as json]
             [pcrit.log.interface :as log]
             [pcrit.config.interface :as config]))
 
@@ -51,16 +50,6 @@
 ;; NEW FAILTER JSON PARSING, COST CALCULATION, and CSV WRITING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn parse-failter-json-report
-  "Parses the JSON output stream from the new `failter run` command."
-  [json-string]
-  (try
-    (when json-string
-      (json/read-str json-string :key-fn keyword))
-    (catch Exception e
-      (log/error "Failed to parse JSON report stream from Failter:" (.getMessage e))
-      [])))
-
 (defn- calculate-cost
   "Calculates the monetary cost for a single Failter result based on token usage."
   [failter-result-map price-table]
@@ -103,10 +92,9 @@
      :error        (to-str (:error result-map))}))
 
 (defn process-and-write-csv-report!
-  "Takes the raw JSON output from `failter run`, processes it, and writes a report."
-  [json-string target-csv-path]
-  (let [parsed-data (parse-failter-json-report json-string)
-        processed-data (map flatten-and-normalize-result parsed-data)]
+  "Takes a pre-parsed sequence of Failter result maps, processes them, and writes a report."
+  [parsed-json-data target-csv-path]
+  (let [processed-data (map flatten-and-normalize-result parsed-json-data)]
     (if (seq processed-data)
       (let [headers (-> processed-data first keys)
             rows (mapv (fn [row-map] (mapv row-map headers)) processed-data)

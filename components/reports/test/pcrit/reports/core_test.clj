@@ -40,59 +40,30 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; NEW FAILTER JSON PARSING AND CSV WRITING TESTS
+;; NEW FAILTER JSON PROCESSING AND CSV WRITING TESTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private sample-failter-json
-  (str "[
-    {
-      \"prompt_id\": \"P1.prompt\",
-      \"score\": 95,
-      \"usage\": {
-        \"model_used\": \"openai/gpt-4o-mini\",
-        \"tokens_in\": 1000,
-        \"tokens_out\": 2000
-      },
-      \"performance\": {\"retry_attempts\": 0},
-      \"error\": null
-    },
-    {
-      \"prompt_id\": \"P2.prompt\",
-      \"score\": 80,
-      \"usage\": {
-        \"model_used\": \"ollama/qwen3:8b\",
-        \"tokens_in\": 500,
-        \"tokens_out\": 500
-      },
-      \"performance\": {\"retry_attempts\": 1},
-      \"error\": null
-    },
-    {
-      \"prompt_id\": \"P3.prompt\",
-      \"score\": null,
-      \"usage\": { \"model_used\": \"openai/gpt-4o-mini\" },
-      \"performance\": {},
-      \"error\": \"API call timed out\"
-    }
-  ]"))
-
-(deftest parse-failter-json-report-test
-  (testing "Successfully parses a valid JSON string from Failter"
-    (let [parsed-data (reports/parse-failter-json-report sample-failter-json)]
-      (is (= 3 (count parsed-data)))
-      (let [p1-data (first parsed-data)]
-        (is (= "P1.prompt" (:prompt_id p1-data)))
-        (is (= 95 (:score p1-data)))
-        (is (= "openai/gpt-4o-mini" (get-in p1-data [:usage :model_used]))))))
-
-  (testing "Returns empty list for malformed JSON"
-    (let [parsed-data (reports/parse-failter-json-report "[{\"key\":")]
-      (is (empty? parsed-data)))))
+(def ^:private sample-failter-parsed-json
+  [{:prompt_id "P1.prompt"
+    :score 95
+    :usage {:model_used "openai/gpt-4o-mini" :tokens_in 1000 :tokens_out 2000}
+    :performance {:retry_attempts 0}
+    :error nil}
+   {:prompt_id "P2.prompt"
+    :score 80
+    :usage {:model_used "ollama/qwen3:8b" :tokens_in 500 :tokens_out 500}
+    :performance {:retry_attempts 1}
+    :error nil}
+   {:prompt_id "P3.prompt"
+    :score nil
+    :usage {:model_used "openai/gpt-4o-mini"}
+    :performance {}
+    :error "API call timed out"}])
 
 (deftest process-and-write-csv-report-test
-  (testing "Correctly processes JSON, calculates costs, and writes a CSV file"
+  (testing "Correctly processes parsed data, calculates costs, and writes a CSV file"
     (let [target-csv (io/file (get-temp-dir) "new-report.csv")
-          processed-data (reports/process-and-write-csv-report! sample-failter-json (.getCanonicalPath target-csv))]
+          processed-data (reports/process-and-write-csv-report! sample-failter-parsed-json (.getCanonicalPath target-csv))]
 
       (testing "Returns correctly structured data with string values"
         (is (= 3 (count processed-data)))
@@ -100,7 +71,6 @@
           (is (= "P1" (:prompt p1-data)))
           (is (= "95" (:score p1-data)))
           (is (= "openai/gpt-4o-mini" (:model p1-data)))
-          ;; CORRECTED ASSERTION: Test for approximate equality correctly.
           (is (< (Math/abs (- (Double/parseDouble (:cost p1-data)) 0.00135)) 1e-9))
           (is (= "1000" (:tokens-in p1-data)))))
 

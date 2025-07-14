@@ -33,7 +33,7 @@
 (defn- get-and-log-contest-cost [processed-report-data]
   (if (seq processed-report-data)
     (let [costs (->> processed-report-data
-                     (keep :cost) ; Use keep to handle both strings and numbers, and filter nils
+                     (keep :cost)
                      (map #(if (string? %) (Double/parseDouble %) %))
                      (remove nil?))
           total-cost (reduce + 0.0 costs)]
@@ -71,11 +71,13 @@
                                   :population        population
                                   :models            models-to-test
                                   :judge-model       final-judge-model}
-                  {:keys [success json-report]} (failter/run-contest! ctx contest-params)]
+                  ;; Updated to handle the new return value from run-contest!
+                  {:keys [success parsed-json]} (failter/run-contest! ctx contest-params)]
 
               (if success
                 (let [report-csv-path (io/file (expdir/get-contest-dir ctx gen-num contest-name) "report.csv")
-                      processed-data (reports/process-and-write-csv-report! json-report (.getCanonicalPath report-csv-path))
+                      ;; Pass the pre-parsed data to the reports component
+                      processed-data (reports/process-and-write-csv-report! parsed-json (.getCanonicalPath report-csv-path))
                       cost (get-and-log-contest-cost processed-data)]
                   {:success true :cost cost :contest-name contest-name})
                 {:success false :cost 0.0}))))))))
