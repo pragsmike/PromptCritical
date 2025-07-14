@@ -1,94 +1,221 @@
-# PromptCritical Project Risks
+# PromptCritical: Reproducible Evolution of Human-Readable Prompts
 
-**Version 2.0 · 2025‑07‑14**
-**Status:** *Reviewed post-v0.3 Failter refactoring*
+*A reproducible platform for evolving large–language–model prompts, one small,
+auditable step at a time.*
 
-Here are ten key risks for the PromptCritical project, ranked from most to least severe.
+## ✨ What is PromptCritical?
 
-## 1. **Premature Convergence to Local Optima**
-**Risk**: A simplistic selection strategy could cause the population to lose diversity and converge on a suboptimal solution, preventing the discovery of better alternatives.
+PromptCritical is a **data‑driven, experiment‑oriented toolchain** that breeds and evaluates prompts for LLMs. It automates the cycle of:
 
-**Mitigation**:
-- The `select` command defaults to a `top-N=5` policy, which presents a direct risk of premature convergence. Users can mitigate this for more exploratory tasks by passing a higher value to the `--policy` flag (e.g., `--policy top-N=20`).
-- The `vary` command includes operators for random mutation to maintain exploration.
-- Future versions will introduce more advanced selection strategies (e.g., tournament selection, diversity-preserving algorithms).
-- Monitor population diversity metrics in `contest-metadata.edn` to detect convergence.
+```
+vary → evaluate → select
+```
 
-## 2. **Evaluation Brittleness/Inconsistency**
-**Risk**: The `Failter` judges (LLM-based) may produce inconsistent scores for the same prompt across different runs, making fitness comparisons unreliable and rendering the `select` command's decisions random.
+so you can focus on defining **fitness metrics** and **mutation strategies**, not on plumbing. A `bootstrap` command seeds the initial `gen-0` population, after which the main loop can begin.
 
-**Mitigation**:
-- Run multiple evaluation trials per prompt within a contest and average the scores. (This is a planned `Failter` feature).
-- Implement evaluation confidence intervals in contest result analysis.
-- Add deterministic, rule-based metrics alongside LLM evaluation for a stable baseline.
-- Track evaluation variance in `contest-metadata.edn` to detect judge instability.
+PromptCritical stands out by pairing a **multi-model judging
+architecture**—where evolved prompts face a panel of independent LLM “critics”
+rather than a single, potentially biased scorer—with an **immutable,
+hash-addressed prompt database** that captures every ancestral mutation and
+evaluation in cryptographically verifiable form. This provenance layer functions
+as a “time machine”: you can rewind any prompt’s lineage, replay an entire
+evolutionary run bit-for-bit, or fork experiments without losing auditability.
+Together, the contest-style fitness and tamper-evident record make
+PromptCritical uniquely reproducible, bias-resistant, and production-friendly in
+a field where ad-hoc scripts and opaque metrics still dominate.
 
-## 3. **Exponential Cost Growth**
-**Risk**: As population size or the number of generations grows, API costs from the `vary` and `evaluate` commands could quickly become prohibitive.
+## 🚀 Quick Start
 
-**Mitigation**:
-- Implement cost budgets and tracking per-experiment. The upcoming `evolve` command will include a `--max-cost` flag.
-- Use cheaper models in the `vary` step by configuring them in `evolution-parameters.edn`, reserving more expensive models for the `evaluate` step.
-- Develop "surrogate critics" (cheaper models or heuristics) to pre-filter prompts before a full evaluation contest.
-- Implement early-stopping rules based on cost thresholds.
+Get your first experiment running in two commands:
 
-## 4. **Data Leakage in Evaluation**
-**Risk**: If the documents used in an evaluation contest were part of the judging LLM's training data, the resulting fitness scores would be meaningless.
+```bash
+# 1. Create a new experiment skeleton in a directory named "my-exp"
+pcrit init my-exp
 
-**Mitigation**:
-- Use very recent content (post-dating the LLM's training cut-off) for evaluation corpora.
-- Maintain a diverse evaluation corpus from multiple sources.
-- Document all data sources and dates in `contest-metadata.edn`.
+# 2. Ingest the seed prompts and create generation 0
+pcrit bootstrap my-exp
+```
+You now have a complete, runnable experiment in the `my-exp` directory. See the [Usage Guide](USAGE.md) for the next steps (`vary`, `evaluate`, `select`).
 
-## 5. **Prompt Template Fragility**
-**Risk**: The `{{FIELD}}` template system could break as prompts evolve during the `vary` step, causing runtime failures during the `evaluate` step.
 
-**Mitigation**:
-- The `pcrit.pop` component already validates template fields upon ingestion.
-- The meta-prompts used by the `vary` command must be carefully designed to preserve or correctly modify template variables.
-- The `evaluate` command has a validation step to ensure all prompts in a population have the required `{{INPUT_TEXT}}` field before starting a contest.
+## Key Ingredients
 
-## 6. **Meta-Prompt Bias/Limitations**
-**Risk**: The initial meta-prompts used by the `vary` command may have inherent biases that constrain the evolutionary search space and prevent novel solutions from emerging.
+| Ingredient | Purpose |
+| :--- | :--- |
+| **Polylith workspace** | Re‑usable components, clean boundaries, lightning‑fast incremental tests |
+| **Immutable Prompt DB** | Atomic, hash‑verified store with per‑file lock‑healing |
+| **Git as temporal database** | Second layer of tamper-detection, allows experiment branching and backtracking |
+| **Failter integration** | Runs large‑scale prompt contests and collects scores |
+| **Evolution engine** | Varies, evaluates, and selects prompts to improve fitness |
 
-**Mitigation**:
-- Start with multiple, diverse meta-prompts (e.g., "improve," "rephrase," "make more concise," "add examples").
-- Plan for meta-prompt evolution in later project versions (i.e., evolve the evolvers).
-- Track which meta-prompts produce the most successful offspring to guide future development.
+### Git as Temporal Database
 
-## 7. **Scalability Bottlenecks**
-**Risk**: The file-based prompt store and symlink system may not scale efficiently to thousands of prompts and generations.
+Using git for population snapshots is attractive because:
+- Every generation is a commit with full diff history
+- You can branch for experimental evolution strategies
+- Merge conflicts become meaningful (competing evolutionary pressures)
+- You get distributed replication of your entire evolutionary history for free
 
-**Mitigation**:
-- The `pcrit.pdb` component abstracts the storage mechanism, allowing the file-based system to be replaced with a more scalable backend (e.g., a database) in the future without changing the core logic.
-- Profile system performance with large prompt populations.
-- Implement prompt store cleanup/archiving for old generations.
+## Documentation
 
-## 8. **Reproducibility Failures**
-**Risk**: Despite immutable storage, subtle differences in LLM API responses, model versions, or evaluation conditions could make experiments difficult to reproduce perfectly.
+For more information, see:
+   * [OVERVIEW](docs/OVERVIEW.md)
+   * [DESIGN](docs/DESIGN.md)
+   * [RISKS](docs/RISKS.md)
 
-**Mitigation**:
-- Record exact model versions and API parameters in `contest-metadata.edn`.
-- The new `Failter` spec records all parameters, and its artifacts directory provides for idempotent, resumable runs.
-- Implement experiment replay functionality in a future version.
-- Document all external dependencies and their versions.
+---
 
-## 9. **Overfitting to Evaluation Corpus**
-**Risk**: Prompts could become highly specialized to the specific documents used for evaluation, performing poorly on new, unseen content.
+## ✨ Aspirational Goals
 
-**Mitigation**:
-- Maintain separate "training" and "testing" evaluation corpora.
-- Rotate evaluation content periodically.
-- Include diverse content types (different topics, formats, styles).
-- Implement cross-validation with multiple evaluation sets in later versions.
+Prompt engineering still feels like folklore. PromptCritical’s long-term mission is to turn it into a **data-driven, evolutionary workflow**:
 
-## 10. **Integration Complexity with Failter**
-**Risk**: The dependency on `Failter` for evaluation creates a potential single point of failure and adds complexity to the system.
+1.  **Store every prompt immutably** with lineage, hashes, and timestamps.
+2.  **Run controlled experiments** that score those prompts on real tasks (Latency / Cost / Accuracy / Consistency).
+3.  **Breed the next generation**—mutate, crossover, and select—using the recorded scores as fitness.
+4.  **Repeat automatically**, producing prompts that keep pace with new LLM releases and changing task definitions.
 
-**Mitigation**:
-- **(Largely Mitigated)** The `evaluate` command now integrates with a much simpler, more robust `failter run --spec <path>` command. The declarative `spec.yml` and structured JSON output dramatically reduce integration complexity compared to the previous directory-based approach.
-- The `pcrit.failter` component remains a clean abstraction layer, isolating the rest of the system from the specifics of the `Failter` tool.
-- Maintain comprehensive integration tests for the `evaluate` -> `Failter` boundary.
+---
 
-### **Overall Risk Management Strategy**
-With the `v0.3` refactoring of the `evaluate` command for the new Failter interface now complete, our risk management focus shifts from implementation to practical application. The modular Polylith architecture remains our primary strategic tool, as it allowed us to cleanly swap out the `Failter` integration logic and will allow us to improve or replace other components (selection policies, storage backends) to address these risks as the system matures.
+## 🏗 Workspace Layout (Polylith)
+
+The project follows Polylith conventions, organizing the codebase into re-usable **components** and runnable **bases**. This ensures logic is reusable by any interface (e.g., the CLI or a future web service).
+
+```
+workspace/
+├── components/
+│   ├── command/      ; Reusable, high-level user commands
+│   ├── experiment/   ; Defines the logical experiment context
+│   ├── expdir/       ; Manages experiment directory layout
+│   ├── pdb/          ; The immutable prompt database
+│   ├── pop/          ; Population domain model & analysis
+│   ├── reports/      ; Parses contest result files (e.g., report.csv)
+│   ├── config/       ; Runtime configuration (EDN → map)
+│   ├── log/          ; Structured logging facade
+│   ├── llm/          ; Thin HTTP client for LLMs
+│   └── test-helper/  ; Shared utilities for testing
+└── bases/
+    └── cli/          ; `pcrit` command‑line entry point
+```
+
+### CLI Overview
+
+| Command | Status | Description |
+| :--- | :--- | :--- |
+| `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
+| `evaluate`  | ✅ | Runs the active population in a contest and collects results. |
+| `init`      | ✅ | Creates a new, minimal experiment skeleton directory. |
+| `select`    | ✅ | Creates a **new generation** of survivors based on evaluation scores. |
+| `stats`     | ✅ | Displays cost and score statistics for a contest or generation. |
+| `vary`      | ✅ | Adds new prompt variations to the *current* generation's population. |
+
+
+---
+
+### 📖 Terminology & File-Naming Glossary
+
+| Term                                               | Notes                                                   | Meaning                                                                                                                                                                       |
+|----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **init**                                           | Creates the initial experiment files.                   | One-time step that scaffolds a runnable experiment directory, including the `seeds/` folder, `bootstrap.edn`, and default configurations.                                     |
+| **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that ingests prompts from `seeds/` into the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                |
+| **vary**                                           | Mutates the current generation.                         | Generates new candidate prompts by mutating or recombining existing ones, adding them to the *current* population directory (`generations/gen-000/population`, …). |
+| **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
+| **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
+| **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `report.csv` and creates a **new generation folder** populated with symlinks to the survivors.                                  |
+| **stats**                                          | An analysis command. Does not mutate state.             | Reads one or more `report.csv` files and displays aggregated statistics about cost and performance scores.                                                                    |
+| **population (`generations/gen-NNN/population/`)** | See *Directory Layout* section.                         | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                                  |
+| **experiment directory (`expdir/`)**               | Portable & reproducible.                                | Root folder that bundles prompt generations, results, Failter specs, and metadata for a single evolutionary run.                                                              |
+| **`report.csv`**                                   | Failter produces this.                                  | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                                     |
+| **template placeholders**                          | *Only these two names are recognized by the templater.* | Literal strings substituted when a prompt is rendered:  <br>`{{INPUT_TEXT}}` – the evaluation text corpus<br>`{{OBJECT_PROMPT}}` – a prompt being operated on.                |
+| **seed prompt**                                    | Seeds are version-controlled.                           | Hand-crafted prompt placed in `seeds/` that kicks off **bootstrap**.                                                                                                          |
+
+> Use this table as the **single source of truth** when writing docs, code comments, or CLI help.
+
+---
+
+## 📦 Current State (Post-Refactoring)
+
+The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. All core commands are now fully implemented.
+
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`, `stats!`).
+*   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
+*   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
+*   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
+*   **`pcrit.pop`**: Handles core prompt domain logic, including population management.
+*   **`pcrit.reports`**: Parses contest result files like `report.csv`.
+*   **`pcrit.failter`**: A dedicated adapter for running the external Failter toolchain.
+
+---
+
+## 🛠 External Dependency — Failter
+
+PromptCritical does **not** implement scoring or judgement itself. Instead we treat [**Failter**](https://github.com/pragsmike/failter) as a **black box** experiment runner:
+
+*   We generate a `spec.yml` file that defines the entire contest for Failter.
+*   We shell-out to the single, idempotent `failter run --spec <path>` command.
+*   We parse the resulting JSON report to gather fitness data for the `select` step.
+
+---
+
+## 🚧 Current Milestone (v0.2): The Core Evolutionary Loop
+
+The immediate goal is to implement the full **`init` → `bootstrap` → `vary` → `evaluate` → `select`** vertical slice. This proves the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
+
+1.  **Initialize an Experiment** (`✅ Implemented`)
+    Creates a runnable experiment skeleton with default prompts and configs.
+    ```bash
+    pcrit init my-experiment/
+    ```
+
+2.  **Bootstrap an Experiment** (`✅ Implemented`)
+    Ingests seed prompts, creates named links, and populates `gen-0`.
+    ```bash
+    pcrit bootstrap my-experiment/
+    ```
+
+3.  **Vary the Population** (`✅ Implemented`)
+    Loads the latest generation, applies meta-prompts to create offspring, and adds the new prompts to the *current* generation's population.
+    ```bash
+    pcrit vary my-experiment/
+    ```
+
+4.  **Evaluate the Population** (`✅ Implemented`)
+    Packages prompts from a specific generation, runs them through Failter in a "contest," and collects the results.
+    ```bash
+    pcrit evaluate my-experiment/ --generation 0 --name "web-cleanup-v1" --inputs ...
+    ```
+
+5.  **Select the Survivors** (`✅ Implemented`)
+    Parses `report.csv` from a contest and applies a selection strategy to create a **new generation** containing only the fittest prompts.
+    ```bash
+    pcrit select my-experiment/ --from-contest "web-cleanup-v1"
+    ```
+
+---
+
+## 🗺 Roadmap Snapshot
+
+| Milestone | New Capability |
+|-----------|----------------|
+| **v0.2**  | Implement core commands (`init`, `stats`, etc). |
+| **v0.3**  | Automated `evolve` command that composes the v0.2 commands. |
+| **v0.4**  | Advanced selection & mutation operators. |
+| **v0.5**  | Surrogate critic to pre-filter variants before Failter. |
+| **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability. |
+| **v0.7**  | Reporting dashboard (`pcrit.web` base). |
+| **v1.0**  | Distributed workers, advanced semantic validators. |
+
+---
+
+## Getting Involved
+
+1.  **Clone** and run the tests:
+    ```bash
+    git clone https://github.com/pragsmike/promptcritical
+    cd promptcritical
+    make test
+2.  **Read** the design documents in the `docs/` directory.
+3.  **Hack** on the next milestone—PRs welcome!
+
+---
+
+**PromptCritical**: because great prompts shouldn’t be accidental.
