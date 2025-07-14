@@ -21,9 +21,7 @@
     {:exit-code @exit-code :output @output}))
 
 (defn- make-bootstrap-prereqs!
-  "Creates the necessary files for a `bootstrap` command to run successfully.
-  Specifically, it creates `seeds/` and `bootstrap.edn`, but crucially,
-  it does NOT create the `generations/` directory."
+  "Creates the necessary files for a `bootstrap` command to run successfully."
   [target-dir]
   (let [seeds-dir (io/file target-dir "seeds")]
     (.mkdirs seeds-dir)
@@ -48,7 +46,6 @@
 
 (deftest cli-bootstrap-dispatch-test
   (let [exp-dir (get-temp-dir)]
-    ;; CORRECTED: Use the minimal prereq helper, not the one that creates `generations`
     (make-bootstrap-prereqs! exp-dir)
     (let [{:keys [exit-code]} (run-cli ["bootstrap" exp-dir])]
       (is (nil? exit-code) "Bootstrap should run without error.")
@@ -59,7 +56,6 @@
   (let [exp-dir (get-temp-dir)
         ctx (exp/new-experiment-context exp-dir)
         vary-called (atom false)]
-    ;; CORRECTED: Set up the experiment correctly before testing `vary`
     (make-bootstrap-prereqs! exp-dir)
     (cmd/bootstrap! ctx)
 
@@ -75,12 +71,9 @@
           inputs-dir (io/file exp-dir "inputs")
           evaluate-called (atom nil)]
       (.mkdirs inputs-dir)
-
-      ;; CORRECTED: A valid, bootstrapped experiment must exist before evaluate can be called.
       (make-bootstrap-prereqs! exp-dir)
       (cmd/bootstrap! ctx)
       (spit (io/file exp-dir "evolution-parameters.edn") (pr-str {:evaluate {:models ["a-model"]}}))
-
 
       (with-redefs [cmd/evaluate! (fn [_ctx options] (reset! evaluate-called options))]
         (run-cli ["evaluate" exp-dir
@@ -89,3 +82,24 @@
 
       (is (some? @evaluate-called) "cmd/evaluate! should have been called.")
       (is (= "cli-judge-model" (:judge-model @evaluate-called))))))
+
+(deftest cli-evolve-dispatch-test
+  (testing "evolve command correctly parses options and calls the command fn"
+    (let [exp-dir (get-temp-dir)
+          ctx (exp/new-experiment-context exp-dir)
+          inputs-dir (doto (io/file exp-dir "inputs") .mkdirs)
+          evolve-called (atom nil)]
+      (make-bootstrap-prereqs! exp-dir)
+      (cmd/bootstrap! ctx)
+
+      (with-redefs [cmd/evolve! (fn [_ctx options] (reset! evolve-called options))]
+        (run-cli ["evolve" exp-dir
+                  "--inputs" (.getCanonicalPath inputs-dir)
+                  "--generations" "5"
+                  "--max-cost" "10.50"]))
+
+      (is (some? @evolve-called) "cmd/evolve! should have been called.")
+      (let [opts @evolve-called]
+        (is (= 5 (:generations opts)))
+        (is (= 10.5 (:max-cost opts)))
+        (is (= (.getCanonicalPath inputs-dir) (:inputs opts)))))))

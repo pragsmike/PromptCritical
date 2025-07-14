@@ -30,16 +30,20 @@
       :else
       {:valid? true :population population})))
 
-(defn- log-contest-cost! [processed-report-data]
-  (when (seq processed-report-data)
+(defn- get-and-log-contest-cost [processed-report-data]
+  (if (seq processed-report-data)
     (let [costs (->> processed-report-data
-                     (map :cost)
-                     (remove nil?)) ; Defensively remove any nils before summing.
+                     (keep :cost) ; Use keep to handle both strings and numbers, and filter nils
+                     (map #(if (string? %) (Double/parseDouble %) %))
+                     (remove nil?))
           total-cost (reduce + 0.0 costs)]
-      (log/info (format "Contest completed. Total calculated cost: $%.4f" total-cost)))))
+      (log/info (format "Contest completed. Total calculated cost: $%.4f" total-cost))
+      total-cost)
+    0.0))
 
 (defn evaluate!
-  "Orchestrates the evaluation of a prompt population for a given generation using the new spec-driven Failter workflow."
+  "Orchestrates the evaluation of a prompt population.
+  Returns a map with contest results, including the calculated :cost."
   [ctx {:keys [generation name inputs judge-model]}]
   (let [evo-params        (config/load-evolution-params ctx)
         eval-config       (:evaluate evo-params)
@@ -49,14 +53,16 @@
         contest-name      (or name "contest")]
 
     (if-not gen-num
-      (log/error "Cannot evaluate: No generations found in this experiment.")
+      (do (log/error "Cannot evaluate: No generations found in this experiment.")
+          {:success false :cost 0.0})
       (let [options-to-validate {:generation-number gen-num
                                  :contest-name      contest-name
                                  :inputs-dir        inputs
                                  :models            models-to-test}
             {:keys [valid? reason population]} (validate-options ctx options-to-validate)]
         (if-not valid?
-          (log/error "Evaluation validation failed:" reason)
+          (do (log/error "Evaluation validation failed:" reason)
+              {:success false :cost 0.0})
           (do
             (log/info "Starting evaluation for generation" gen-num "with contest name '" contest-name "'")
             (let [contest-params {:generation-number gen-num
@@ -67,7 +73,9 @@
                                   :judge-model       final-judge-model}
                   {:keys [success json-report]} (failter/run-contest! ctx contest-params)]
 
-              (when success
+              (if success
                 (let [report-csv-path (io/file (expdir/get-contest-dir ctx gen-num contest-name) "report.csv")
-                      processed-data (reports/process-and-write-csv-report! json-report (.getCanonicalPath report-csv-path))]
-                  (log-contest-cost! processed-data))))))))))
+                      processed-data (reports/process-and-write-csv-report! json-report (.getCanonicalPath report-csv-path))
+                      cost (get-and-log-contest-cost processed-data)]
+                  {:success true :cost cost :contest-name contest-name})
+                {:success false :cost 0.0}))))))))

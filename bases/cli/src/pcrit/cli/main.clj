@@ -60,7 +60,6 @@
         (log/error "The 'evaluate' command requires an --inputs <directory> option.")
         (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
               ctx (exp/new-experiment-context resolved-dir)
-              ;; Resolve the --inputs path as well
               resolved-opts (if (:inputs options)
                               (assoc options :inputs (resolve-exp-dir (:inputs options) user-cwd))
                               options)]
@@ -84,7 +83,19 @@
             ctx (exp/new-experiment-context resolved-dir)]
         (cmd/stats! ctx options)))))
 
-;; --- Command Specification Map (Unchanged) ---
+(defn- do-evolve [{:keys [options arguments]}]
+  (let [user-cwd (:pcrit-user-cwd options)]
+    (if (empty? arguments)
+      (log/error "The 'evolve' command requires an <experiment-dir> argument.")
+      (if-not (:inputs options)
+        (log/error "The 'evolve' command requires an --inputs <directory> option.")
+        (let [resolved-dir (resolve-exp-dir (first arguments) user-cwd)
+              ctx (exp/new-experiment-context resolved-dir)
+              resolved-opts (if (:inputs options)
+                              (assoc options :inputs (resolve-exp-dir (:inputs options) user-cwd))
+                              options)]
+          (cmd/evolve! ctx resolved-opts))))))
+
 (def command-specs
   {"init"      {:doc "Creates a new, minimal experiment skeleton directory."
                 :handler do-init
@@ -92,7 +103,7 @@
    "bootstrap" {:doc "Initializes an experiment, ingests seeds, and creates gen-0."
                 :handler do-bootstrap
                 :options []}
-   "vary"      {:doc "Evolves the latest generation into a new one via mutation."
+   "vary"      {:doc "Applies meta-prompts to the latest generation."
                 :handler do-vary
                 :options []}
    "evaluate"  {:doc "Runs a contest on a population using the Failter tool."
@@ -116,9 +127,17 @@
                 :options [
                           ["-c" "--from-contest NAME" "Name of a specific contest to analyze"]
                           ["-g" "--generation GEN" "Generation to analyze (defaults to latest)"
-                           :parse-fn #(Integer/parseInt %)]]}})
+                           :parse-fn #(Integer/parseInt %)]]}
+   "evolve"    {:doc "Automates the vary->evaluate->select loop for N generations."
+                :handler do-evolve
+                :options [
+                          ["-g" "--generations N" "The total number of generations to run for."
+                           :default 1
+                           :parse-fn #(Integer/parseInt %)]
+                          ["-m" "--max-cost N" "A maximum cost in USD to halt evolution if exceeded."
+                           :parse-fn #(Double/parseDouble %)]
+                          ["-i" "--inputs DIR" "Directory of input files to use for all evaluations."]]}})
 
-;; --- Usage and Parsing Logic ---
 (defn- command-usage [command-name spec options-summary]
   (->> [(str "Usage: pcrit " command-name " [options] <args...>\n")
         "Description:"
@@ -165,7 +184,6 @@
             (if-let [errors (:errors second-pass)]
               (exit-fn 1 (out-fn (error-msg errors)))
               (let [final-opts (merge global-opts command-opts)]
-                ;; CORRECTED: Set log level after all options are merged.
                 (taoensso.telemere/set-min-level! (:log final-opts))
                 (cond
                   (:help final-opts)

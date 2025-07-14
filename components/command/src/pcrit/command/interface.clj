@@ -4,7 +4,8 @@
             [pcrit.command.stats :as stats]
             [pcrit.command.vary :as vary]
             [pcrit.command.evaluate :as evaluate]
-            [pcrit.command.select :as select]))
+            [pcrit.command.select :as select]
+            [pcrit.command.evolve :as evolve]))
 
 (def setup!
   "Performs application-wide setup, like logging and pre-flight checks."
@@ -34,3 +35,7 @@
 (def select!
   "Selects survivors from a contest and creates a new generation."
   select/select!)
+
+(def evolve!
+  "Automates the `vary -> evaluate -> select` loop for N generations."
+  evolve/evolve!)

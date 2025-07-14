@@ -23,12 +23,13 @@
               final-metadata (merge ancestry-metadata generation-metadata)]
           {:header final-metadata :body content})))))
 
-(defn gen-offspring
+(defn- gen-offspring
   "The 'strategy' function for generating offspring. For now, it implements
   a single, hardcoded strategy: apply the 'improve' meta-prompt. This function
   is the intended extension point for future multimethod-based strategies."
   [ctx evo-params run-id parent-prompt call-template-fn]
-  (let [model-name (get-in evo-params [:vary :model] "mistral")
+  ;; CORRECTED: Default to a valid, fully-qualified model name.
+  (let [model-name (get-in evo-params [:vary :model] "openai/gpt-4o-mini")
         _ (log/info (str "Using model '" model-name "' for variation."))
         ;; This is the strategy-specific part: choosing the meta-prompt.
         improve-prompt (pop/read-linked-prompt ctx "refine")]
@@ -37,8 +38,7 @@
 
 (defn vary!
   "Adds new offspring to the latest generation by applying meta-prompts.
-  This command mutates the current generation's population in-place and does
-  NOT create a new generation folder."
+  Returns a map containing statistics about the run, including the total :cost."
   [ctx & [{:keys [call-template-fn] :or {call-template-fn llm/call-model-template}}]]
   (if-let [latest-gen-num (expdir/find-latest-generation-number ctx)]
     (let [evo-params (config/load-evolution-params ctx)
@@ -48,19 +48,18 @@
 
       (log/info "Varying generation" latest-gen-num "which has" (count current-pop) "members.")
 
-      ;; Generate Offspring proto-prompts
-      (let [offspring0 (->> current-pop
-                            (map (fn [parent-prompt]
-                                   (gen-offspring ctx evo-params run-id parent-prompt call-template-fn)))
-                            (remove nil?))
-            ;; Ingest the proto-prompts into the PDB
-            offspring (->> offspring0
+      (let [offspring-proto-prompts (->> current-pop
+                                         (mapv (fn [parent] (gen-offspring ctx evo-params run-id parent call-template-fn)))
+                                         (remove nil?))
+            vary-cost (->> offspring-proto-prompts
+                           (map #(get-in % [:header :cost-usd-snapshot] 0.0))
+                           (reduce + 0.0))
+            offspring (->> offspring-proto-prompts
                            (map (fn [child] (pop/ingest-prompt ctx (:body child) :metadata (:header child))))
                            (doall))]
 
         (log/info "Created" (count offspring) "new offspring prompts.")
 
-        ;; Add offspring to the *current* generation's population directory
         (doseq [child-prompt offspring]
           (let [target-file (expdir/pdb-file-of-prompt-record ctx child-prompt)
                 link-name   (str (get-in child-prompt [:header :id]) ".prompt")
@@ -71,6 +70,8 @@
 
         {:generation-varied latest-gen-num
          :offspring-created (count offspring)
-         :new-population-size (+ (count current-pop) (count offspring))}))
+         :new-population-size (+ (count current-pop) (count offspring))
+         :cost vary-cost}))
 
-    (log/error "Cannot run vary. No generations found. Did you bootstrap?")))
+    (do (log/error "Cannot run vary. No generations found. Did you bootstrap?")
+        {:cost 0.0})))
