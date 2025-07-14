@@ -1,7 +1,7 @@
 # PromptCritical System Design
 
-**Version 2.0 · 2025‑07‑14**
-**Status:** *v0.3 Failter Refactoring Complete*
+**Version 2.1 · 2025‑07‑14**
+**Status:** *v0.3 Automated Evolution Complete*
 
 ---
 
@@ -22,7 +22,7 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 
 | Layer | Name (ns prefix) | Role |
 | :--- | :--- | :--- |
-| **Component** | `pcrit.command` | **Reusable, high-level workflows** (e.g., `bootstrap!`, `vary!`) |
+| **Component** | `pcrit.command` | **Reusable, high-level workflows** (e.g., `bootstrap!`, `evolve!`) |
 | **Component** | `pcrit.experiment` | **Defines the logical Experiment context** passed between components |
 | **Component** | `pcrit.expdir` | **Manages the physical layout** of an experiment directory |
 | **Component** | `pcrit.failter` | **Generates `spec.yml` and runs the `failter run` command** |
@@ -38,7 +38,7 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 ```
 workspace/
 ├── components/
-│   ├── command/      ; high-level user commands
+│   ├── command/      ; high-level user commands (init, bootstrap, evolve, etc.)
 │   ├── experiment/   ; logical experiment context
 │   ├── expdir/       ; experiment directory layout logic
 │   ├── failter/      ; adapter for the external failter tool
@@ -76,31 +76,17 @@ The descriptions from the previous version remain accurate.
 ## 5  Experiment Flow (v0.3)
 
 ```
-bootstrap → vary → evaluate → select
+bootstrap → [ vary → evaluate → select ]*
 ```
+The new `evolve` command automates the core loop.
 
 1.  **Bootstrap** (`pcrit bootstrap <exp-dir>`)
-    *   The `cli` base calls the `pcrit.command/bootstrap!` function.
-    *   The command component orchestrates `expdir` and `pop` to create the directory structure and ingest the initial prompts from `bootstrap.edn`, creating `gen-0`.
+    *   The `cli` base calls the `pcrit.command/bootstrap!` function to create `gen-0`.
 
-2.  **Vary** (`pcrit vary <exp-dir>`)
-    *   Loads `evolution-parameters.edn` using the `pcrit.config` component to determine the model for variation.
-    *   Loads the population from the latest generation.
-    *   Applies meta-prompts to generate new offspring prompts, adding them to the *current* generation.
-
-3.  **Evaluate** (`pcrit evaluate <exp-dir> --name <contest-name> ...`)
-    *   The `cli` base calls the `pcrit.command/evaluate!` function.
-    *   The command loads `evolution-parameters.edn` using the `pcrit.config` component to get the list of models to test against and the default judge model.
-    *   It then orchestrates the `pcrit.failter` component to generate a `spec.yml` file defining the entire contest.
-    *   The `failter` component executes the external `failter run --spec <path>` command and captures the resulting JSON report from `stdout`.
-    *   Finally, the `command` component passes this JSON data to `pcrit.reports`, which calculates costs for each run and writes the final, canonical `report.csv`.
-
-4.  **Select** (`pcrit select <exp-dir> --from-contest <name>`)
-    *   The `cli` base calls `pcrit.command/select!`.
-    *   The command uses the `pcrit.reports` component to parse the specified `report.csv`.
-    *   It applies a selection strategy (defaulting to `top-N=5`) to determine the survivors.
-    *   It calls `pdb/update-metadata` to append a `:selection` event to each survivor's header.
-    *   Finally, it calls `pop/create-new-generation!` to create the next generation directory populated with links to the surviving members.
+2.  **Evolve** (`pcrit evolve <exp-dir> --generations N ...`)
+    *   The `cli` base calls `pcrit.command/evolve!`, which loops for `N` generations.
+    *   In each loop, it calls `pcrit.command/vary!`, `pcrit.command/evaluate!`, and `pcrit.command/select!` in sequence.
+    *   It tracks cumulative cost and can halt early if a budget is exceeded.
 
 ---
 
@@ -118,8 +104,9 @@ The descriptions from the previous version remain accurate.
 
 ## 8  Open Issues & Next Steps
 
-*   **Implement `evolve` command (v0.3)**: Create a high-level command that composes the `vary`, `evaluate`, and `select` steps into an automated evolutionary loop, running for a specified number of generations.
-*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `vary` → `evaluate` → `select` loop (using a mocked Failter) in the CI matrix.
+*   **Implement `evolve` command (v0.3)**: (`✅ Done`) The `evolve!` function and corresponding CLI command have been implemented, automating the core evolutionary cycle.
+*   **Add end‑to‑end smoke test**: Implement a test for the full `bootstrap` → `evolve` loop (using a mocked Failter) in the CI matrix. This is the next priority.
+*   **Refactor test helpers**: Consolidate test setup logic into a shared `test-helper` namespace to reduce duplication and improve test reliability.
 
 ---
 

@@ -35,7 +35,7 @@ pcrit init my-exp
 # 2. Ingest the seed prompts and create generation 0
 pcrit bootstrap my-exp
 ```
-You now have a complete, runnable experiment in the `my-exp` directory. See the [Usage Guide](USAGE.md) for the next steps (`vary`, `evaluate`, `select`).
+You now have a complete, runnable experiment in the `my-exp` directory. See the [Usage Guide](USAGE.md) for the next steps (`evolve`, `vary`, `evaluate`, `select`).
 
 
 ## Key Ingredients
@@ -103,6 +103,7 @@ workspace/
 | :--- | :--- | :--- |
 | `bootstrap` | ✅ | Initializes an experiment, ingests seed prompts, and creates `gen-0`. |
 | `evaluate`  | ✅ | Runs the active population in a contest and collects results. |
+| `evolve`    | ✅ | **Automates the `vary` → `evaluate` → `select` loop for N generations.** |
 | `init`      | ✅ | Creates a new, minimal experiment skeleton directory. |
 | `select`    | ✅ | Creates a **new generation** of survivors based on evaluation scores. |
 | `stats`     | ✅ | Displays cost and score statistics for a contest or generation. |
@@ -136,7 +137,7 @@ workspace/
 
 The project has undergone a significant architectural refactoring into a clean Polylith structure with clear, single-responsibility components. All core commands are now fully implemented.
 
-*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`, `stats!`).
+*   **`pcrit.command`**: Provides reusable, high-level workflow functions (`init!`, `bootstrap!`, `vary!`, `evaluate!`, `select!`, `stats!`, `evolve!`).
 *   **`pcrit.experiment`**: Defines the central data structure representing an experiment's context.
 *   **`pcrit.expdir`**: Manages the physical filesystem layout of an experiment directory.
 *   **`pcrit.pdb`**: The robust, concurrent, and immutable prompt database.
@@ -156,38 +157,24 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 
 ---
 
-## 🚧 Current Milestone (v0.2): The Core Evolutionary Loop
+## 🚧 Current Milestone (v0.3): The Automated Evolutionary Loop
 
-The immediate goal is to implement the full **`init` → `bootstrap` → `vary` → `evaluate` → `select`** vertical slice. This proves the system can orchestrate an external evaluator and manage a population through a full evolutionary cycle.
+The goal of this milestone was to implement the high-level `evolve` command to compose the core `vary` → `evaluate` → `select` steps into a fully automated loop.
 
 1.  **Initialize an Experiment** (`✅ Implemented`)
-    Creates a runnable experiment skeleton with default prompts and configs.
     ```bash
     pcrit init my-experiment/
     ```
 
 2.  **Bootstrap an Experiment** (`✅ Implemented`)
-    Ingests seed prompts, creates named links, and populates `gen-0`.
     ```bash
     pcrit bootstrap my-experiment/
     ```
 
-3.  **Vary the Population** (`✅ Implemented`)
-    Loads the latest generation, applies meta-prompts to create offspring, and adds the new prompts to the *current* generation's population.
+3.  **Evolve the Population** (`✅ Implemented`)
+    Runs the full `vary` -> `evaluate` -> `select` cycle automatically for a specified number of generations or until a cost budget is met.
     ```bash
-    pcrit vary my-experiment/
-    ```
-
-4.  **Evaluate the Population** (`✅ Implemented`)
-    Packages prompts from a specific generation, runs them through Failter in a "contest," and collects the results.
-    ```bash
-    pcrit evaluate my-experiment/ --generation 0 --name "web-cleanup-v1" --inputs ...
-    ```
-
-5.  **Select the Survivors** (`✅ Implemented`)
-    Parses `report.csv` from a contest and applies a selection strategy to create a **new generation** containing only the fittest prompts.
-    ```bash
-    pcrit select my-experiment/ --from-contest "web-cleanup-v1"
+    pcrit evolve my-experiment/ --generations 5 --inputs path/to/my/inputs/
     ```
 
 ---
@@ -196,8 +183,8 @@ The immediate goal is to implement the full **`init` → `bootstrap` → `vary` 
 
 | Milestone | New Capability |
 |-----------|----------------|
-| **v0.2**  | Implement core commands (`init`, `stats`, etc). |
-| **v0.3**  | Automated `evolve` command that composes the v0.2 commands. |
+| **v0.2**  | DONE Implement core commands (`init`, `stats`, etc). |
+| **v0.3**  | DONE Automated `evolve` command that composes the v0.2 commands. |
 | **v0.4**  | Advanced selection & mutation operators. |
 | **v0.5**  | Surrogate critic to pre-filter variants before Failter. |
 | **v0.6**  | Experiment recipes (EDN/YAML) and CLI replayability. |
