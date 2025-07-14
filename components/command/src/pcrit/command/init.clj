@@ -5,11 +5,12 @@
 ;; --- Private Helpers ---
 
 (def ^:private scaffold-files
-  {"pcrit/init_scaffold/.gitignore"               ".gitignore"
-   "pcrit/init_scaffold/bootstrap.edn"            "bootstrap.edn"
-   "pcrit/init_scaffold/evolution-parameters.edn" "evolution-parameters.edn"
-   "pcrit/init_scaffold/seeds/improve-meta-prompt.txt" "seeds/improve-meta-prompt.txt"
-   "pcrit/init_scaffold/seeds/seed-object-prompt.txt"  "seeds/seed-object-prompt.txt"})
+  {"pcrit/init_scaffold/.gitignore"                       ".gitignore"
+   "pcrit/init_scaffold/bootstrap.edn"                    "bootstrap.edn"
+   "pcrit/init_scaffold/evolution-parameters.edn"         "evolution-parameters.edn"
+   "pcrit/init_scaffold/seeds/improve-meta-prompt.txt"    "seeds/improve-meta-prompt.txt"
+   "pcrit/init_scaffold/seeds/seed-object-prompt.txt"     "seeds/seed-object-prompt.txt"
+   "pcrit/init_scaffold/seeds/crossover-meta-prompt.txt"  "seeds/crossover-meta-prompt.txt"})
 
 (defn- copy-resource! [resource-path target-file]
   (io/make-parents target-file)

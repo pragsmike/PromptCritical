@@ -1,10 +1,12 @@
 (ns pcrit.command.vary-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
+            [pcrit.command.interface :as cmd]
             [pcrit.command.vary :as vary]
             [pcrit.expdir.interface :as expdir]
             [pcrit.llm.interface :as llm]
             [pcrit.pop.interface :as pop]
+            [pcrit.pdb.interface :as pdb]
             [pcrit.command.test-helper :as th-cmd]
             [pcrit.test-helper.interface :as th-generic]))
 
@@ -31,7 +33,7 @@
       (is (= 0 (expdir/find-latest-generation-number ctx)) "Precondition: gen-0 should exist.")
       (is (= 1 (count (pop/load-population ctx 0))) "Precondition: gen-0 should have one member.")
 
-      (let [{:keys [offspring-created]} (vary/vary! ctx {:call-template-fn mock-template-caller})]
+      (let [{:keys [offspring-created]} (cmd/vary! ctx {:call-template-fn mock-template-caller})]
         (is (= 1 offspring-created))
 
         (let [varied-pop (pop/load-population ctx 0)
@@ -40,7 +42,6 @@
 
           (is (some? offspring-header) "An offspring with parent metadata should exist.")
           (is (= ["P1"] (:parents offspring-header)) "Offspring should list P1 as its parent.")
-          ;; CORRECTED ASSERTION: The test now checks for the correct default model.
           (is (= "openai/gpt-4o-mini" (get-in offspring-header [:generator :model]))))))))
 
 (deftest vary-command-configured-model-test
@@ -50,7 +51,7 @@
           config-file (io/file exp-dir "evolution-parameters.edn")]
       (spit config-file (pr-str {:vary {:model "my-configured-model"}}))
 
-      (vary/vary! ctx {:call-template-fn mock-template-caller})
+      (cmd/vary! ctx {:call-template-fn mock-template-caller})
 
       (let [offspring-header (->> (pop/load-population ctx 0)
                                   (map :header)
@@ -63,10 +64,53 @@
   (testing "vary! with an unknown strategy in config logs a warning and creates no offspring"
     (let [exp-dir (th-generic/get-temp-dir)
           ctx (th-cmd/setup-bootstrapped-exp! exp-dir)
-          ;; Add a config file specifying an unknown strategy
           config-file (io/file exp-dir "evolution-parameters.edn")]
       (spit config-file (pr-str {:vary {:strategy :hallucinate}}))
 
-      (let [{:keys [cost offspring-created]} (vary/vary! ctx {:call-template-fn mock-template-caller})]
+      (let [{:keys [cost offspring-created]} (cmd/vary! ctx {:call-template-fn mock-template-caller})]
         (is (zero? offspring-created) "No offspring should be created with an unknown strategy.")
         (is (zero? cost) "Cost should be zero when no offspring are created.")))))
+
+
+;; --- CORRECTED TEST FOR CROSSOVER STRATEGY ---
+
+(deftest crossover-strategy-test
+  (testing ":crossover strategy creates one child from the top two parents of the previous generation"
+    (let [exp-dir (th-generic/get-temp-dir)
+          ctx (th-cmd/setup-bootstrapped-exp! exp-dir)
+          pdb-dir (expdir/get-pdb-dir ctx)]
+      ;; Setup:
+      ;; 1. Manually ingest the crossover prompt and link it, ensuring it exists for the test.
+      (let [crossover-prompt (pop/ingest-prompt ctx "Crossover: {{OBJECT_PROMPT_A}} vs {{OBJECT_PROMPT_B}}")]
+        (expdir/link-prompt! ctx crossover-prompt "crossover")
+        (is (.exists (io/file (expdir/get-link-dir ctx) "crossover")) "Precondition: Crossover link must exist."))
+
+      ;; 2. Ingest another prompt to be a parent. P1 and P2 already exist.
+      (let [p4 (pdb/create-prompt pdb-dir "Parent B")]
+        ;; 3. Create a fake contest report for gen-0, making P4 and P1 the winners.
+        (let [contest-dir (expdir/get-contest-dir ctx 0 "crossover-setup-contest")
+              report-file (io/file contest-dir "report.csv")]
+          (.mkdirs contest-dir)
+          (spit report-file "prompt,score\nP4,100\nP1,90\nP2,80"))
+
+        ;; 4. Create gen-1 with these two winners. `vary` will be run on gen-1.
+        (pop/create-new-generation! ctx [(pdb/read-prompt pdb-dir "P1") p4])
+        (is (= 1 (expdir/find-latest-generation-number ctx)) "Precondition: gen-1 should exist.")
+
+        ;; 5. Configure the experiment to use the :crossover strategy for gen-1.
+        (let [config-file (io/file exp-dir "evolution-parameters.edn")]
+          (spit config-file (pr-str {:vary {:strategy :crossover}})))
+
+        ;; Action: Run the vary command on gen-1.
+        (let [{:keys [offspring-created new-population-size]} (cmd/vary! ctx {:call-template-fn mock-template-caller})]
+          ;; Assertions:
+          (is (= 1 offspring-created) "Crossover should create exactly one offspring.")
+          (is (= 3 new-population-size) "New population should have the 2 parents + 1 child.")
+
+          (let [gen-1-pop (pop/load-population ctx 1)
+                offspring (->> gen-1-pop
+                               (filter #(seq (get-in % [:header :parents])))
+                               first)]
+            (is (some? offspring) "An offspring should exist in the population.")
+            ;; The :parents list should contain the IDs of the top 2 from the report.
+            (is (= #{"P4" "P1"} (set (get-in offspring [:header :parents]))) "Offspring should list both parents.")))))))

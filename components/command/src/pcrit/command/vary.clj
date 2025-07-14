@@ -4,12 +4,14 @@
             [pcrit.expdir.interface :as expdir]
             [pcrit.llm.interface :as llm]
             [pcrit.log.interface :as log]
-            [pcrit.pop.interface :as pop])
+            [pcrit.pop.interface :as pop]
+            [pcrit.pdb.interface :as pdb]
+            [pcrit.reports.interface :as reports])
   (:import [java.time Instant]))
 
 (defn- breed-prompt
-  "The generic 'breeding' function. Applies a chosen meta-prompt to a parent
-  prompt to produce a new proto-prompt map with full metadata."
+  "The generic 'breeding' function for a single parent. Applies a chosen meta-prompt
+  to a parent prompt to produce a new proto-prompt map with full metadata."
   [model-name meta-prompt parent-prompt run-id call-template-fn]
   (let [template (:body meta-prompt)
         vars {:OBJECT_PROMPT (:body parent-prompt)}]
@@ -22,6 +24,23 @@
               final-metadata (merge ancestry-metadata generation-metadata)]
           {:header final-metadata :body content})))))
 
+(defn- breed-from-crossover
+  "Breeding function for two parents. Applies a crossover meta-prompt."
+  [model-name meta-prompt parent-a parent-b run-id call-template-fn]
+  (let [template (:body meta-prompt)
+        vars {:OBJECT_PROMPT_A (:body parent-a)
+              :OBJECT_PROMPT_B (:body parent-b)}]
+    (let [{:keys [content generation-metadata error]} (call-template-fn model-name template vars)]
+      (when-not error
+        (let [ancestry-metadata {:parents [(get-in parent-a [:header :id])
+                                           (get-in parent-b [:header :id])]
+                                 :generator {:model model-name
+                                             :meta-prompt (get-in meta-prompt [:header :id])
+                                             :vary-run run-id}}
+              final-metadata (merge ancestry-metadata generation-metadata)]
+          {:header final-metadata :body content})))))
+
+
 ;; --- Pluggable Offspring Generation Strategy ---
 
 (defn- dispatch-strategy [evo-params]
@@ -30,25 +49,63 @@
 (defmulti gen-offspring
   "Generates offspring using a pluggable strategy. Dispatches on the value of
   [:vary :strategy] in evolution-parameters.edn, defaulting to :refine."
-  (fn [_ctx evo-params _run-id _parent-prompt _call-template-fn]
-    (dispatch-strategy evo-params)))
+  (fn [dispatch-val _ctx _run-id _call-template-fn]
+    (:strategy dispatch-val)))
 
 (defmethod gen-offspring :refine
-  [ctx evo-params run-id parent-prompt call-template-fn]
-  (let [model-name (get-in evo-params [:vary :model] "openai/gpt-4o-mini")
+  [dispatch-val ctx run-id call-template-fn]
+  (let [{:keys [evo-params population]} dispatch-val
+        model-name (get-in evo-params [:vary :model] "openai/gpt-4o-mini")
         improve-prompt (pop/read-linked-prompt ctx "refine")]
     (if improve-prompt
       (do
-        (log/info "Using :refine strategy. Applying meta-prompt" (get-in improve-prompt [:header :id]) "to" (get-in parent-prompt [:header :id]))
-        (breed-prompt model-name improve-prompt parent-prompt run-id call-template-fn))
+        (log/info "Using :refine strategy. Applying meta-prompt" (get-in improve-prompt [:header :id]) "to" (count population) "parents.")
+        (->> population
+             (mapv (fn [parent] (breed-prompt model-name improve-prompt parent run-id call-template-fn)))
+             (remove nil?)))
       (do
-        (log/warn "Vary strategy is ':refine' but the linked prompt 'refine' was not found. Skipping parent:" (get-in parent-prompt [:header :id]))
-        nil))))
+        (log/warn "Vary strategy is ':refine' but the linked prompt 'refine' was not found. Skipping generation.")
+        []))))
+
+(defmethod gen-offspring :crossover
+  [dispatch-val ctx run-id call-template-fn]
+  (let [{:keys [evo-params generation-number]} dispatch-val
+        model-name (get-in evo-params [:vary :model] "openai/gpt-4o-mini")
+        crossover-prompt (pop/read-linked-prompt ctx "crossover")
+        prev-gen-num (dec generation-number)]
+    (if-not crossover-prompt
+      (do (log/warn "Vary strategy is ':crossover' but the linked prompt 'crossover' was not found. Skipping generation.")
+          [])
+      (if (< prev-gen-num 0)
+        (do (log/warn "Cannot use :crossover strategy on generation 0. Skipping.")
+            [])
+        (let [contests-dir (expdir/get-contests-dir ctx prev-gen-num)
+              reports (->> (file-seq contests-dir) (filter #(= "report.csv" (.getName %))))]
+          (if (empty? reports)
+            (do (log/warn "Cannot use :crossover, no contest reports found in previous generation" prev-gen-num)
+                [])
+            (let [latest-report (last (sort reports))
+                  top-2-data (->> (reports/parse-report latest-report)
+                                  (sort-by :score >)
+                                  (take 2))
+                  parent-a-id (:prompt (first top-2-data))
+                  parent-b-id (:prompt (second top-2-data))
+                  parent-a-record (pdb/read-prompt (expdir/get-pdb-dir ctx) parent-a-id)
+                  parent-b-record (pdb/read-prompt (expdir/get-pdb-dir ctx) parent-b-id)]
+              (if (and parent-a-record parent-b-record)
+                (do
+                  (log/info "Using :crossover strategy. Breeding" parent-a-id "and" parent-b-id)
+                  (if-let [offspring (breed-from-crossover model-name crossover-prompt parent-a-record parent-b-record run-id call-template-fn)]
+                    [offspring] ; Return a collection with the single offspring
+                    []))
+                (do (log/warn "Could not find one or both parents for crossover in PDB:" parent-a-id parent-b-id)
+                    [])))))))))
+
 
 (defmethod gen-offspring :default
-  [_ctx evo-params _run-id parent-prompt _call-template-fn]
-  (log/warn "Unknown vary strategy" (dispatch-strategy evo-params) "requested for parent" (get-in parent-prompt [:header :id]) ". Skipping.")
-  nil)
+  [dispatch-val _ctx _run-id _call-template-fn]
+  (log/warn "Unknown vary strategy" (:strategy dispatch-val) "requested. Skipping generation.")
+  [])
 
 
 ;; --- Main Command Function ---
@@ -61,13 +118,16 @@
     (let [evo-params (config/load-evolution-params ctx)
           current-pop (pop/load-population ctx latest-gen-num)
           current-pop-dir (expdir/get-population-dir ctx latest-gen-num)
-          run-id (.toString (Instant/now))]
+          run-id (.toString (Instant/now))
+          strategy (dispatch-strategy evo-params)
+          dispatch-val {:strategy          strategy
+                        :evo-params        evo-params
+                        :population        current-pop
+                        :generation-number latest-gen-num}]
 
-      (log/info "Varying generation" latest-gen-num "which has" (count current-pop) "members.")
+      (log/info "Varying generation" latest-gen-num "with strategy" (str ":" strategy))
 
-      (let [offspring-proto-prompts (->> current-pop
-                                         (mapv (fn [parent] (gen-offspring ctx evo-params run-id parent call-template-fn)))
-                                         (remove nil?))
+      (let [offspring-proto-prompts (gen-offspring dispatch-val ctx run-id call-template-fn)
             vary-cost (->> offspring-proto-prompts
                            (map #(get-in % [:header :cost-usd-snapshot] 0.0))
                            (reduce + 0.0))
