@@ -32,7 +32,6 @@
                              :artifacts_dir artifacts-dir-path
                              :retries       2
                              :output_file   (.getCanonicalPath report-file)}
-                      ;; Defensively add the judge_model key only if it's a non-blank string.
                       (not (str/blank? judge-model)) (assoc :judge_model judge-model))]
     (.mkdirs contest-dir)
     (spit spec-file (yaml/generate-string spec-data :dumper-options {:flow-style :block}))
@@ -56,7 +55,6 @@
       (log/info "Running failter toolchain:" (str/join " " command))
 
       (let [result (apply shell/sh command)]
-        ;; Capture stdout for debugging, regardless of outcome.
         (spit (io/file contest-dir "failter.stdout.log") (:out result))
         (spit (io/file contest-dir "failter.stderr.log") (:err result))
 
@@ -77,4 +75,7 @@
                 {:success false :error "Failter report file not found."})))
           (do
             (log/error "Failter command failed with exit code" (:exit result))
+            ;; NEW: Print stderr output on failure for immediate user feedback.
+            (when-not (str/blank? (:err result))
+              (log/error "Failter stderr output:\n" (:err result)))
             {:success false :error (:err result)}))))))

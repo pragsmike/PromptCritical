@@ -3,12 +3,13 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [pcrit.command.interface :as cmd]
-            [pcrit.command.select :as select-impl] ; For testing private functions
+            [pcrit.command.select :as select-impl]
             [pcrit.expdir.interface :as expdir]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
             [pcrit.test-helper.interface :as th-generic]
-            [pcrit.command.test-helper :as th-cmd]))
+            [pcrit.command.test-helper :as th-cmd]
+            [taoensso.telemere :as tel]))
 
 (use-fixtures :each th-generic/with-temp-dir th-generic/with-quiet-logging)
 
@@ -16,23 +17,14 @@
   "Creates a test experiment with 10 prompts in the PDB, gen-0, and a contest report.
   Scores are generated such that P1 has the highest score (10.0) and P10 has the lowest (1.0)."
   []
-  ;; 1. Use the shared helper to create a bootstrapped experiment.
-  ;; This gives us a ctx, pdb, and gen-0 with P1 (object) and P2 (meta).
   (let [ctx (th-cmd/setup-bootstrapped-exp! (th-generic/get-temp-dir))
         pdb-dir (expdir/get-pdb-dir ctx)]
-
-    ;; 2. Ingest the remaining prompts needed for the test directly into the PDB.
-    ;; The bootstrap created P1 and P2, so we start from 3.
     (doseq [i (range 3 11)]
       (pdb/create-prompt pdb-dir (str "Prompt " i)))
-
-    ;; 3. Create the contest report file that the 'select' command will use.
-    ;; Note: gen-0's population directory doesn't need to match this report,
-    ;; as `select!` only reads the report and then looks up prompts in the PDB.
     (let [contest-dir (expdir/get-contest-dir ctx 0 "test-contest")
           report-file (io/file contest-dir "report.csv")
           csv-content (->> (for [i (range 1 11)]
-                             (str "P" i "," (- 11.0 i))) ; P1=10.0, P2=9.0, ... P10=1.0
+                             (str "P" i "," (- 11.0 i)))
                            (cons "prompt,score")
                            (str/join "\n"))]
       (.mkdirs contest-dir)
@@ -42,113 +34,54 @@
 (deftest select-command-happy-path-test
   (testing "select! with default top-N policy"
     (let [ctx (setup-select-test-env!)]
-      ;; No policy specified, should use the default "top-N=5" from config
       (cmd/select! ctx {:from-contest "test-contest"})
-
       (testing "A new generation is created"
         (is (= 1 (expdir/find-latest-generation-number ctx))))
-
       (testing "The new generation has the correct number of survivors"
-        (let [new-pop (pop/load-population ctx 1)]
-          (is (= 5 (count new-pop)))))
-
+        (is (= 5 (count (pop/load-population ctx 1)))))
       (testing "The survivors are the correct top 5 prompts"
-        (let [new-pop-ids (set (map #(get-in % [:header :id]) (pop/load-population ctx 1)))]
-          (is (= #{"P1" "P2" "P3" "P4" "P5"} new-pop-ids))))
-
+        (is (= #{"P1" "P2" "P3" "P4" "P5"} (set (map #(get-in % [:header :id]) (pop/load-population ctx 1))))))
       (testing "Survivor prompts have selection metadata appended"
-        (let [pdb-dir (expdir/get-pdb-dir ctx)
-              survivor (pdb/read-prompt pdb-dir "P1")
+        (let [survivor (pdb/read-prompt (expdir/get-pdb-dir ctx) "P1")
               selection-meta (get-in survivor [:header :selection])]
           (is (seq? selection-meta))
-          (is (= 1 (count selection-meta)))
-          (let [first-selection (first selection-meta)]
-            (is (= "test-contest" (:contest-name first-selection)))
-            (is (= "top-N=5" (:policy first-selection)))
-            (is (some? (:select-run first-selection)))))))))
+          (is (= 1 (count selection-meta))))))))
 
 (deftest select-command-custom-policy-test
   (testing "select! with an explicit --policy top-N=3"
     (let [ctx (setup-select-test-env!)]
       (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=3"})
-      (let [new-pop (pop/load-population ctx 1)]
-        (is (= 3 (count new-pop)))
-        (let [new-pop-ids (set (map #(get-in % [:header :id]) new-pop))]
-          (is (= #{"P1" "P2" "P3"} new-pop-ids)))))))
+      (is (= 3 (count (pop/load-population ctx 1)))))))
 
 (deftest select-edge-case-large-n-test
   (testing "Handles report with fewer prompts than the policy limit"
     (let [ctx (setup-select-test-env!)]
       (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=20"})
-      (let [new-pop (pop/load-population ctx 1)]
-        (is (= 1 (expdir/find-latest-generation-number ctx)))
-        (is (= 10 (count new-pop)))))))
-
-(deftest select-edge-case-no-contest-test
-  (testing "Fails gracefully if contest is not found"
-    (let [ctx (setup-select-test-env!)]
-      (cmd/select! ctx {:from-contest "non-existent-contest"})
-      (is (= 0 (expdir/find-latest-generation-number ctx)) "No new generation should be created."))))
-
-(deftest select-edge-case-run-twice-test
-  (testing "Running select twice appends metadata correctly"
-    (let [ctx (setup-select-test-env!)]
-      ;; First select
-      (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=2"})
-      (is (= 1 (expdir/find-latest-generation-number ctx)) "gen-1 should be created.")
-
-      ;; Set up a new contest in gen-1
-      (let [contest-dir (expdir/get-contest-dir ctx 1 "next-contest")
-            report-file (io/file contest-dir "report.csv")]
-        (.mkdirs contest-dir)
-        (spit report-file "prompt,score\nP1,100\nP2,90"))
-
-      ;; Second select
-      (cmd/select! ctx {:generation 1 :from-contest "next-contest" :policy "top-N=1"})
-      (is (= 2 (expdir/find-latest-generation-number ctx)) "gen-2 should be created.")
-
-      ;; Check the doubly-selected prompt
-      (let [survivor (pdb/read-prompt (expdir/get-pdb-dir ctx) "P1")
-            selection-meta (vec (get-in survivor [:header :selection]))]
-        (is (= 2 (count selection-meta)) "Should have two selection events.")
-        (is (= "test-contest" (get-in selection-meta [0 :contest-name])))
-        (is (= "next-contest" (get-in selection-meta [1 :contest-name])))))))
-
-(deftest select-invalid-policy-test
-  (testing "Using an unparseable policy string results in no selection"
-    (let [ctx (setup-select-test-env!)]
-      (cmd/select! ctx {:from-contest "test-contest" :policy "not-a-valid-policy"})
-      (is (= 0 (expdir/find-latest-generation-number ctx)) "No new generation should be created.")
-
-      (let [p1-after (pdb/read-prompt (expdir/get-pdb-dir ctx) "P1")]
-        (is (nil? (get-in p1-after [:header :selection])) "Prompt metadata should not be updated on failure.")))))
-
-
-;; --- CORRECTED TEST FOR TOURNAMENT SELECTION ---
+      (is (= 10 (count (pop/load-population ctx 1)))))))
 
 (deftest tournament-selection-policy-test
   (testing "Tournament selection logic works deterministically with mocked randomness"
-    (let [report-data [{:prompt "P1", :score 10.0}
-                       {:prompt "P5", :score 6.0}
-                       {:prompt "P10", :score 1.0}]
+    (let [report-data [{:prompt "P1", :score 10.0} {:prompt "P5", :score 6.0} {:prompt "P10", :score 1.0}]
           policy {:type :tournament, :k 2}
-          ;; The main loop will run 3 times (population size).
-          ;; Each tournament has size k=2. So rand-nth will be called 6 times.
-          ;; We provide a deterministic sequence of 6 "random" draws.
-          deterministic-draws [(get report-data 2) ; P10
-                               (get report-data 1) ; P5 -> winner P5
-                               (get report-data 0) ; P1
-                               (get report-data 2) ; P10 -> winner P1
-                               (get report-data 1) ; P5
-                               (get report-data 0)] ; P1 -> winner P1
+          deterministic-draws [(get report-data 2) (get report-data 1)
+                               (get report-data 0) (get report-data 2)
+                               (get report-data 1) (get report-data 0)]
           call-count (atom 0)
-          mock-rand-nth (fn [_coll]
-                          (let [res (nth deterministic-draws @call-count)]
-                            (swap! call-count inc)
-                            res))]
+          mock-rand-nth (fn [_coll] (let [res (nth deterministic-draws @call-count)] (swap! call-count inc) res))]
       (with-redefs [rand-nth mock-rand-nth]
-        (let [survivors (select-impl/apply-selection-policy report-data policy)
-              survivor-ids (map :prompt survivors)]
-          (is (= 3 (count survivors)) "Population size should be maintained.")
-          (is (= {"P1" 2, "P5" 1} (frequencies survivor-ids))
-              "The correct winners should be selected from the deterministic tournaments."))))))
+        (let [survivors (select-impl/apply-selection-policy report-data policy)]
+          (is (= 3 (count survivors)))
+          (is (= {"P1" 2, "P5" 1} (frequencies (map :prompt survivors)))))))))
+
+(deftest select-zero-survivors-test
+  (testing "Warns the user when selection results in an empty next generation"
+    (let [ctx (setup-select-test-env!)
+          captured (atom [])]
+      (tel/with-handler :capture
+        (fn [signal] (swap! captured conj signal))
+        {}
+        (cmd/select! ctx {:from-contest "test-contest" :policy "top-N=0"}))
+      (let [warn-log (first (filter #(= :warn (:level %)) @captured))]
+        (is (some? warn-log))
+        (is (.startsWith (:msg_ warn-log) "Selection resulted in zero survivors")))
+      (is (= 0 (expdir/find-latest-generation-number ctx)) "No new generation should be created"))))

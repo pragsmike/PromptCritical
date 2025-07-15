@@ -24,7 +24,6 @@
       {:type :top-n, :policy-string policy-str, :n (Integer/parseInt n)}
       nil)
 
-    ;; NEW: Parse tournament selection policy
     (str/starts-with? policy-str "tournament-k=")
     (if-let [[_ k] (re-matches #"tournament-k=(\d+)" policy-str)]
       {:type :tournament, :policy-string policy-str, :k (Integer/parseInt k)}
@@ -43,7 +42,6 @@
        (sort-by :score >)
        (take n)))
 
-;; NEW: Tournament Selection Implementation
 (defmethod apply-selection-policy :tournament
   [report-data {:keys [k]}]
   (if (empty? report-data)
@@ -51,8 +49,6 @@
     (let [population-vec (vec report-data)
           population-size (count population-vec)]
       (log/info "Running" population-size "tournaments with k=" k)
-      ;; To maintain population size, we run N tournaments, where N is the original size.
-      ;; We sample with replacement, so fitter individuals can be selected multiple times.
       (for [_ (range population-size)]
         (->> (repeatedly k #(rand-nth population-vec))
              (apply max-key :score))))))
@@ -112,11 +108,13 @@
                 _               (log/info "Selected" (count survivor-ids) "survivors from generation" gen-num "using policy '" policy-str "'")
                 survivor-records (doall (map #(pdb/read-prompt (expdir/get-pdb-dir ctx) %) survivor-ids))]
 
-            ;; Append metadata to each survivor in the PDB
+            ;; NEW: Warn if the selection resulted in no survivors.
+            (when (empty? survivor-records)
+              (log/warn "Selection resulted in zero survivors. The next generation will be empty."))
+
             (doseq [survivor survivor-records]
               (update-survivor-metadata! ctx (get-in survivor [:header :id]) selection-event))
 
-            ;; Create the new generation with symlinks to the survivors
             (when (seq survivor-records)
               (let [gen-info (pop/create-new-generation! ctx survivor-records)]
                 (log/info "Created new generation" (:generation-number gen-info) "with" (:population-size gen-info) "survivors.")))))))))

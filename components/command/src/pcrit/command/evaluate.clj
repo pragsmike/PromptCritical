@@ -11,18 +11,18 @@
 (defn- validate-options [ctx {:keys [generation-number contest-name inputs-dir models judge-model]}]
   (let [gen-dir (expdir/get-generation-dir ctx generation-number)
         contest-dir (expdir/get-contest-dir ctx generation-number contest-name)
-        population (pop/load-population ctx generation-number)]
+        population (pop/load-population ctx generation-number)
+        inputs-file (io/file inputs-dir)]
     (cond
       (not (.exists gen-dir))
       {:valid? false :reason (str "Generation " generation-number " does not exist.")}
 
-      (or (nil? inputs-dir) (not (and (.exists (io/file inputs-dir)) (.isDirectory (io/file inputs-dir)))))
+      (or (nil? inputs-dir) (not (and (.exists inputs-file) (.isDirectory inputs-file))))
       {:valid? false :reason (str "Inputs directory not found or not a directory: " inputs-dir)}
 
       (or (nil? models) (empty? models))
       {:valid? false :reason "No models specified for evaluation. Check :evaluate/:models in evolution-parameters.edn."}
 
-      ;; NEW: Check for a valid judge model before anything else.
       (str/blank? judge-model)
       {:valid? false :reason "No judge model specified. Use the --judge-model flag or add :judge-model to evolution-parameters.edn."}
 
@@ -45,6 +45,18 @@
       (log/info (format "Contest completed. Total calculated cost: $%.4f" total-cost))
       total-cost)
     0.0))
+
+(defn- check-and-warn!
+  "Performs non-blocking checks and prints warnings to the user."
+  [inputs-dir models]
+  ;; Check for empty inputs directory
+  (when (empty? (.listFiles (io/file inputs-dir)))
+    (log/warn "Inputs directory is empty:" inputs-dir))
+  ;; Check for unknown model names
+  (doseq [model models]
+    (when-not (or (str/starts-with? model "ollama/")
+                  (get config/price-table model))
+      (log/warn "Model '" model "' is not a known model in PromptCritical's price table. It may not be supported."))))
 
 (defn evaluate!
   "Orchestrates the evaluation of a prompt population.
@@ -70,6 +82,7 @@
           (do (log/error "Evaluation validation failed:" reason)
               {:success false :cost 0.0})
           (do
+            (check-and-warn! inputs models-to-test)
             (log/info "Starting evaluation for generation" gen-num "with contest name '" contest-name "'")
             (let [contest-params {:generation-number gen-num
                                   :contest-name      contest-name
