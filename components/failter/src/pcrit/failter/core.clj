@@ -24,15 +24,16 @@
         artifacts-dir-path (-> (expdir/get-failter-artifacts-dir ctx generation-number contest-name)
                                .getCanonicalPath
                                ensure-trailing-slash)
-        spec-data   {:version 2
-                     :inputs_dir    (.getCanonicalPath (io/file inputs-dir))
-                     :templates_dir (.getCanonicalPath (expdir/get-pdb-dir ctx))
-                     :templates     (mapv #(str (get-in % [:header :id]) ".prompt") population)
-                     :models        models
-                     :judge_model   judge-model
-                     :artifacts_dir artifacts-dir-path
-                     :retries       2
-                     :output_file   (.getCanonicalPath report-file)}]
+        spec-data   (cond-> {:version 2
+                             :inputs_dir    (.getCanonicalPath (io/file inputs-dir))
+                             :templates_dir (.getCanonicalPath (expdir/get-pdb-dir ctx))
+                             :templates     (mapv #(str (get-in % [:header :id]) ".prompt") population)
+                             :models        models
+                             :artifacts_dir artifacts-dir-path
+                             :retries       2
+                             :output_file   (.getCanonicalPath report-file)}
+                      ;; Defensively add the judge_model key only if it's a non-blank string.
+                      (not (str/blank? judge-model)) (assoc :judge_model judge-model))]
     (.mkdirs contest-dir)
     (spit spec-file (yaml/generate-string spec-data :dumper-options {:flow-style :block}))
     (log/info "Wrote Failter spec file to" (.getCanonicalPath spec-file))

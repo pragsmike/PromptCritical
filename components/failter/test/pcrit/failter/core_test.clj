@@ -49,7 +49,8 @@
 
           ;; 3. Verify that the correct failter shell command was executed
           (is (some? @shell-command))
-          (is (= ["failter" "run" "--spec" (str contest-dir "/spec.yml")] (first (vec @shell-command)))))))))
+          ;; CORRECTED ASSERTION
+          (is (= ["failter" "run" "--spec" (str contest-dir "/spec.yml")] @shell-command)))))))
 
 (deftest run-contest-shell-failure-test
   (testing "run-contest! returns a failure map when shell command fails (non-zero exit)"

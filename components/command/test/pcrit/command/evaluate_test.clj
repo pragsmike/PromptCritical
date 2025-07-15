@@ -20,7 +20,6 @@
           reports-called (atom nil)]
       (with-redefs [failter/run-contest! (fn [_ctx params]
                                            (reset! failter-called params)
-                                           ;; Mock now returns pre-parsed JSON data
                                            {:success true :parsed-json mock-failter-parsed-json})
                     reports/process-and-write-csv-report! (fn [parsed-data path]
                                                             (reset! reports-called {:data parsed-data :path path}))]
@@ -33,7 +32,6 @@
         (is (= "mock-judge" (:judge-model @failter-called)))
 
         (is (some? @reports-called) "reports/process-and-write-csv-report! should have been called.")
-        ;; Assert that the function received the parsed data structure, not a string
         (is (= mock-failter-parsed-json (:data @reports-called)))
         (is (.endsWith (:path @reports-called) (str "my-test" java.io.File/separator "report.csv")))))))
 
@@ -71,10 +69,26 @@
       ;; Create a new, empty generation to test against
       (expdir/create-experiment-dirs! ctx)
       (spit (io/file (th-generic/get-temp-dir) "evolution-parameters.edn")
-            (pr-str {:evaluate {:models ["a"]}}))
+            (pr-str {:evaluate {:models ["a"] :judge-model "b"}}))
       (let [pop-dir (expdir/get-population-dir ctx 1)]
         (.mkdirs pop-dir))
 
       (with-redefs [failter/run-contest! (fn [_ p] (reset! failter-called p) {:success true})]
         (evaluate/evaluate! ctx {:generation 1 :inputs (.getCanonicalPath inputs-dir)})
         (is (nil? @failter-called) "failter/run-contest! should not be called for empty population.")))))
+
+(deftest evaluate-validation-missing-judge-model-test
+  (testing "Validation fails if no judge-model is provided in config or CLI options"
+    (let [exp-dir (th-generic/get-temp-dir)
+          ctx (th-cmd/setup-bootstrapped-exp! exp-dir)
+          inputs-dir (doto (io/file exp-dir "inputs") .mkdirs)
+          failter-called (atom nil)]
+
+      ;; Manually create a config file that is MISSING the :judge-model key
+      (spit (io/file exp-dir "evolution-parameters.edn")
+            (pr-str {:evaluate {:models ["a-model"]}}))
+
+      (with-redefs [failter/run-contest! (fn [_ p] (reset! failter-called p) {:success true})]
+        ;; Run evaluate! WITHOUT the --judge-model CLI flag
+        (evaluate/evaluate! ctx {:generation 0 :name "a-contest" :inputs (.getCanonicalPath inputs-dir)})
+        (is (nil? @failter-called) "failter/run-contest! should not be called.")))))

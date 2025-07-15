@@ -1,5 +1,6 @@
 (ns pcrit.command.evaluate
   (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [pcrit.config.interface :as config]
             [pcrit.expdir.interface :as expdir]
             [pcrit.failter.interface :as failter]
@@ -7,7 +8,7 @@
             [pcrit.pop.interface :as pop]
             [pcrit.reports.interface :as reports]))
 
-(defn- validate-options [ctx {:keys [generation-number contest-name inputs-dir models]}]
+(defn- validate-options [ctx {:keys [generation-number contest-name inputs-dir models judge-model]}]
   (let [gen-dir (expdir/get-generation-dir ctx generation-number)
         contest-dir (expdir/get-contest-dir ctx generation-number contest-name)
         population (pop/load-population ctx generation-number)]
@@ -20,6 +21,10 @@
 
       (or (nil? models) (empty? models))
       {:valid? false :reason "No models specified for evaluation. Check :evaluate/:models in evolution-parameters.edn."}
+
+      ;; NEW: Check for a valid judge model before anything else.
+      (str/blank? judge-model)
+      {:valid? false :reason "No judge model specified. Use the --judge-model flag or add :judge-model to evolution-parameters.edn."}
 
       (.exists contest-dir)
       {:valid? false :reason (str "Contest '" contest-name "' already exists for generation " generation-number ".")}
@@ -58,7 +63,8 @@
       (let [options-to-validate {:generation-number gen-num
                                  :contest-name      contest-name
                                  :inputs-dir        inputs
-                                 :models            models-to-test}
+                                 :models            models-to-test
+                                 :judge-model       final-judge-model}
             {:keys [valid? reason population]} (validate-options ctx options-to-validate)]
         (if-not valid?
           (do (log/error "Evaluation validation failed:" reason)
@@ -71,12 +77,10 @@
                                   :population        population
                                   :models            models-to-test
                                   :judge-model       final-judge-model}
-                  ;; Updated to handle the new return value from run-contest!
                   {:keys [success parsed-json]} (failter/run-contest! ctx contest-params)]
 
               (if success
                 (let [report-csv-path (io/file (expdir/get-contest-dir ctx gen-num contest-name) "report.csv")
-                      ;; Pass the pre-parsed data to the reports component
                       processed-data (reports/process-and-write-csv-report! parsed-json (.getCanonicalPath report-csv-path))
                       cost (get-and-log-contest-cost processed-data)]
                   {:success true :cost cost :contest-name contest-name})
