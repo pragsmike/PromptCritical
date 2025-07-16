@@ -18,6 +18,7 @@ pack:
 					docs/evo-command-sequence.md \
 					docs/evo-cost-calculation.md \
 					docs/prompt-representation.md \
+					docs/prompt-symlinks.md \
 					copilot/onboard-*.md \
 					Makefile `find . -name deps.edn` ;\
 	   do echo $$i; cat $$i; echo ---- ; done ;\

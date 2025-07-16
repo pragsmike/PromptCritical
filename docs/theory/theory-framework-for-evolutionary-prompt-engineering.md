@@ -7,12 +7,12 @@
 - **LLMs as compressed projections**: Models are “statistical ghosts of human
   discourse” - lossy compression of training data that preserves essential
   patterns
-- **Prompts as acoustic probes**: Text that excites resonances in
-  high-dimensional correlation webs, like striking a complex instrument
 - **Path-dependent fitness landscapes**: The terrain of possible responses
   reshapes itself as we traverse it - “semi-controlled demolition of potentials”
 - **Closed categorical structure**: Transformations are themselves text,
   enabling meta-operations on our own operations
+- **Prompts as acoustic probes**: Text that excites resonances in
+  high-dimensional correlation webs, like striking a complex instrument
 
 ### The Algebraic Framework
 

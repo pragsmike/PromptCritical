@@ -15,6 +15,7 @@
 - [Evolutionary Optimization of Model Merging Recipes](https://arxiv.org/abs/2403.13187): 2024-03-19, Not specified. Proposes an evolutionary approach to combine diverse models effectively[13].
 - [beeevita/EvoPrompt](https://github.com/beeevita/EvoPrompt): 2025-01-01, Not specified. Official implementation of EvoPrompt, connecting LLMs with evolutionary algorithms for prompt optimization[14].
 - [EvoPrompt – Evolutionary Algorithms Meets Prompt Engineering](https://www.reddit.com/r/MachineLearning/comments/1aji7np/d_microsoft_researchs_evoprompt_evolutionary): 2024-02-05, Not specified. Discusses Microsoft's EvoPrompt, using simple evolutionary algorithms for automated prompt engineering[3].
+- [Exploring the Prompt Space of Large Language Models through Evolutionary Sampling](https://dl.acm.org/doi/10.1145/3638529.3654049): 2024, Saletta, Martina and Ferretti, Claudio.  Uses Structured Grammatical Evolution [86]
 
 # General Prompt Engineering Techniques and Guides
 
@@ -132,3 +133,4 @@
 [83] https://arxiv.org/abs/2010.04340
 [84] https://journals.sagepub.com/doi/full/10.1177/15501329221113508
 [85] https://link.aps.org/doi/10.1103/PhysRevSTAB.16.010101
+[86] https://dl.acm.org/doi/10.1145/3638529.3654049

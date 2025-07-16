@@ -5,6 +5,14 @@ engineering for large language models (LLMs), evolving prompts through mutation,
 crossover, and selection to maximize performance. Below are key research papers
 advancing this approach.
 
+### Conclusion
+
+Research confirms that genetic algorithms significantly enhance prompt
+optimization by automating iterative refinement. **EvoPrompt** and **GAAPO**
+represent leading frameworks, leveraging evolutionary principles to reduce human
+effort while improving accuracy and efficiency. For implementation,
+**PromptOptimization** offers a practical starting point[^7][^6].
+
 ### Key Research Papers
 
 1. **EvoPrompt: Connecting LLMs with Evolutionary Algorithms**
@@ -56,14 +64,6 @@ advancing this approach.
 - TextGrad
 - DSPy
 - RLPrompt
-
-### Conclusion
-
-Research confirms that genetic algorithms significantly enhance prompt
-optimization by automating iterative refinement. **EvoPrompt** and **GAAPO**
-represent leading frameworks, leveraging evolutionary principles to reduce human
-effort while improving accuracy and efficiency. For implementation,
-**PromptOptimization** offers a practical starting point[^7][^6].
 
 <div style="text-align: center">⁂</div>
 

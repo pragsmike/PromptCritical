@@ -1,68 +1,67 @@
 These are notes and references in the process of being organized.
 
-* [Prompt File Database format ](prompt-representation.md)
-* [DESIGN](DESIGN.md)
+# Framework Documentation
+## Overview
+    * [Overview](OVERVIEW.md)
+    * [Design](DESIGN.md)
+    * [API](API.md)
+    * [Risks](RISKS.md) the project must address
+    * [AI Assistant Usage](ai-assistant-usage.md)
+## Data structures
+    * [Prompt Storage Representation](prompt-representation.md)
+    * [Prompt Templating](prompt-templating.md)
+    * [Prompt Symlinks](prompt-symlinks.md) to identify roles, champions, etc.
+## Evolutionary Algorithm
+    * [Prompt Evolution Process](evo-process.md)
+    * [Evolution command sequence](evo-command-sequence.md)
+    * [Population bootstrapping](evo-population-bootstrapping.md)
+    * [Cost calculations for LLM usage](evo-cost-calculations.md)
+  User Experience
+    * [When things go wrong: Bad Day Scenarios](ux-bad-day-scenarios.md)
 
-* [Plan](plan.md)
-* [Research directions](intro-research-1.md)
-* [References](refs-list.org)
+# Theory
+
+  * [Research directions](theory/intro-research-1.md)
+
+## Research References
+    * [References](theory/refs.md)
+    * [Evolutionary Prompts papers](theory/refs-evolutionary-prompts-papers.md)
+    * [References in bibtex format](theory/refs.bib)
+
+## Overview
+    * [Research directions](theory/intro-research-1.md)
+    * [Framework for Evolutionary Prompt Engineering](theory/theory-framework-for-evolutionary-prompt-engineering.md)
+## LLM vs Formal Methods
+    * theory/llm-vs-formal-methods.md
+    * theory/llm-vs-amr+kg-general.md
+    * theory/llm-vs-amr+kb-prompt-refinement.md
+
+## Formal Methods
+    * theory/formal-methods.md
+    * theory/formal-knowledge-graph-contributions.md
+    * [Compositional Semantics for Prompt Combination](theory/formal-compositional-semantics-for-prompt-combination.md)
+    * theory/formal-methods-amr-cds-described.md
+    * theory/formal-amr-implementation.md
+
+## Prompt Ecology
+    * [Prompt ecology: Ecological Niches](theory/prompt-ecology.md)
+
+## Evolutionary Algorithm
+    * [Prompt breeding](theory/prompt-breeding.md)
+
+## Prompt Algebra
+    * [Prompt Algebra](theory/prompt-algebra.md)
+    * [Prompt Folding](theory/prompt-folding.md)
+
+## Prompt Metrics
+    * [Surrogate Fitness Metrics to lower costs](theory/evo-surrogate-fitness-metrics.md)
+    * [Fitness Function](theory/evo-fitness-function.md)
+    * [Prompt Metadata](theory/prompt-metadata.md)
+
+## Population Metrics
+    * [Population Metrics](theory/evo-population-metrics.md)
+
+## Philosophical Jazz
+    * [LLMs are nonlinear systems, prompts are excitations](pending/llm-resonances.md)
 
 
-* [Compositional Semantics for Prompt Combination](formal-compositional-semantics-for-prompt-combination.md)
-
-* [Surrogate Fitness Metrics to lower costs](evo-surrogate-fitness-metrics.md)
-
-
-Overview
-  * intro-overview.md
-  * intro-framework-for-evolutionary-prompt-engineering.md
-  * intro-research-1.md
-
-LLM vs Formal Methods
-  * llm-vs-formal-methods.md
-  * llm-vs-amr+kg-general.md
-  * llm-vs-amr+kb-prompt-refinement.md
-
-Formal Methods
-  * formal-methods.md
-  * formal-knowledge-graph-contributions.md
-  * formal-compositional-semantics-for-prompt-combination.md
-  * formal-methods-amr-cds-described.md
-  * formal-amr-implementation.md
-
-Prompt Ecology
-  * prompt-ecology.md
-
-Data structures
-  * prompt-representation.md
-  * prompt-templating.md
-  * evo-contest-architecture.md
-  * git-as-temporal-database.md
-
-Prompt Algebra
-  * prompt-algebra.md
-  * prompt-folding.md
-
-Evolutionary Algorithm
-  * evo-process.md
-  * evo-population-bootstrapping.md
-  * evo-operation-enumeration.md
-  * prompt-breeding.md
-  * evo-contest-architecture.md
-
-
-Prompt Metrics
-  * prompt-metadata.md
-  * evo-fitness-function.md
-  * evo-surrrogate-fitness-metrics.md
-
-Population Metrics
-  * evo-population-metrics.md
-
-Philosophical Jazz
-  * llm-resonances.md
-
-
-Research References
-  * refs-evolutionary-prompts-papers.md
-  * refs-list.md

@@ -1,37 +1,19 @@
 Each meta prompt corresponds to an algebraic operation. These are the starter
 set of operations.
 
-Soon we’ll have crossover operators, and maybe an operator algebra. It’s a
-closed category after all!
+Meta-prompts can be combined, and evolved, forming an operator algebra.
+This makes sense, as prompts, as programs, form a closed category.
 
 Failter judges are llms with prompts that instruct them to score from 0-100 how
 close the result is to the ideal, either by
    * evaluating against the goal inferred from the object prompt or
    * by comparison with a gold standard, which some cases have, some don’t.
 
-Perhaps the goal that generated the pbject prompt will be available.
+Perhaps the goal that generated the object prompt will be available.
 
 We should have population metrics taken at each checkpoint, like diversity,
 and other statistics, and keep track of trends.
 This could drive meta parametric evolution of the evolution process.
-
-We use git to snapshot the population at each checkpoint. This gives us a Time
-Machine to do temporal studies.
-
-Contests are recorded: the participants, prompts, score, etc.
-
-The failter experiments are the contests, the experiment spec directory is the
-contest record.
-
-Instead of copying prompts into contest directories, the experiment directory
-refers to prompts by having symlinks to them in the prompt store directory. This
-symlink scheme maintains the single source of truth while creating the
-participation record.
-
-The next thing after the contest is the winnowing and breeding step, which
-applies a function that takes population to population. winnow-and-breed is an
-endofunction on the set of all possible populations -- the power set of all
-possible prompts.
 
 
 ## Prompts are text: Closed Category

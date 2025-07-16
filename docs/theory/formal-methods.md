@@ -1,6 +1,7 @@
 Formal methods include
    * Abstract Meaning Representation (AMR)
    * Compositional Distributive Semantics (CDS).
+   * Dynamic Structured Grammatical Evolution (DSGE)
 
 The combination of AMR and CDS give a good balance between symbolic (deductive) and statistical (inductive)
 avenues, bridging the symbolic/statistical divide.
@@ -80,3 +81,9 @@ natural evolution could bring to bear.
 
 The System 1 / System 2 dichotomy is just a useful metaphor for understanding
 the role that the different techniques play, and what we expect from them.
+
+- [The language of prompting: What linguistic properties make a prompt successful?](https://arxiv.org/abs/2311.01967): 2023-11-03, Alina Leidinger. Investigates how grammatical and lexico-semantic variations affect LLM performance on prompts.
+
+- [Exploring the Prompt Space of Large Language Models through Evolutionary Sampling](https://dl.acm.org/doi/10.1145/3638529.3654049): 2024, Saletta, Martina and Ferretti, Claudio.
+Use Dynamic Structured Grammatical Evolution (DSGE) to address issues like redundancy and locality that can occur in standard GE.
+
