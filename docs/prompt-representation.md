@@ -222,7 +222,8 @@ id: "P123"
 prompt-type: :object-prompt
 sha1-hash: "7fd8e8e70235bc6fd5c17fd8e8e70235bc6fd5c1"
 ---
-The prompt body...```
+The prompt body...
+```
 This file is committed to Git.
 
 ### Step 2: The Update
