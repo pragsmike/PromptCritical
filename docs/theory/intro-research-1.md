@@ -4,12 +4,27 @@ Evolutionary prompt generation treats prompts as evolving artifacts whose
 fitness is measured by the quality of the language-model behaviours they elicit.
 Because prompt space is highly non-linear and context-dependent, effective
 exploration requires semantic representations, principled variation operators,
-and efficient fitness estimation. This paper organises the scattered insights
-below into a coherent framework that joins knowledge-graph semantics,
-evolutionary search, surrogate modelling, and controlled text generation. It is
-aimed at NLP researchers, tool-builders, and advanced prompt engineers who are
-comfortable with basic machine-learning concepts and symbolic-AI formalisms but
-seek a unifying roadmap.
+and efficient fitness estimation. This paper organises some insights into a
+coherent framework that joins knowledge-graph semantics, evolutionary search,
+surrogate modelling, and controlled text generation. It is aimed at NLP
+researchers, tool-builders, and advanced prompt engineers who are comfortable
+with basic machine-learning concepts and symbolic-AI formalisms but seek a
+unifying roadmap.
+
+Research confirms that genetic algorithms significantly enhance prompt
+optimization by automating iterative refinement. **EvoPrompt** and **GAAPO**
+represent leading frameworks, leveraging evolutionary principles to reduce human
+effort while improving accuracy and efficiency. For implementation,
+**PromptOptimization** offers a practical starting point.
+
+We want to compare how well these evolutionary methods work compared to
+strong baseline APO methods such as
+- TextGrad
+- DSPy
+- RLPrompt
+
+We seek to fit these methods together for exploration (evolution, to escape local maxima)
+and exploitation (DSPy, to optimize locally).
 
 ---
 

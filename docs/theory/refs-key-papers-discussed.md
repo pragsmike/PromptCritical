@@ -37,6 +37,39 @@ effort while improving accuracy and efficiency. For implementation,
         - Iteratively refines prompts using roulette-wheel selection[^7].
     - **Use Case**: Demonstrated adaptability for dynamic conversational agents[^7].
 
+4. **Evolutionary Sampling with Dynamic Structured Grammatical Evolution (DSGE)** [^21]
+
+    - **Methodology** Uses a two-stage evolutionary algorithm in which prompts
+      are individuals encoded by a Dynamic Structured Grammatical Evolution
+      grammar. Stage 1 explores a broad prompt space for 10 generations; Stage 2
+      exploits the best structures with constrained mutations that target
+      specific non-terminals (e.g., role prefix, reasoning cue). Fitness is
+      simply the task score that the LLM (Vicuna-7B or Starling-7B) achieves on
+      the evaluation split. This keeps the search model-agnostic and avoids
+      gradient calls or extra LLM operators.
+
+    - **Results** On eight BIG-Bench reasoning tasks the evolved prompts
+      consistently out-performed strong baselines (0-CoT, 1-shot,
+      “step-by-step”) and even beat PaLM-8B on three tasks. Notable gains
+      include Hyperbaton on Vicuna: 0.47 → 0.86 (+82 %), and Epistemic Reasoning
+      on Starling: 0.58 → 0.62. Average improvements across tasks ranged from 7 – 15 %.
+
+    - **Insights** By switching on/off specific mutation classes the authors
+      traced which prompt components matter most—finding, for example, that
+      adding concise role directives often helped Vicuna, while reasoning hints
+      mattered more for Starling. The grammar therefore doubles as an
+      interpretability lens into prompt anatomy.
+
+    - **Advantage** DSGE-based sampling keeps every candidate syntactically
+      valid, accelerates convergence, and yields compact, human-readable prompts
+      without relying on the LLM itself for mutations. The same grammar/fitness
+      plug-in can be reused for new models or tasks with minimal changes.
+
+    - **Takeaway** Evolutionary sampling with DSGE shows that a purely
+      grammar-driven EA can match—or surpass—hybrid methods while offering
+      clearer introspection into why certain prompt pieces work.
+
+
 ### Additional Resources
 
 - **Prompt Injection via Genetic Algorithms** [^8]: Explores adversarial applications, evolving prompts to bypass LLM security measures.
@@ -106,3 +139,5 @@ effort while improving accuracy and efficiency. For implementation,
 [^19]: https://github.com/jxzhangjhu/Awesome-LLM-Prompt-Optimization
 
 [^20]: https://github.com/thunlp/PromptPapers
+
+[^21]: https://dl.acm.org/doi/10.1145/3638529.3654049

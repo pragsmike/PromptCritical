@@ -16,7 +16,7 @@ These are notes and references in the process of being organized.
     * [Evolution command sequence](evo-command-sequence.md)
     * [Population bootstrapping](evo-population-bootstrapping.md)
     * [Cost calculations for LLM usage](evo-cost-calculations.md)
-  User Experience
+## User Experience
     * [When things go wrong: Bad Day Scenarios](ux-bad-day-scenarios.md)
 
 # Theory
@@ -24,24 +24,25 @@ These are notes and references in the process of being organized.
   * [Research directions](theory/intro-research-1.md)
 
 ## Research References
+    * [Key Evolutionary Prompts papers discussed](theory/refs-key-papers-discussed.md)
+    * [References categorized and summarized](theory/refs-categorized-summarized.md)
     * [References](theory/refs.md)
-    * [Evolutionary Prompts papers](theory/refs-evolutionary-prompts-papers.md)
     * [References in bibtex format](theory/refs.bib)
 
 ## Overview
     * [Research directions](theory/intro-research-1.md)
     * [Framework for Evolutionary Prompt Engineering](theory/theory-framework-for-evolutionary-prompt-engineering.md)
 ## LLM vs Formal Methods
-    * theory/llm-vs-formal-methods.md
-    * theory/llm-vs-amr+kg-general.md
-    * theory/llm-vs-amr+kb-prompt-refinement.md
+    * [LLMs vs Formal Methods for Prompt Refinement and Combination](theory/llm-vs-formal-methods.md)
+    * [LLMs, Abstract Meaning Representation, Knowledge Graphs in general](theory/llm-vs-amr+kg-general.md)
+    * [LLMs, AMR, KG for Prompt Refinement](theory/llm-vs-amr+kg-prompt-refinement.md)
 
 ## Formal Methods
-    * theory/formal-methods.md
-    * theory/formal-knowledge-graph-contributions.md
+    * [Formal Methods](theory/formal-methods.md)
+    * [Knowledge Graph Contributions](theory/formal-knowledge-graph-contributions.md)
     * [Compositional Semantics for Prompt Combination](theory/formal-compositional-semantics-for-prompt-combination.md)
-    * theory/formal-methods-amr-cds-described.md
-    * theory/formal-amr-implementation.md
+    * [Abstract Meaning Representation and Compositional Distributional Semantics](theory/formal-methods-amr-cds-described.md)
+    * [AMR Implementation](theory/formal-amr-implementation.md)
 
 ## Prompt Ecology
     * [Prompt ecology: Ecological Niches](theory/prompt-ecology.md)

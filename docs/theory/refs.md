@@ -33,6 +33,7 @@
 *   **SwarmPrompt: Swarm Intelligence-Driven Prompt Optimization Using Large Language Models - SciTePress**: (No direct URL provided in the sources)
 *   **The Prompt Engineer's Almanac: Navigating AI's Semantic Landscape**: (No direct URL provided in the sources)
 *   **Zero-Shot Reasoners: Large Language Models are Zero-Shot Reasoners** (Takeshi Kojima et al., 2022): URL: [https://arxiv.org/pdf/2201.11903.pdf](https://arxiv.org/pdf/2201.11903.pdf)
+* [Exploring the Prompt Space of Large Language Models through Evolutionary Sampling](https://dl.acm.org/doi/10.1145/3638529.3654049): 2024, Saletta, Martina and Ferretti, Claudio.  Uses Structured Grammatical Evolution [11]
 
 [1]: https://arxiv.org/abs/2201.11903 "[2201.11903] Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
 [2]: https://arxiv.org/abs/2309.03409 "[2309.03409] Large Language Models as Optimizers"
