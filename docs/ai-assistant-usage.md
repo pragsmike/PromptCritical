@@ -1,7 +1,45 @@
 # AI Assistant Usage
 
-Here are some tips for using an AI assistant in generating this design, writing
+Here are some tips for using an AI assistant in generating solid designs, writing
 code, and refactoring.
+
+The key is to treat the AI as an analysis and design partner. It can ultimately
+generate code, but that's not the first thing you should ask for. Take the time
+to work through the problem statement in natural language first. This is good
+software engineering practice, but an AI can greatly accelerate the necessary
+work if you approach it in the right way.
+
+## Work through problems and proposed solution designs in detailed natural language first
+
+First work with the AI generate analysis and design documents.
+These same documents are directly useful by humans, too!
+
+Don't just start asking for code.  First you need to understand
+the problem yourself and write it down clearly so the AI can understand it.
+Then explore requirements, solutions, design tradeoffs, constraints,
+and clearly document your findings.
+
+The challenge is to develop these habits:
+   * think things through and articulate in enough detail what your intentions are
+   * identify your assumptions, unstated and otherwise
+   * recognize the gaps in your knowledge and planning
+   * devise a plan of approach to gather the information that you need
+
+An AI assistant can guide you through these activities, but only if you instruct it to do so.
+
+Seek to devise such instructions, so that the assistant will
+   * conduct interviews
+   * give periodic assessments
+   * assemble lists of goals, risks, assumptions, plans
+   * other useful high-level information about a planned development effort.
+
+Clearly state what artifacts you want to produce (risk register, requirements, etc)
+and tell the AI to ask you questions when it needs to in order to fill those out.
+
+Get another AI (the "critic") to read the documents and offer critiques.
+Address the issues that you can, and give the critique to the "author" AI.
+
+## Showing the docs and code to the AI
 
 The Makefile has a `pack` target that concatenates the documentation, with filename headers,
 and the source files, into a text file that can be uploaded into the context of an AI assistant.

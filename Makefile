@@ -28,3 +28,13 @@ pack:
   (find components -name '*.clj' | xargs cat) ;\
   (find bases -name '*.clj' | xargs cat) \
   ) >~/pcrit-pack.txt
+
+# Create a doc pack file to upload to AI assistant
+docpack:
+	(for i in  \
+					docs/*.md \
+					docs/theory/*.md \
+					docs/theory/*.bib \
+					;\
+	   do echo $$i; cat $$i; echo ---- ; done ;\
+  ) >~/pcrit-docpack.txt
