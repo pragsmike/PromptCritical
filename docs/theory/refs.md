@@ -32,8 +32,21 @@
 *   **StablePrompt: Automatic Prompt Tuning using Reinforcement Learning for Large Language Models** (Minchan Kwon et al., 2024): URL: [https://arxiv.org/abs/2410.07652](https://arxiv.org/abs/2410.07652)
 *   **SwarmPrompt: Swarm Intelligence-Driven Prompt Optimization Using Large Language Models - SciTePress**: (No direct URL provided in the sources)
 *   **Zero-Shot Reasoners: Large Language Models are Zero-Shot Reasoners** (Takeshi Kojima et al., 2022): URL: [https://arxiv.org/pdf/2201.11903.pdf](https://arxiv.org/pdf/2201.11903.pdf)
-* [Exploring the Prompt Space of Large Language Models through Evolutionary Sampling](https://dl.acm.org/doi/10.1145/3638529.3654049): 2024, Saletta, Martina and Ferretti, Claudio.  Uses Structured Grammatical Evolution [11]
-* [On Meta-Prompting](https://arxiv.org/abs/2312.06562): 2023, de Wynter, Adrian and Wang, Xun and Gu, Qilong and Chen, Si-Qing. Presents a theoretical framework based on category theory to describe in-context learning and large language model behavior when interacting with users through meta-prompting approaches
+* [Exploring the Prompt Space of Large Language Models through Evolutionary Sampling](https://dl.acm.org/doi/10.1145/3638529.3654049): 2024, Saletta,
+  Martina and Ferretti, Claudio. Uses Structured Grammatical Evolution [11]
+* [On Meta-Prompting](https://arxiv.org/abs/2312.06562): 2023, de Wynter, Adrian
+  and Wang, Xun and Gu, Qilong and Chen, Si-Qing. Presents a theoretical
+  framework based on category theory to describe in-context learning and large
+  language model behavior when interacting with users through meta-prompting
+  approaches
+* [Prompts Are Programs Too! Understanding How Developers Build Software Containing Prompts](https://arxiv.org/abs/2409.12447): 2024, Liang, Jenny T.
+  and Arab, Maryam and Nam, Minhyuk and Druga, Stefania and Lim, Brian Ka-Jun
+  and Heuer, Hendrik and Ko, Amy J. Argues that prompts function as programs and
+  explores prompt programming practices through grounded theory interviews with
+  20 developers, highlighting differences from traditional software development
+  and implications for tools[1].
+
+[1] https://arxiv.org/abs/2409.12447v2
 
 [1]: https://arxiv.org/abs/2201.11903 "[2201.11903] Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
 [2]: https://arxiv.org/abs/2309.03409 "[2309.03409] Large Language Models as Optimizers"
