@@ -19,6 +19,7 @@
                                 pcrit/expdir      {:local/root "components/expdir"}
                                 pcrit/command     {:local/root "components/command"}
                                 pcrit/reports     {:local/root "components/reports"}
+                                pcrit/results     {:local/root "components/results"}
                                 pcrit/test-helper	{:local/root "components/test-helper"}
 
                                         ; Bases
@@ -36,5 +37,6 @@
                                 "components/failter/test"
                                 "components/command/test"
                                 "components/reports/test"
+                                "components/results/test"
                                 "components/test-helper/src"
                                 "bases/cli/test"]}}}

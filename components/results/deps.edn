@@ -1,0 +1,6 @@
+{:paths ["src" "interface"]
+ :deps {}
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps {pcrit/test-helper {:local/root "../../components/test-helper"}
+                               pcrit/expdir      {:local/root "../../components/expdir"}
+                               pcrit/config      {:local/root "../../components/config"}}}}}

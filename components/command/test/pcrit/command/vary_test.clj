@@ -1,6 +1,7 @@
 (ns pcrit.command.vary-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
+            [clojure.data.json :as json]
             [pcrit.command.interface :as cmd]
             [pcrit.expdir.interface :as expdir]
             [pcrit.llm.interface :as llm]
@@ -76,11 +77,9 @@
 (deftest crossover-strategy-test
   (testing ":crossover strategy creates one child from the top two parents of the previous generation"
     (let [exp-dir (th-generic/get-temp-dir)
-          ;; The updated helper now correctly creates the crossover link.
           ctx (th-cmd/setup-bootstrapped-exp! exp-dir)
           pdb-dir (expdir/get-pdb-dir ctx)]
 
-      ;; Precondition check: Bootstrap should have created the crossover link.
       (is (.exists (io/file (expdir/get-link-dir ctx) "crossover")) "Precondition: Crossover link must exist.")
 
       ;; Setup:
@@ -88,9 +87,12 @@
       (let [p4 (pdb/create-prompt pdb-dir "Parent B")]
         ;; 2. Create a fake contest report for gen-0, making P4 and P1 the winners.
         (let [contest-dir (expdir/get-contest-dir ctx 0 "crossover-setup-contest")
-              report-file (io/file contest-dir "report.csv")]
+              report-file (io/file contest-dir "failter-report.json")]
           (.mkdirs contest-dir)
-          (spit report-file "prompt,score\nP4,100\nP1,90\nP2,80"))
+          (spit report-file
+                (json/write-str [{:prompt_id "P4.prompt" :score 100}
+                                 {:prompt_id "P1.prompt" :score 90}
+                                 {:prompt_id "P2.prompt" :score 80}])))
 
         ;; 3. Create gen-1 with these two winners. `vary` will be run on gen-1.
         (pop/create-new-generation! ctx [(pdb/read-prompt pdb-dir "P1") p4])

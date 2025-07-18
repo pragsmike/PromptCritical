@@ -6,7 +6,7 @@
             [pcrit.log.interface :as log]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
-            [pcrit.reports.interface :as reports])
+            [pcrit.results.interface :as results])
   (:import [java.time Instant]))
 
 (defn- breed-prompt
@@ -80,12 +80,13 @@
         (do (log/warn "Cannot use :crossover strategy on generation 0. Skipping.")
             [])
         (let [contests-dir (expdir/get-contests-dir ctx prev-gen-num)
-              reports (->> (file-seq contests-dir) (filter #(= "report.csv" (.getName %))))]
-          (if (empty? reports)
+              contest-dirs (->> (file-seq contests-dir) (filter #(.isDirectory %)) (rest))]
+          (if (empty? contest-dirs)
             (do (log/warn "Cannot use :crossover, no contest reports found in previous generation" prev-gen-num)
                 [])
-            (let [latest-report (last (sort reports))
-                  top-2-data (->> (reports/parse-report latest-report)
+            (let [latest-contest-dir (last (sort contest-dirs))
+                  latest-contest-name (.getName latest-contest-dir)
+                  top-2-data (->> (results/parse-report ctx prev-gen-num latest-contest-name)
                                   (sort-by :score >)
                                   (take 2))
                   parent-a-id (:prompt (first top-2-data))
@@ -94,7 +95,7 @@
                   parent-b-record (pdb/read-prompt (expdir/get-pdb-dir ctx) parent-b-id)]
               (if (and parent-a-record parent-b-record)
                 (do
-                  (log/info "Using :crossover strategy. Breeding" parent-a-id "and" parent-b-id)
+                  (log/info "Using :crossover strategy. Breeding" parent-a-id "and" parent-b-id "from contest" latest-contest-name)
                   (if-let [offspring (breed-from-crossover model-name crossover-prompt parent-a-record parent-b-record run-id call-template-fn)]
                     [offspring] ; Return a collection with the single offspring
                     []))

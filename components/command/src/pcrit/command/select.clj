@@ -1,12 +1,11 @@
 (ns pcrit.command.select
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [pcrit.config.interface :as config]
             [pcrit.expdir.interface :as expdir]
             [pcrit.log.interface :as log]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
-            [pcrit.reports.interface :as reports])
+            [pcrit.results.interface :as results])
   (:import [java.time Instant]))
 
 ;; --- Pluggable Selection Policy Implementation ---
@@ -75,14 +74,10 @@
     (pdb/update-metadata pdb-dir survivor-id update-fn)))
 
 (defn- validate-options [ctx {:keys [generation-number from-contest]}]
-  (let [contest-dir (expdir/get-contest-dir ctx generation-number from-contest)
-        report-file (io/file contest-dir "report.csv")]
-    (cond
-      (not (.exists report-file))
-      {:valid? false :reason (str "Report file not found at: " (.getCanonicalPath report-file))}
-
-      :else
-      {:valid? true :report-file report-file})))
+  (let [contest-dir (expdir/get-contest-dir ctx generation-number from-contest)]
+    (if-not (.exists contest-dir)
+      {:valid? false :reason (str "Contest directory not found at: " (.getCanonicalPath contest-dir))}
+      {:valid? true})))
 
 (defn select!
   "Selects survivor prompts from a contest, appends selection metadata,
@@ -95,10 +90,10 @@
     (if-not gen-num
       (log/error "Cannot select: No generations found in this experiment.")
       (let [opts {:generation-number gen-num :from-contest from-contest}
-            {:keys [valid? reason report-file]} (validate-options ctx opts)]
+            {:keys [valid? reason]} (validate-options ctx opts)]
         (if-not valid?
           (log/error "Select validation failed:" reason)
-          (let [report-data     (reports/parse-report report-file)
+          (let [report-data     (results/parse-report ctx gen-num from-contest)
                 parsed-policy   (or (parse-policy policy-str) {:type :default, :policy-string policy-str})
                 survivors-data  (apply-selection-policy report-data parsed-policy)
                 survivor-ids    (map :prompt survivors-data)
@@ -108,7 +103,6 @@
                 _               (log/info "Selected" (count survivor-ids) "survivors from generation" gen-num "using policy '" policy-str "'")
                 survivor-records (doall (map #(pdb/read-prompt (expdir/get-pdb-dir ctx) %) survivor-ids))]
 
-            ;; NEW: Warn if the selection resulted in no survivors.
             (when (empty? survivor-records)
               (log/warn "Selection resulted in zero survivors. The next generation will be empty."))
 

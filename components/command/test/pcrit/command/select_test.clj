@@ -1,7 +1,7 @@
 (ns pcrit.command.select-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.string :as str]
+            [clojure.data.json :as json]
             [pcrit.command.interface :as cmd]
             [pcrit.command.select :as select-impl]
             [pcrit.expdir.interface :as expdir]
@@ -19,16 +19,17 @@
   []
   (let [ctx (th-cmd/setup-bootstrapped-exp! (th-generic/get-temp-dir))
         pdb-dir (expdir/get-pdb-dir ctx)]
-    (doseq [i (range 3 11)]
+    (doseq [i (range 3 12)]
       (pdb/create-prompt pdb-dir (str "Prompt " i)))
     (let [contest-dir (expdir/get-contest-dir ctx 0 "test-contest")
-          report-file (io/file contest-dir "report.csv")
-          csv-content (->> (for [i (range 1 11)]
-                             (str "P" i "," (- 11.0 i)))
-                           (cons "prompt,score")
-                           (str/join "\n"))]
+          report-file (io/file contest-dir "failter-report.json")
+          json-content (->> (for [i (range 1 11)]
+                              {:prompt_id (str "P" i ".prompt")
+                               :score     (double (- 11.0 i))
+                               :usage     {:model_used "test/model"}})
+                            (json/write-str))]
       (.mkdirs contest-dir)
-      (spit report-file csv-content))
+      (spit report-file json-content))
     ctx))
 
 (deftest select-command-happy-path-test
