@@ -88,10 +88,10 @@ workspace/
 │   ├── expdir/       ; Manages experiment directory layout
 │   ├── pdb/          ; The immutable prompt database
 │   ├── pop/          ; Population domain model & analysis
-│   ├── reports/      ; Parses contest result files (e.g., report.csv)
+│   ├── reports/      ; Generates human-readable CSV reports
+│   ├── results/      ; Parses canonical contest results from JSON
 │   ├── config/       ; Runtime configuration (EDN → map)
 │   ├── log/          ; Structured logging facade
-│   ├── llm/          ; Thin HTTP client for LLMs
 │   └── test-helper/  ; Shared utilities for testing
 └── bases/
     └── cli/          ; `pcrit` command‑line entry point
@@ -119,13 +119,13 @@ workspace/
 | **init**                                           | Creates the initial experiment files.                   | One-time step that scaffolds a runnable experiment directory, including the `seeds/` folder, `bootstrap.edn`, and default configurations.                                     |
 | **bootstrap**                                      | Creates `gen-0`.                                        | One-time step that ingests prompts from `seeds/` into the prompt database, creates named links, and populates `gen-0` with the initial set of **object-prompts**.                |
 | **vary**                                           | Mutates the current generation.                         | Generates new candidate prompts by mutating or recombining existing ones, adding them to the *current* population directory (`generations/gen-000/population`, …). Now supports multiple strategies like `:refine` and `:crossover`. |
-| **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `report.csv`.                                         |
+| **evaluate**                                       | Runs scoring but does **not** decide winners.           | Orchestrates a Failter **contest** for every prompt in the current population and collects the raw fitness metrics into `failter-report.json`.                                       |
 | **contest**                                        | *Contest* = noun; *evaluate* = verb/command.            | A single Failter run that scores a set of prompts on a target document. It is the core operation *inside* **evaluate**.                                                       |
-| **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `report.csv` and creates a **new generation folder** populated with symlinks to the survivors. Now supports policies like `top-N` and `tournament`. |
-| **stats**                                          | An analysis command. Does not mutate state.             | Reads one or more `report.csv` files and displays aggregated statistics about cost and performance scores.                                                                    |
+| **select**                                         | Selection strategy is pluggable. Creates new generation. | Picks the top-performing prompts according to `failter-report.json` and creates a **new generation folder** populated with symlinks to the survivors. Now supports policies like `top-N` and `tournament`. |
+| **stats**                                          | An analysis command. Does not mutate state.             | Reads one or more `failter-report.json` files and displays aggregated statistics about cost and performance scores.                                                                    |
 | **population (`generations/gen-NNN/population/`)** | See *Directory Layout* section.                         | Folder tree that holds every generation’s prompt files. Each generation gets its own numbered sub-directory.                                                                  |
 | **experiment directory (`expdir/`)**               | Portable & reproducible.                                | Root folder that bundles prompt generations, results, Failter specs, and metadata for a single evolutionary run.                                                              |
-| **`report.csv`**                                   | Failter produces this.                                  | Canonical filename for evaluation output: one row per prompt plus columns for fitness metrics, metadata, and prompt hash.                                                     |
+| **`failter-report.json`**                          | Failter produces this.                                  | Canonical filename for evaluation output: a JSON array of objects, each representing a prompt's performance metrics and metadata.                                            |
 | **template placeholders**                          | *Only these two names are recognized by the templater.* | Literal strings substituted when a prompt is rendered:  <br>`{{INPUT_TEXT}}` – the evaluation text corpus<br>`{{OBJECT_PROMPT}}` – a prompt being operated on.                |
 | **seed prompt**                                    | Seeds are version-controlled.                           | Hand-crafted prompt placed in `seeds/` that kicks off **bootstrap**.                                                                                                          |
 
@@ -149,7 +149,7 @@ PromptCritical does **not** implement scoring or judgement itself. Instead we tr
 
 *   We generate a `spec.yml` file that defines the entire contest for Failter.
 *   We shell-out to the single, idempotent `failter run --spec <path>` command.
-*   We parse the resulting JSON report to gather fitness data for the `select` step.
+*   We parse the resulting `failter-report.json` to gather fitness data for the `select` and `stats` steps.
 
 ---
 
