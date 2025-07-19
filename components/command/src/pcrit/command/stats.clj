@@ -1,9 +1,9 @@
 (ns pcrit.command.stats
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [pcrit.expdir.interface :as expdir]
             [pcrit.log.interface :as log]
-            [pcrit.results.interface :as results]))
+            [pcrit.results.interface :as results]
+            [pcrit.llm.costs :as llm-costs]))
 
 (defn- find-contest-dirs [ctx {:keys [generation from-contest]}]
   (let [latest-gen (expdir/find-latest-generation-number ctx)
@@ -25,14 +25,15 @@
 
 (defn- calculate-stats [report-data]
   (when (seq report-data)
-    (let [scored-data    (filter #(some? (:score %)) report-data)
-          costs          (keep :cost report-data)
+    (let [cost-augmented-data (map #(assoc % :cost (llm-costs/calculate-cost (:model %) (:tokens-in %) (:tokens-out %))) report-data)
+          scored-data    (filter #(some? (:score %)) cost-augmented-data)
+          costs          (keep :cost cost-augmented-data)
           scores         (keep :score scored-data)
-          tokens-in      (keep :tokens-in report-data)
-          tokens-out     (keep :tokens-out report-data)
+          tokens-in      (keep :tokens-in cost-augmented-data)
+          tokens-out     (keep :tokens-out cost-augmented-data)
           best-prompt    (apply max-key :score scored-data)
           worst-prompt   (apply min-key :score scored-data)]
-      (cond-> {:prompt-count   (count report-data)}
+      (cond-> {:prompt-count   (count cost-augmented-data)}
         (seq costs)        (assoc :total-cost (reduce + 0.0 costs)
                                   :avg-cost   (/ (reduce + 0.0 costs) (count costs)))
         (seq scores)       (assoc :highest-score  (:score best-prompt)

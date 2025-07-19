@@ -11,7 +11,7 @@
 
 (use-fixtures :each th-generic/with-temp-dir th-generic/with-quiet-logging)
 
-(def ^:private mock-failter-parsed-json [])
+(def ^:private mock-failter-parsed-json [{:model "test/model" :tokens-in 100 :tokens-out 50}])
 
 (deftest evaluate-happy-path-test
   (testing "evaluate! with all options calls failter and reports correctly"
@@ -82,19 +82,7 @@
         (tel/with-handler :capture
           (fn [signal] (swap! captured conj signal))
           {}
-          (check-and-warn! (.getCanonicalPath inputs-dir) ["some-model"]))
+          (check-and-warn! (.getCanonicalPath inputs-dir)))
         (let [warn-log (first (filter #(= :warn (:level %)) @captured))]
           (is (some? warn-log))
-          (is (.startsWith (:msg_ warn-log) "Inputs directory is empty")))))
-
-    (testing "Warns about unknown model name"
-      (let [inputs-dir (doto (io/file (th-generic/get-temp-dir) "inputs") .mkdirs)
-            _ (spit (io/file inputs-dir "doc.txt") "content")
-            captured (atom [])]
-        (tel/with-handler :capture
-          (fn [signal] (swap! captured conj signal))
-          {}
-          (check-and-warn! (.getCanonicalPath inputs-dir) ["not-a-real-model"]))
-        (let [warn-log (first (filter #(= :warn (:level %)) @captured))]
-          (is (some? warn-log))
-          (is (.contains (:msg_ warn-log) "not a known model")))))))
+          (is (.startsWith (:msg_ warn-log) "Inputs directory is empty")))))))

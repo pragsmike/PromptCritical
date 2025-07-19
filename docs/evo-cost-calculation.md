@@ -1,49 +1,38 @@
 # Understanding and Managing Costs in PromptCritical
 
-Large Language Model (LLM) API calls cost money. As you run evolutionary experiments with dozens or hundreds of prompts over multiple generations, these costs can add up. PromptCritical is designed not only to track these costs but also to give you the tools and understanding needed to manage them effectively.
+Large Language Model (LLM) API calls cost money. PromptCritical is designed not only to track these costs but also to give you the tools and understanding needed to manage them effectively.
 
-This document explains how PromptCritical tracks LLM usage, how it calculates monetary cost from that usage, and what strategies you can employ to run effective experiments while minimizing expense.
+This document explains how PromptCritical tracks and calculates LLM costs following the extraction of this logic into the external `pcrit-llm` library.
 
-## The Golden Rule: Usage vs. Cost
+## The Golden Rule: Delegation to `pcrit-llm`
 
-To understand cost in PromptCritical, you must first understand the core principle of its accounting system: **we store immutable usage data as the source of truth and calculate cost from it.**
+To understand cost in PromptCritical, you must first understand the core principle of its accounting system: **PromptCritical now delegates all cost calculation to the `pcrit-llm` library.**
 
-*   **Usage Data (The Fact):** This is the record of what happened during an API call. It consists of the `model` name used, the number of `tokens_in` (input), and the number of `tokens_out` (output). This data is an immutable fact—it will be true forever.
-
-*   **Cost Data (The Calculation):** This is the monetary cost in USD. Since model pricing changes over time, this value is considered a point-in-time calculation based on the usage data.
-
-PromptCritical tracks and calculates costs generated during the two key phases of the evolutionary loop: prompt generation (`vary`) and prompt evaluation (`evaluate`).
-
-## The Price Table
-
-The heart of the cost calculation system is the `price-table` defined within PromptCritical's internal configuration. This table maps model names to their cost per 1,000 tokens for both input and output.
-
-> You can review the current price table within the project's source code to see which models are recognized and at what rates. PromptCritical uses this internal table for all calculations.
+The `pcrit-llm` library contains the canonical `price-table` and is the single source of truth for all cost-related logic. PromptCritical consumes this library to calculate costs at two different points in the evolutionary cycle.
 
 ## How Costs are Calculated: The Two Pathways
 
-### Pathway 1: The `vary` Command (Prompt Generation)
+### Pathway 1: The `vary` Command (Pre-calculated Cost)
 
-When you run `pcrit vary`, PromptCritical calls an LLM to generate new "offspring" prompts from existing ones. The cost of this creative step is calculated and recorded immediately.
+When you run `pcrit vary`, the system calls an LLM to generate new "offspring" prompts. The cost of this step is calculated by the `pcrit-llm` library and embedded directly into the new prompt artifact.
 
-1.  **Action:** The `vary` command sends a meta-prompt and a parent prompt to an LLM.
-2.  **Usage Tracking:** The system receives a response from the LLM API that includes the tokens used for both the input and the generated output.
-3.  **Cost Calculation:** PromptCritical immediately uses its internal **price table** to calculate the cost of that single API call.
-4.  **Storage:** The full usage and cost data (`:model`, `:token-in`, `:token-out`, `:cost-usd-snapshot`, etc.) is written directly into the YAML header of the newly created prompt file in the `pdb/`.
+1.  **Action:** The `vary` command sends a meta-prompt and a parent prompt to the `pcrit-llm` library.
+2.  **Usage Tracking & Cost Calculation (by `pcrit-llm`):** The `pcrit-llm` library performs the API call, receives the token usage from the provider, and **immediately calculates the monetary cost** using its internal price table.
+3.  **Storage:** The response from `pcrit-llm` already contains a `:cost-usd-snapshot` value. PromptCritical writes this complete, pre-calculated metadata directly into the YAML header of the newly created prompt file in the `pdb/`.
 
-### Pathway 2: The `evaluate` Command (Contest Scoring)
+### Pathway 2: The `stats` Command (Just-in-Time Cost)
 
-When you run `pcrit evaluate`, the system orchestrates the external `Failter` tool to run a contest, scoring each prompt in the population against your input documents.
+The `evaluate` command's only job is to orchestrate the external `Failter` tool. It does **not** calculate cost. The `stats` command is now responsible for calculating the cost of an evaluation *after the fact*.
 
-1.  **Action:** The `evaluate` command shells out to `Failter`, passing it the population of prompts and the input directory.
-2.  **Usage Tracking (by Failter):** `Failter` performs all the necessary LLM calls to score the prompts. For each prompt it evaluates, it records the `model` used, the `tokens_in`, and the `tokens_out` in its final output file, `report.csv`.
-3.  **Cost Calculation (by PromptCritical):** After the contest is complete, commands like `pcrit stats` read the `report.csv` file. For each row in the report, **PromptCritical then calculates the cost itself** by applying its internal **price table** to the token counts provided by Failter.
+1.  **Action:** The `pcrit evaluate` command shells out to `Failter`, which runs the contest and records the raw **token usage** for each prompt in its `failter-report.json` output.
+2.  **Usage Parsing:** When you run `pcrit stats`, it uses the `pcrit.results` component to parse the `failter-report.json` file and extract the raw token counts for each prompt.
+3.  **Cost Calculation (by `pcrit stats`):** For each prompt result, the `stats` command then calls the `pcrit.llm.costs/calculate-cost` function from the external library, passing it the model name and token counts. This calculates the cost for the evaluation just-in-time for display.
 
-This approach ensures that even as Failter's reporting format changes, PromptCritical maintains a consistent and centralized method for calculating evaluation costs.
+This approach ensures that cost calculation remains consistent and centralized within the `pcrit-llm` library.
 
 ## Practical Strategies for Minimizing Costs
 
-Your experiment's cost is a direct function of the models you choose and the number of API calls you make. Here are four practical strategies to keep costs down.
+Your experiment's cost is a direct function of the models you choose and the number of API calls you make. These strategies remain critical for managing your budget.
 
 #### 1. Use Cheaper Models for `vary`
 

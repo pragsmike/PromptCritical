@@ -5,10 +5,6 @@
   "A map of application-wide default values."
   core/defaults)
 
-(def price-table
-  "A map of model names to their cost per 1000 tokens for input and output."
-  core/price-table)
-
 (def config
   "A centralized map for all application configuration."
   core/config)

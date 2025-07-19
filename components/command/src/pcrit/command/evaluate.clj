@@ -6,7 +6,8 @@
             [pcrit.failter.interface :as failter]
             [pcrit.log.interface :as log]
             [pcrit.pop.interface :as pop]
-            [pcrit.reports.interface :as reports]))
+            [pcrit.reports.interface :as reports]
+            [pcrit.llm.costs :as llm-costs]))
 
 (defn- validate-options [ctx {:keys [generation-number contest-name inputs-dir models judge-model]}]
   (let [gen-dir (expdir/get-generation-dir ctx generation-number)
@@ -38,8 +39,7 @@
 (defn- get-and-log-contest-cost [processed-report-data]
   (if (seq processed-report-data)
     (let [costs (->> processed-report-data
-                     (keep :cost)
-                     (map #(if (string? %) (Double/parseDouble %) %))
+                     (map #(llm-costs/calculate-cost (:model %) (:tokens-in %) (:tokens-out %)))
                      (remove nil?))
           total-cost (reduce + 0.0 costs)]
       (log/info (format "Contest completed. Total calculated cost: $%.4f" total-cost))
@@ -48,15 +48,10 @@
 
 (defn- check-and-warn!
   "Performs non-blocking checks and prints warnings to the user."
-  [inputs-dir models]
+  [inputs-dir]
   ;; Check for empty inputs directory
   (when (empty? (.listFiles (io/file inputs-dir)))
-    (log/warn "Inputs directory is empty:" inputs-dir))
-  ;; Check for unknown model names
-  (doseq [model models]
-    (when-not (or (str/starts-with? model "ollama/")
-                  (get config/price-table model))
-      (log/warn "Model '" model "' is not a known model in PromptCritical's price table. It may not be supported."))))
+    (log/warn "Inputs directory is empty:" inputs-dir)))
 
 (defn evaluate!
   "Orchestrates the evaluation of a prompt population.
@@ -82,7 +77,7 @@
           (do (log/error "Evaluation validation failed:" reason)
               {:success false :cost 0.0})
           (do
-            (check-and-warn! inputs models-to-test)
+            (check-and-warn! inputs)
             (log/info "Starting evaluation for generation" gen-num "with contest name '" contest-name "'")
             (let [contest-params {:generation-number gen-num
                                   :contest-name      contest-name
@@ -95,6 +90,6 @@
               (if success
                 (let [report-csv-path (io/file (expdir/get-contest-dir ctx gen-num contest-name) "report.csv")
                       processed-data (reports/process-and-write-csv-report! parsed-json (.getCanonicalPath report-csv-path))
-                      cost (get-and-log-contest-cost processed-data)]
+                      cost (get-and-log-contest-cost parsed-json)]
                   {:success true :cost cost :contest-name contest-name})
                 {:success false :cost 0.0}))))))))

@@ -2,8 +2,8 @@
   (:require [clojure.java.io :as io]
             [pcrit.expdir.interface :as expdir]
             [pcrit.pop.interface :as pop]
-            [pcrit.llm.interface :as llm]
-            [pcrit.log.interface :as log]))
+            [pcrit.log.interface :as log]
+            [pcrit.llm.core :as llm]))
 
 (defn setup! []
   (log/setup-logging!)

@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [pcrit.config.interface :as config]
             [pcrit.expdir.interface :as expdir]
-            [pcrit.llm.interface :as llm]
+            [pcrit.llm.templater :as llm-templater]
             [pcrit.log.interface :as log]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
@@ -114,7 +114,7 @@
 (defn vary!
   "Adds new offspring to the latest generation by applying meta-prompts.
   Returns a map containing statistics about the run, including the total :cost."
-  [ctx & [{:keys [call-template-fn] :or {call-template-fn llm/call-model-template}}]]
+  [ctx & [{:keys [call-template-fn] :or {call-template-fn llm-templater/call-model-template}}]]
   (if-let [latest-gen-num (expdir/find-latest-generation-number ctx)]
     (let [evo-params (config/load-evolution-params ctx)
           current-pop (pop/load-population ctx latest-gen-num)

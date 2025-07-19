@@ -10,7 +10,6 @@
 
                   :extra-deps  {; Components
                                 pcrit/config      {:local/root "components/config"}
-                                pcrit/llm         {:local/root "components/llm"}
                                 pcrit/experiment  {:local/root "components/experiment"}
                                 pcrit/failter     {:local/root "components/failter"}
                                 pcrit/log         {:local/root "components/log"}
@@ -25,11 +24,13 @@
                                         ; Bases
                                 pcrit/pcrit-cli   {:local/root "bases/cli"}
 
+                                        ; External Libraries (NEW)
+                                pcrit/pcrit-llm   {:local/root "../pcrit-llm"}
+
                                         ; Development dependencies
                                 org.clojure/clojure {:mvn/version "1.12.1"}}}
 
            :test {:extra-paths ["development/src"
-                                "components/llm/test"
                                 "components/log/test"
                                 "components/pdb/test"
                                 "components/pop/test"

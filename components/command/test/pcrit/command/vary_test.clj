@@ -4,7 +4,7 @@
             [clojure.data.json :as json]
             [pcrit.command.interface :as cmd]
             [pcrit.expdir.interface :as expdir]
-            [pcrit.llm.interface :as llm]
+            [pcrit.llm.templater :as llm-templater]
             [pcrit.pop.interface :as pop]
             [pcrit.pdb.interface :as pdb]
             [pcrit.command.test-helper :as th-cmd]
@@ -25,7 +25,7 @@
   (fn [_model-name _prompt-body] mock-llm-response))
 
 (def ^:private mock-template-caller
-  (fn [model-name template vars] (llm/call-model-template model-name template vars mock-sender-fn)))
+  (fn [model-name template vars] (llm-templater/call-model-template model-name template vars mock-sender-fn)))
 
 (deftest vary-command-default-strategy-test
   (testing "vary! with no config uses the default :refine strategy successfully"

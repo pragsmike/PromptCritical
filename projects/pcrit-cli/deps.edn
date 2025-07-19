@@ -1,6 +1,5 @@
 {:deps      {pcrit/experiment {:local/root "../../components/experiment"}
              pcrit/log        {:local/root "../../components/log"}
-             pcrit/llm        {:local/root "../../components/llm"}
              pcrit/config     {:local/root "../../components/config"}
              pcrit/pdb        {:local/root "../../components/pdb"}
              pcrit/pop        {:local/root "../../components/pop"}
@@ -11,6 +10,9 @@
              pcrit/test-helper {:local/root "../../components/test-helper"}
              pcrit/cli        {:local/root "../../bases/cli"}
              pcrit/command    {:local/root "../../components/command"}
+
+             ; External Libraries (CORRECTED PATH)
+             pcrit/pcrit-llm  {:local/root "../../../pcrit-llm"}
 
              org.clojure/clojure {:mvn/version "1.12.1"}}
 

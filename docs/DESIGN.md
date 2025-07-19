@@ -18,7 +18,7 @@ The design has two guiding principles:
 
 ## 2  Polylith Architecture Overview
 
-The codebase is organized into re-usable **components** and runnable **bases**. This separation ensures that core logic is reusable by any entry point (e.g., CLI, a future web UI).
+The codebase is organized into re-usable **components** and runnable **bases**. This separation ensures that core logic is reusable by any entry point (e.g., CLI, a future web UI). Note that LLM interaction and cost calculation have been extracted to an external `pcrit-llm` library.
 
 | Layer | Name (ns prefix) | Role |
 | :--- | :--- | :--- |
@@ -28,10 +28,10 @@ The codebase is organized into re-usable **components** and runnable **bases**. 
 | **Component** | `pcrit.failter` | **Generates `spec.yml` and runs the `failter run` command** |
 | **Component** | `pcrit.pdb` | **Immutable prompt database** (file I/O, locking, ID generation) |
 | **Component** | `pcrit.pop` | **Population domain model** and prompt analysis (`:prompt-type`) |
-| **Component** | `pcrit.reports` | **Parses contest results** (legacy CSV & new Failter JSON) and writes reports |
+| **Component** | `pcrit.reports` | **Generates human-readable CSV reports** from contest results |
+| **Component** | `pcrit.results` | **Parses raw `failter-report.json`** into canonical data structures |
 | **Component** | `pcrit.config` | Central configuration map & helpers |
 | **Component** | `pcrit.log` | Structured logging and log setup |
-| **Component** | `pcrit.llm` | Thin HTTP client façade for LLMs |
 | **Component** | `pcrit.test-helper` | Shared utilities for the test suite |
 | **Base** | `pcrit.cli` | **Command‑line interface** (`pcrit …`) entry point |
 
