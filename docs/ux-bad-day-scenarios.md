@@ -52,3 +52,5 @@ This tells you exactly what is wrong with the generated `spec.yml` file, pointin
     WARN pcrit.command.evaluate | Model 'openai/gpt-4o-minii' is not a known model in PromptCritical's price table. It may not be supported.
     ```
     This doesn't stop the command from running (as you may have a custom LiteLLM proxy), but it gives you an immediate hint that you should double-check your spelling and configuration.
+
+NOTE: The price table is actually configured in a library that `pcrit` uses, `pcrit-llm`.

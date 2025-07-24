@@ -56,7 +56,7 @@ to `bootstrap.edn`, put the file in `seeds/`, rerun `bootstrap`, and the system 
 
 ### Why do we bother with this indirection?
 
-* **Human ergonomics**: scripts and docs can say “use `links/improve`” instead of “use `P7.prompt`”.
+* **Human ergonomics**: scripts and docs can say “use `links/refine`” instead of “use `P7.prompt`”.
 * **Immutability & provenance**: the PDB file never moves or changes; the link is just a mutable pointer.
 * **Portability**: relative links keep experiments reproducible even after `mv`-ing the directory to a new path.
 

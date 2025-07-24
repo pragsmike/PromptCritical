@@ -31,6 +31,8 @@ Here are ten key risks for the PromptCritical project, ranked from most to least
 - Use cheaper models in the `vary` step by configuring them in `evolution-parameters.edn`, reserving more expensive models for the `evaluate` step.
 - Develop "surrogate critics" (cheaper models or heuristics) to pre-filter prompts before a full evaluation contest. (v0.5 Milestone)
 - Implement early-stopping rules based on cost thresholds.
+See **[Practical strategies for minimising costs](../evo-cost-calculation.md#practical-strategies-for-minimizing-costs)** for the hands-on checklist.
+
 
 ## 4. **Data Leakage in Evaluation**
 **Risk**: If the documents used in an evaluation contest were part of the judging LLM's training data, the resulting fitness scores would be meaningless.

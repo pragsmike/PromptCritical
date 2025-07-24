@@ -59,9 +59,10 @@ Using git for population snapshots is attractive because:
 ## Documentation
 
 For more information, see:
-   * [OVERVIEW](docs/OVERVIEW.md)
-   * [DESIGN](docs/DESIGN.md)
-   * [RISKS](docs/RISKS.md)
+   * [OVERVIEW](docs/OVERVIEW.md) describes what PromptCritical is for and how it works.
+   * [BACKGROUND](BACKGROUND.md) explains what you need to know to use PromptCritical and gives links to where to learn it.
+   * [DESIGN](docs/DESIGN.md) is for developers to understand the structure.
+   * [RISKS](docs/RISKS.md) outlines the risks that must be addressed.
 
 ---
 
